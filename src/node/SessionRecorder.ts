@@ -1,0 +1,539 @@
+/**
+ * Session Recorder - Main API for recording user actions in Playwright
+ */
+
+import { Page } from '@playwright/test';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as crypto from 'crypto';
+import { SessionData, RecordedAction, HarEntry, SnapshotterBlob } from './types';
+
+export class SessionRecorder {
+  private page: Page | null = null;
+  private sessionData: SessionData;
+  private sessionDir: string;
+  private actionQueue: Promise<void> = Promise.resolve();
+  private currentActionData: any = null; // Temporary storage for action being recorded
+  private allResources = new Set<string>(); // Track all captured resources by SHA1
+  private resourcesDir: string;
+  private urlToResourceMap = new Map<string, string>(); // URL → SHA1 filename mapping
+
+  constructor(sessionId?: string) {
+    this.sessionData = {
+      sessionId: sessionId || `session-${Date.now()}`,
+      startTime: new Date().toISOString(),
+      actions: [],
+      resources: []
+    };
+
+    const outputDir = path.join(__dirname, '../../output');
+    this.sessionDir = path.join(outputDir, this.sessionData.sessionId);
+    this.resourcesDir = path.join(this.sessionDir, 'resources');
+  }
+
+  async start(page: Page): Promise<void> {
+    if (this.page) {
+      throw new Error('Recording already started');
+    }
+
+    this.page = page;
+
+    // Create output directories
+    fs.mkdirSync(this.sessionDir, { recursive: true });
+    fs.mkdirSync(path.join(this.sessionDir, 'screenshots'), { recursive: true });
+    fs.mkdirSync(path.join(this.sessionDir, 'snapshots'), { recursive: true });
+    fs.mkdirSync(this.resourcesDir, { recursive: true });
+
+    // Setup network resource capture (like HarTracer)
+    page.on('response', async (response) => {
+      await this._handleNetworkResponse(response);
+    });
+
+    // Read compiled browser-side code
+    // When compiled, __dirname is dist/src/node, so browser code is at ../browser
+    const browserDir = path.join(__dirname, '../browser');
+
+    const snapshotCaptureCode = fs.readFileSync(
+      path.join(browserDir, 'snapshotCapture.js'),
+      'utf-8'
+    );
+    const actionListenerCode = fs.readFileSync(
+      path.join(browserDir, 'actionListener.js'),
+      'utf-8'
+    );
+    const injectedCode = fs.readFileSync(
+      path.join(browserDir, 'injected.js'),
+      'utf-8'
+    );
+
+    // Bundle and inject browser-side code (already compiled to JS, no type stripping needed)
+    const fullInjectedCode = `
+      console.log('🎬 Starting session recorder injection...');
+
+      try {
+        // Snapshot capture module
+        (function() {
+          console.log('Loading snapshot capture module...');
+          ${snapshotCaptureCode.replace(/exports\.\w+\s*=/g, '').replace('Object.defineProperty(exports, "__esModule", { value: true });', '')}
+          window.__snapshotCapture = { captureSnapshot: createSnapshotCapture().captureSnapshot };
+          console.log('✅ Snapshot capture loaded');
+        })();
+
+        // Action listener module
+        (function() {
+          console.log('Loading action listener module...');
+          ${actionListenerCode.replace(/exports\.\w+\s*=/g, '').replace('Object.defineProperty(exports, "__esModule", { value: true });', '')}
+          window.__actionListener = { setupActionListeners };
+          console.log('✅ Action listener loaded');
+        })();
+
+        // Main coordinator
+        console.log('Loading main coordinator...');
+        ${injectedCode.replace('"use strict";', '').replace('Object.defineProperty(exports, "__esModule", { value: true });', '')}
+        console.log('✅ Session recorder fully loaded');
+      } catch (err) {
+        console.error('❌ Session recorder injection failed:', err);
+      }
+    `;
+
+    await page.addInitScript(fullInjectedCode);
+
+    // Expose callbacks for browser to call
+    await page.exposeFunction('__recordActionBefore', async (data: any) => {
+      this.actionQueue = this.actionQueue.then(() =>
+        this._handleActionBefore(data)
+      );
+    });
+
+    await page.exposeFunction('__recordActionAfter', async (data: any) => {
+      this.actionQueue = this.actionQueue.then(() =>
+        this._handleActionAfter(data)
+      );
+    });
+
+    console.log(`📹 Session recording started: ${this.sessionData.sessionId}`);
+    console.log(`📁 Output: ${this.sessionDir}`);
+  }
+
+  private async _handleActionBefore(data: any): Promise<void> {
+    if (!this.page) return;
+
+    const actionId = `action-${this.sessionData.actions.length + 1}`;
+
+    // Rewrite HTML to reference local resources
+    const rewrittenHtml = this._rewriteHTML(data.beforeHtml, data.beforeUrl);
+
+    // Save BEFORE HTML snapshot as separate file
+    const beforeSnapshotPath = path.join(
+      this.sessionDir,
+      'snapshots',
+      `${actionId}-before.html`
+    );
+    fs.writeFileSync(beforeSnapshotPath, rewrittenHtml, 'utf-8');
+
+    // Take BEFORE screenshot
+    const beforeScreenshotPath = path.join(
+      this.sessionDir,
+      'screenshots',
+      `${actionId}-before.png`
+    );
+
+    await this.page.screenshot({
+      path: beforeScreenshotPath,
+      type: 'png'
+    });
+
+    // Store partial action data (with file paths, not inline HTML)
+    this.currentActionData = {
+      id: actionId,
+      timestamp: data.action.timestamp,
+      type: data.action.type,
+      before: {
+        timestamp: data.beforeTimestamp,
+        html: `snapshots/${actionId}-before.html`,  // File path instead of HTML string
+        screenshot: `screenshots/${actionId}-before.png`,
+        url: data.beforeUrl,
+        viewport: data.beforeViewport
+      },
+      action: {
+        type: data.action.type,
+        x: data.action.x,
+        y: data.action.y,
+        value: data.action.value,
+        key: data.action.key,
+        timestamp: data.action.timestamp
+      }
+    };
+
+    console.log(`📸 Captured BEFORE: ${data.action.type}`);
+  }
+
+  private async _handleActionAfter(data: any): Promise<void> {
+    if (!this.page || !this.currentActionData) return;
+
+    const actionId = this.currentActionData.id;
+
+    // Rewrite HTML to reference local resources
+    const rewrittenHtml = this._rewriteHTML(data.afterHtml, data.afterUrl);
+
+    // Save AFTER HTML snapshot as separate file
+    const afterSnapshotPath = path.join(
+      this.sessionDir,
+      'snapshots',
+      `${actionId}-after.html`
+    );
+    fs.writeFileSync(afterSnapshotPath, rewrittenHtml, 'utf-8');
+
+    // Take AFTER screenshot
+    const afterScreenshotPath = path.join(
+      this.sessionDir,
+      'screenshots',
+      `${actionId}-after.png`
+    );
+
+    await this.page.screenshot({
+      path: afterScreenshotPath,
+      type: 'png'
+    });
+
+    // Complete action data (with file path, not inline HTML)
+    this.currentActionData.after = {
+      timestamp: data.afterTimestamp,
+      html: `snapshots/${actionId}-after.html`,  // File path instead of HTML string
+      screenshot: `screenshots/${actionId}-after.png`,
+      url: data.afterUrl,
+      viewport: data.afterViewport
+    };
+
+    // Add to session
+    this.sessionData.actions.push(this.currentActionData);
+
+    console.log(`✅ Recorded action #${this.sessionData.actions.length}: ${this.currentActionData.type}`);
+
+    this.currentActionData = null;
+  }
+
+  async stop(): Promise<void> {
+    if (!this.page) {
+      console.warn('Recording not started');
+      return;
+    }
+
+    // Wait for any pending actions to complete
+    await this.actionQueue;
+
+    this.sessionData.endTime = new Date().toISOString();
+
+    // Save session.json
+    const sessionJsonPath = path.join(this.sessionDir, 'session.json');
+    fs.writeFileSync(
+      sessionJsonPath,
+      JSON.stringify(this.sessionData, null, 2),
+      'utf-8'
+    );
+
+    console.log(`🛑 Recording stopped`);
+    console.log(`📊 Total actions: ${this.sessionData.actions.length}`);
+    console.log(`📦 Total resources: ${this.allResources.size}`);
+    console.log(`📄 Session data: ${sessionJsonPath}`);
+
+    this.page = null;
+  }
+
+  getSessionData(): SessionData {
+    return this.sessionData;
+  }
+
+  getSummary(): any {
+    return {
+      sessionId: this.sessionData.sessionId,
+      duration: this.sessionData.endTime
+        ? new Date(this.sessionData.endTime).getTime() - new Date(this.sessionData.startTime).getTime()
+        : null,
+      totalActions: this.sessionData.actions.length,
+      totalResources: this.allResources.size,
+      actions: this.sessionData.actions.map(a => ({
+        id: a.id,
+        type: a.type,
+        timestamp: a.timestamp,
+        url: a.after.url
+      }))
+    };
+  }
+
+  // ============================================================================
+  // Resource Capture Methods (HarTracer-style)
+  // ============================================================================
+
+  /**
+   * Handle network responses - captures resources like HarTracer does
+   */
+  private async _handleNetworkResponse(response: any): Promise<void> {
+    try {
+      // Only capture successful responses with body content
+      const status = response.status();
+      if (status < 200 || status >= 400) return;
+
+      const contentType = response.headers()['content-type'] || '';
+      const url = response.url();
+
+      // Skip data URLs and already cached resources
+      if (url.startsWith('data:')) return;
+
+      // Capture CSS, JS, images, fonts, and other assets
+      const shouldCapture =
+        contentType.includes('text/css') ||
+        contentType.includes('javascript') ||
+        contentType.includes('image/') ||
+        contentType.includes('font/') ||
+        contentType.includes('application/font') ||
+        contentType.includes('text/html') ||
+        contentType.includes('application/json');
+
+      if (!shouldCapture) return;
+
+      // Get response body
+      const buffer = await response.body().catch(() => null);
+      if (!buffer) return;
+
+      // Calculate SHA1 hash (like HarTracer does)
+      const sha1 = this._calculateSha1(buffer);
+      const extension = this._getExtensionFromContentType(contentType, url);
+      const filename = `${sha1}${extension}`;
+
+      // Store URL → filename mapping for rewriting
+      this.urlToResourceMap.set(url, filename);
+
+      // Save via onContentBlob (mimics HarTracer delegate pattern)
+      this.onContentBlob(filename, buffer);
+
+      // If CSS, also rewrite and save rewritten version
+      if (contentType.includes('text/css')) {
+        const cssContent = buffer.toString('utf-8');
+        const rewrittenCSS = this._rewriteCSS(cssContent, url);
+        const rewrittenBuffer = Buffer.from(rewrittenCSS, 'utf-8');
+        fs.writeFileSync(path.join(this.resourcesDir, filename), rewrittenBuffer);
+      }
+
+      console.log(`📦 Captured resource: ${filename} (${buffer.length} bytes) - ${contentType}`);
+    } catch (err) {
+      // Silently ignore errors (some responses may not have bodies)
+    }
+  }
+
+  /**
+   * HarTracerDelegate: onContentBlob - Save network response bodies
+   */
+  onContentBlob(sha1: string, buffer: Buffer): void {
+    if (this.allResources.has(sha1)) {
+      return; // Already saved (deduplication)
+    }
+
+    this.allResources.add(sha1);
+
+    const resourcePath = path.join(this.resourcesDir, sha1);
+    fs.writeFileSync(resourcePath, buffer);
+
+    // Track in session data
+    if (this.sessionData.resources) {
+      this.sessionData.resources.push(sha1);
+    }
+  }
+
+  /**
+   * HarTracerDelegate: onEntryStarted (optional - for HAR metadata)
+   */
+  onEntryStarted(entry: HarEntry): void {
+    // Optional: Track when network requests start
+  }
+
+  /**
+   * HarTracerDelegate: onEntryFinished (optional - for HAR metadata)
+   */
+  onEntryFinished(entry: HarEntry): void {
+    // Optional: Store HAR entry metadata
+    // entry.response.content._sha1 contains the resource filename
+  }
+
+  /**
+   * SnapshotterDelegate: onSnapshotterBlob - Save snapshot-related resources
+   */
+  onSnapshotterBlob(blob: SnapshotterBlob): void {
+    this.onContentBlob(blob.sha1, blob.buffer);
+  }
+
+  // ============================================================================
+  // Helper Methods
+  // ============================================================================
+
+  /**
+   * Calculate SHA1 hash of buffer (like Playwright's calculateSha1)
+   */
+  private _calculateSha1(buffer: Buffer): string {
+    return crypto.createHash('sha1').update(buffer).digest('hex');
+  }
+
+  /**
+   * Get file extension from content type and URL
+   */
+  private _getExtensionFromContentType(contentType: string, url: string): string {
+    // Try to get extension from content type
+    if (contentType.includes('text/css')) return '.css';
+    if (contentType.includes('javascript')) return '.js';
+    if (contentType.includes('image/png')) return '.png';
+    if (contentType.includes('image/jpeg') || contentType.includes('image/jpg')) return '.jpg';
+    if (contentType.includes('image/svg')) return '.svg';
+    if (contentType.includes('image/webp')) return '.webp';
+    if (contentType.includes('image/gif')) return '.gif';
+    if (contentType.includes('font/woff2')) return '.woff2';
+    if (contentType.includes('font/woff')) return '.woff';
+    if (contentType.includes('font/ttf')) return '.ttf';
+    if (contentType.includes('text/html')) return '.html';
+    if (contentType.includes('application/json')) return '.json';
+
+    // Try to get extension from URL
+    const urlExt = path.extname(url);
+    if (urlExt) return urlExt;
+
+    // Default
+    return '.dat';
+  }
+
+  // ============================================================================
+  // URL Rewriting Methods
+  // ============================================================================
+
+  /**
+   * Rewrite HTML to reference local resources
+   */
+  private _rewriteHTML(html: string, baseUrl: string): string {
+    let rewritten = html;
+
+    // Rewrite <link> stylesheets
+    rewritten = rewritten.replace(
+      /<link([^>]*?)href=["']([^"']+)["']/g,
+      (match, attrs, href) => {
+        const absoluteUrl = this._resolveUrl(href, baseUrl);
+        const localPath = this.urlToResourceMap.get(absoluteUrl);
+        if (localPath) {
+          return `<link${attrs}href="../resources/${localPath}"`;
+        }
+        return match;
+      }
+    );
+
+    // Rewrite <script> sources
+    rewritten = rewritten.replace(
+      /<script([^>]*?)src=["']([^"']+)["']/g,
+      (match, attrs, src) => {
+        const absoluteUrl = this._resolveUrl(src, baseUrl);
+        const localPath = this.urlToResourceMap.get(absoluteUrl);
+        if (localPath) {
+          return `<script${attrs}src="../resources/${localPath}"`;
+        }
+        return match;
+      }
+    );
+
+    // Rewrite <img> sources
+    rewritten = rewritten.replace(
+      /<img([^>]*?)src=["']([^"']+)["']/g,
+      (match, attrs, src) => {
+        const absoluteUrl = this._resolveUrl(src, baseUrl);
+        const localPath = this.urlToResourceMap.get(absoluteUrl);
+        if (localPath) {
+          return `<img${attrs}src="../resources/${localPath}"`;
+        }
+        return match;
+      }
+    );
+
+    // Rewrite <source> srcset (for <picture> and <video>)
+    rewritten = rewritten.replace(
+      /<source([^>]*?)srcset=["']([^"']+)["']/g,
+      (match, attrs, srcset) => {
+        const absoluteUrl = this._resolveUrl(srcset, baseUrl);
+        const localPath = this.urlToResourceMap.get(absoluteUrl);
+        if (localPath) {
+          return `<source${attrs}srcset="../resources/${localPath}"`;
+        }
+        return match;
+      }
+    );
+
+    // Rewrite style attributes with url()
+    rewritten = rewritten.replace(
+      /style=["']([^"']*?)["']/g,
+      (match, styleContent) => {
+        const rewrittenStyle = this._rewriteCSSUrls(styleContent, baseUrl);
+        return `style="${rewrittenStyle}"`;
+      }
+    );
+
+    return rewritten;
+  }
+
+  /**
+   * Rewrite CSS file to reference local resources
+   */
+  private _rewriteCSS(css: string, baseUrl: string): string {
+    return this._rewriteCSSUrls(css, baseUrl);
+  }
+
+  /**
+   * Rewrite url() references in CSS content
+   */
+  private _rewriteCSSUrls(css: string, baseUrl?: string): string {
+    return css.replace(
+      /url\(["']?([^"')]+)["']?\)/g,
+      (match, url) => {
+        // Handle data URLs
+        if (url.startsWith('data:')) {
+          return match;
+        }
+
+        // Resolve absolute URL if we have a base URL
+        let absoluteUrl = url;
+        if (baseUrl && !url.startsWith('http://') && !url.startsWith('https://')) {
+          try {
+            absoluteUrl = new URL(url, baseUrl).href;
+          } catch {
+            // Invalid URL, keep original
+            return match;
+          }
+        }
+
+        const localPath = this.urlToResourceMap.get(absoluteUrl);
+        if (localPath) {
+          return `url('../resources/${localPath}')`;
+        }
+
+        // Try original URL if resolution failed
+        const localPathOriginal = this.urlToResourceMap.get(url);
+        if (localPathOriginal) {
+          return `url('../resources/${localPathOriginal}')`;
+        }
+
+        return match;
+      }
+    );
+  }
+
+  /**
+   * Resolve a relative URL to an absolute URL using base URL
+   */
+  private _resolveUrl(url: string, baseUrl: string): string {
+    // Already absolute
+    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
+      return url;
+    }
+
+    // Resolve relative URL
+    try {
+      return new URL(url, baseUrl).href;
+    } catch {
+      // Invalid URL, return as-is
+      return url;
+    }
+  }
+}

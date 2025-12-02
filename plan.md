@@ -23,7 +23,7 @@ These are fundamentally different capture modes!
 Instead of fighting with Playwright's client/server architecture and trying to use internal APIs from the wrong layer, we should:
 
 1. **Copy the snapshot capture logic** from Playwright (the parts that work)
-2. **Create our own standalone recorder** in `packages/playwright/src/mcp/browser-session-recorder/`
+2. **Create our own standalone recorder** in `session-recorder/`
 3. **Listen to user actions** directly in the browser
 4. **Capture snapshots ourselves** using the extracted code
 
