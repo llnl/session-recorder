@@ -1,0 +1,42 @@
+.tab-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: #ffffff;
+  border-top: 1px solid #e0e0e0;
+}
+
+.tab-panel-header {
+  display: flex;
+  border-bottom: 1px solid #e0e0e0;
+  background-color: #f5f5f5;
+}
+
+.tab-button {
+  padding: 0.75rem 1.5rem;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #666;
+  transition: all 0.2s;
+}
+
+.tab-button:hover {
+  color: #333;
+  background-color: #e8e8e8;
+}
+
+.tab-button.active {
+  color: #1976d2;
+  border-bottom-color: #1976d2;
+  background-color: #ffffff;
+}
+
+.tab-panel-content {
+  flex: 1;
+  overflow: auto;
+  padding: 1rem;
+}

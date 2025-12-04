@@ -1,0 +1,20 @@
+.snapshot-viewer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: #ffffff;
+}
+
+.snapshot-viewer-controls {
+  padding: 1rem;
+  border-bottom: 1px solid #e0e0e0;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.snapshot-viewer-content {
+  flex: 1;
+  overflow: auto;
+  position: relative;
+}

@@ -4,8 +4,8 @@ Table of Contents:
 
 - [Session Recorder - POC 2 Tasks](#session-recorder---poc-2-tasks)
   - [Phase 1: Console Log Capture (3 hours) ✅ COMPLETE](#phase-1-console-log-capture-3-hours--complete)
-  - [Phase 2: Custom Trace Viewer - Project Setup (3 hours)](#phase-2-custom-trace-viewer---project-setup-3-hours)
-  - [Phase 3: State Management \& Data Structures (2 hours)](#phase-3-state-management--data-structures-2-hours)
+  - [Phase 2: Custom Trace Viewer - Project Setup (3 hours) ✅ COMPLETE](#phase-2-custom-trace-viewer---project-setup-3-hours--complete)
+  - [Phase 3: State Management \& Data Structures (2 hours) ✅ COMPLETE](#phase-3-state-management--data-structures-2-hours--complete)
   - [Phase 4: Timeline Component (6 hours)](#phase-4-timeline-component-6-hours)
   - [Phase 5: Action List Component (4 hours)](#phase-5-action-list-component-4-hours)
   - [Phase 6: Snapshot Viewer Component (5 hours)](#phase-6-snapshot-viewer-component-5-hours)
@@ -50,13 +50,13 @@ Table of Contents:
 - [x] Verify JSON Lines format
 - [x] Verify performance impact is minimal
 
-## Phase 2: Custom Trace Viewer - Project Setup (3 hours)
+## Phase 2: Custom Trace Viewer - Project Setup (3 hours) ✅ COMPLETE
 
-**Task 2.1**: Initialize React project
+**Task 2.1**: Initialize React project ✅
 
-- [ ] Create `viewer/` directory (separate from Express viewer)
-- [ ] Run `npm create vite@latest` with React + TypeScript template
-- [ ] Install dependencies:
+- [x] Create `viewer/` directory (separate from Express viewer)
+- [x] Run `npm create vite@latest` with React + TypeScript template
+- [x] Install dependencies:
 
   ```json
   {
@@ -77,12 +77,12 @@ Table of Contents:
   }
   ```
 
-- [ ] Configure `vite.config.ts` for development
-- [ ] Setup `tsconfig.json` with strict mode
+- [x] Configure `vite.config.ts` for development
+- [x] Setup `tsconfig.json` with strict mode
 
-**Task 2.2**: Create project structure
+**Task 2.2**: Create project structure ✅
 
-- [ ] Create directory structure:
+- [x] Create directory structure:
   - `src/components/Timeline/`
   - `src/components/ActionList/`
   - `src/components/SnapshotViewer/`
@@ -91,40 +91,40 @@ Table of Contents:
   - `src/utils/`
   - `src/types/`
   - `src/stores/`
-- [ ] Create base component files (empty templates)
-- [ ] Setup CSS modules or styling solution
+- [x] Create base component files (empty templates)
+- [x] Setup CSS modules or styling solution
 
-**Task 2.3**: Create data loading utilities
+**Task 2.3**: Create data loading utilities ✅
 
-- [ ] Create `src/types/session.ts` (import from recorder types)
-- [ ] Create `src/utils/sessionLoader.ts`:
+- [x] Create `src/types/session.ts` (import from recorder types)
+- [x] Create `src/utils/sessionLoader.ts`:
   - Load session.json
   - Parse JSON Lines files (network, console)
   - Load resources from directory or zip
-- [ ] Create `src/utils/zipHandler.ts`:
+- [x] Create `src/utils/zipHandler.ts`:
   - Import session from zip (JSZip)
   - Export session to zip (JSZip)
   - Validate session structure
-- [ ] Add error handling for corrupt files
+- [x] Add error handling for corrupt files
 
-## Phase 3: State Management & Data Structures (2 hours)
+## Phase 3: State Management & Data Structures (2 hours) ✅ COMPLETE
 
-**Task 3.1**: Create global state store
+**Task 3.1**: Create global state store ✅
 
-- [ ] Create `src/stores/sessionStore.ts` (Zustand)
-- [ ] Define state shape:
+- [x] Create `src/stores/sessionStore.ts` (Zustand)
+- [x] Define state shape:
   - sessionData, actions, networkEntries, consoleLogs
   - selectedActionIndex, timelineSelection
   - activeTab, loading, error
-- [ ] Implement actions: loadSession, selectAction, setTimeRange, etc.
-- [ ] Add derived selectors for filtered data
+- [x] Implement actions: loadSession, selectAction, setTimeRange, etc.
+- [x] Add derived selectors for filtered data
 
-**Task 3.2**: Create custom hooks
+**Task 3.2**: Create custom hooks ✅
 
-- [ ] Create `src/hooks/useFilteredActions.ts` (filter by time range)
-- [ ] Create `src/hooks/useFilteredConsole.ts` (filter console logs)
-- [ ] Create `src/hooks/useFilteredNetwork.ts` (filter network requests)
-- [ ] Create `src/hooks/useVirtualList.ts` (wrapper for React Virtual)
+- [x] Create `src/hooks/useFilteredActions.ts` (filter by time range)
+- [x] Create `src/hooks/useFilteredConsole.ts` (filter console logs)
+- [x] Create `src/hooks/useFilteredNetwork.ts` (filter network requests)
+- [x] Create `src/hooks/useVirtualList.ts` (wrapper for TanStack Virtual)
 
 ## Phase 4: Timeline Component (6 hours)
 
