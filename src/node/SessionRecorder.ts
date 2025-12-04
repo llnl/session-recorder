@@ -6,7 +6,7 @@ import { Page } from '@playwright/test';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
-import { SessionData, RecordedAction, HarEntry, SnapshotterBlob } from './types';
+import { SessionData, RecordedAction, HarEntry, SnapshotterBlob, NetworkEntry, ConsoleEntry } from './types';
 
 export class SessionRecorder {
   private page: Page | null = null;
@@ -17,6 +17,11 @@ export class SessionRecorder {
   private allResources = new Set<string>(); // Track all captured resources by SHA1
   private resourcesDir: string;
   private urlToResourceMap = new Map<string, string>(); // URL → SHA1 filename mapping
+  private networkLogPath: string;
+  private networkRequestCount = 0;
+  private consoleLogPath: string;
+  private consoleLogCount = 0;
+  private sessionStartTime: number = 0;
 
   constructor(sessionId?: string) {
     this.sessionData = {
@@ -29,6 +34,8 @@ export class SessionRecorder {
     const outputDir = path.join(__dirname, '../../output');
     this.sessionDir = path.join(outputDir, this.sessionData.sessionId);
     this.resourcesDir = path.join(this.sessionDir, 'resources');
+    this.networkLogPath = path.join(this.sessionDir, 'session.network');
+    this.consoleLogPath = path.join(this.sessionDir, 'session.console');
   }
 
   async start(page: Page): Promise<void> {
@@ -37,12 +44,19 @@ export class SessionRecorder {
     }
 
     this.page = page;
+    this.sessionStartTime = Date.now();
 
     // Create output directories
     fs.mkdirSync(this.sessionDir, { recursive: true });
     fs.mkdirSync(path.join(this.sessionDir, 'screenshots'), { recursive: true });
     fs.mkdirSync(path.join(this.sessionDir, 'snapshots'), { recursive: true });
     fs.mkdirSync(this.resourcesDir, { recursive: true });
+
+    // Create network log file (JSON Lines format)
+    fs.writeFileSync(this.networkLogPath, '', 'utf-8');
+
+    // Create console log file (JSON Lines format)
+    fs.writeFileSync(this.consoleLogPath, '', 'utf-8');
 
     // Setup network resource capture (like HarTracer)
     page.on('response', async (response) => {
@@ -59,6 +73,10 @@ export class SessionRecorder {
     );
     const actionListenerCode = fs.readFileSync(
       path.join(browserDir, 'actionListener.js'),
+      'utf-8'
+    );
+    const consoleCaptureCode = fs.readFileSync(
+      path.join(browserDir, 'consoleCapture.js'),
       'utf-8'
     );
     const injectedCode = fs.readFileSync(
@@ -87,6 +105,14 @@ export class SessionRecorder {
           console.log('✅ Action listener loaded');
         })();
 
+        // Console capture module
+        (function() {
+          console.log('Loading console capture module...');
+          ${consoleCaptureCode.replace(/exports\.\w+\s*=/g, '').replace('Object.defineProperty(exports, "__esModule", { value: true });', '')}
+          window.__consoleCapture = createConsoleCapture();
+          console.log('✅ Console capture loaded');
+        })();
+
         // Main coordinator
         console.log('Loading main coordinator...');
         ${injectedCode.replace('"use strict";', '').replace('Object.defineProperty(exports, "__esModule", { value: true });', '')}
@@ -109,6 +135,10 @@ export class SessionRecorder {
       this.actionQueue = this.actionQueue.then(() =>
         this._handleActionAfter(data)
       );
+    });
+
+    await page.exposeFunction('__recordConsoleLog', async (entry: ConsoleEntry) => {
+      this._handleConsoleLog(entry);
     });
 
     console.log(`📹 Session recording started: ${this.sessionData.sessionId}`);
@@ -224,6 +254,22 @@ export class SessionRecorder {
 
     this.sessionData.endTime = new Date().toISOString();
 
+    // Add network metadata
+    if (this.networkRequestCount > 0) {
+      this.sessionData.network = {
+        file: 'session.network',
+        count: this.networkRequestCount
+      };
+    }
+
+    // Add console metadata
+    if (this.consoleLogCount > 0) {
+      this.sessionData.console = {
+        file: 'session.console',
+        count: this.consoleLogCount
+      };
+    }
+
     // Save session.json
     const sessionJsonPath = path.join(this.sessionDir, 'session.json');
     fs.writeFileSync(
@@ -235,6 +281,7 @@ export class SessionRecorder {
     console.log(`🛑 Recording stopped`);
     console.log(`📊 Total actions: ${this.sessionData.actions.length}`);
     console.log(`📦 Total resources: ${this.allResources.size}`);
+    console.log(`🌐 Network requests: ${this.networkRequestCount}`);
     console.log(`📄 Session data: ${sessionJsonPath}`);
 
     this.page = null;
@@ -270,54 +317,130 @@ export class SessionRecorder {
    */
   private async _handleNetworkResponse(response: any): Promise<void> {
     try {
-      // Only capture successful responses with body content
       const status = response.status();
-      if (status < 200 || status >= 400) return;
-
+      const statusText = response.statusText();
       const contentType = response.headers()['content-type'] || '';
       const url = response.url();
+      const request = response.request();
 
-      // Skip data URLs and already cached resources
+      // Skip data URLs
       if (url.startsWith('data:')) return;
 
-      // Capture CSS, JS, images, fonts, and other assets
-      const shouldCapture =
-        contentType.includes('text/css') ||
-        contentType.includes('javascript') ||
-        contentType.includes('image/') ||
-        contentType.includes('font/') ||
-        contentType.includes('application/font') ||
-        contentType.includes('text/html') ||
-        contentType.includes('application/json');
+      // Get timing data
+      const timing = request.timing();
+      const requestStartTime = Date.now(); // Approximate - Playwright doesn't expose exact time
+      const relativeStartTime = requestStartTime - this.sessionStartTime;
 
-      if (!shouldCapture) return;
+      // Calculate timing breakdown (all in milliseconds)
+      const timingBreakdown = {
+        start: relativeStartTime,
+        dns: timing?.domainLookupEnd && timing?.domainLookupStart && timing.domainLookupEnd > 0
+          ? timing.domainLookupEnd - timing.domainLookupStart
+          : undefined,
+        connect: timing?.connectEnd && timing?.connectStart && timing.connectEnd > 0
+          ? timing.connectEnd - timing.connectStart
+          : undefined,
+        ttfb: timing?.responseStart && timing?.requestStart && timing.responseStart > 0
+          ? timing.responseStart - timing.requestStart
+          : 0,
+        download: timing?.responseEnd && timing?.responseStart && timing.responseEnd > 0
+          ? timing.responseEnd - timing.responseStart
+          : 0,
+        total: timing?.responseEnd && timing?.startTime && timing.responseEnd > 0 && timing.startTime > 0
+          ? timing.responseEnd - timing.startTime
+          : 0
+      };
 
-      // Get response body
-      const buffer = await response.body().catch(() => null);
-      if (!buffer) return;
+      // Get resource type
+      const resourceType = request.resourceType();
 
-      // Calculate SHA1 hash (like HarTracer does)
-      const sha1 = this._calculateSha1(buffer);
-      const extension = this._getExtensionFromContentType(contentType, url);
-      const filename = `${sha1}${extension}`;
-
-      // Store URL → filename mapping for rewriting
-      this.urlToResourceMap.set(url, filename);
-
-      // Save via onContentBlob (mimics HarTracer delegate pattern)
-      this.onContentBlob(filename, buffer);
-
-      // If CSS, also rewrite and save rewritten version
-      if (contentType.includes('text/css')) {
-        const cssContent = buffer.toString('utf-8');
-        const rewrittenCSS = this._rewriteCSS(cssContent, url);
-        const rewrittenBuffer = Buffer.from(rewrittenCSS, 'utf-8');
-        fs.writeFileSync(path.join(this.resourcesDir, filename), rewrittenBuffer);
+      // Check if from cache (may not be available for all response types)
+      let fromCache = false;
+      try {
+        fromCache = typeof response.fromCache === 'function' ? response.fromCache() : false;
+      } catch {
+        fromCache = false;
       }
 
-      console.log(`📦 Captured resource: ${filename} (${buffer.length} bytes) - ${contentType}`);
+      // Try to get response body for successful responses
+      let buffer: Buffer | null = null;
+      let sha1: string | undefined = undefined;
+      let filename: string | undefined = undefined;
+
+      // Only capture successful responses with body content
+      if (status >= 200 && status < 400) {
+        const shouldCapture =
+          contentType.includes('text/css') ||
+          contentType.includes('javascript') ||
+          contentType.includes('image/') ||
+          contentType.includes('font/') ||
+          contentType.includes('application/font') ||
+          contentType.includes('text/html') ||
+          contentType.includes('application/json');
+
+        if (shouldCapture) {
+          buffer = await response.body().catch(() => null);
+          if (buffer) {
+            // Calculate SHA1 hash (like HarTracer does)
+            sha1 = this._calculateSha1(buffer);
+            const extension = this._getExtensionFromContentType(contentType, url);
+            filename = `${sha1}${extension}`;
+
+            // Store URL → filename mapping for rewriting
+            this.urlToResourceMap.set(url, filename);
+
+            // Save via onContentBlob (mimics HarTracer delegate pattern)
+            this.onContentBlob(filename, buffer);
+
+            // If CSS, also rewrite and save rewritten version
+            if (contentType.includes('text/css')) {
+              const cssContent = buffer.toString('utf-8');
+              const rewrittenCSS = this._rewriteCSS(cssContent, url);
+              const rewrittenBuffer = Buffer.from(rewrittenCSS, 'utf-8');
+              fs.writeFileSync(path.join(this.resourcesDir, filename), rewrittenBuffer);
+            }
+
+            console.log(`📦 Captured resource: ${filename} (${buffer.length} bytes) - ${contentType}`);
+          }
+        }
+      }
+
+      // Create network entry for logging
+      const networkEntry: NetworkEntry = {
+        timestamp: new Date().toISOString(),
+        url: url,
+        method: request.method(),
+        status: status,
+        statusText: statusText,
+        contentType: contentType,
+        size: buffer ? buffer.length : 0,
+        sha1: filename,
+        resourceType: resourceType,
+        initiator: request.frame()?.url() || undefined,
+        timing: timingBreakdown,
+        fromCache: fromCache,
+        error: status >= 400 ? statusText : undefined
+      };
+
+      // Write network entry to log file (JSON Lines format)
+      fs.appendFileSync(this.networkLogPath, JSON.stringify(networkEntry) + '\n', 'utf-8');
+      this.networkRequestCount++;
+
     } catch (err) {
       // Silently ignore errors (some responses may not have bodies)
+    }
+  }
+
+  /**
+   * Handle console logs from the browser
+   */
+  private _handleConsoleLog(entry: ConsoleEntry): void {
+    try {
+      // Write console entry to log file (JSON Lines format)
+      fs.appendFileSync(this.consoleLogPath, JSON.stringify(entry) + '\n', 'utf-8');
+      this.consoleLogCount++;
+    } catch (err) {
+      console.error('Failed to write console log:', err);
     }
   }
 

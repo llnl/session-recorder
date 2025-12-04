@@ -42,6 +42,7 @@ Data captured for each action:
 ✅ Highlighted element (with data-recorded-el prop)
 
 Flow:
+
 - User action detected (capture phase)
 - data-recorded-el prop added to element interaction with
 - Capture BEFORE (snapshot + screenshot)

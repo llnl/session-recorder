@@ -19,6 +19,15 @@
     return (window as any).__actionListener;
   })();
 
+  // Inline the console capture logic
+  const { startCapture, stopCapture } = (function() {
+    // [consoleCapture.ts will be inlined here by SessionRecorder]
+    return (window as any).__consoleCapture;
+  })();
+
+  // Start console capture
+  startCapture();
+
   // Setup action handler
   setupActionListeners(async (action: any) => {
     try {

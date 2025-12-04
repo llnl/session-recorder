@@ -8,6 +8,7 @@
     "build": "tsc",
     "test": "node dist/test/simple-test.js",
     "test:spa": "node dist/test/spa-test.js",
+    "test:console": "node dist/test/console-test.js",
     "viewer": "node dist/src/viewer/server.js"
   },
   "keywords": [

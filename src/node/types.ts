@@ -8,6 +8,14 @@ export interface SessionData {
   endTime?: string;   // ISO 8601 UTC
   actions: RecordedAction[];
   resources?: string[];  // List of captured resource SHA1s
+  network?: {
+    file: string;  // Relative path to network log file: session.network
+    count: number; // Number of network requests logged
+  };
+  console?: {
+    file: string;  // Relative path to console log file: session.console
+    count: number; // Number of console entries logged
+  };
 }
 
 export interface RecordedAction {
@@ -62,4 +70,51 @@ export interface HarEntry {
 export interface SnapshotterBlob {
   buffer: Buffer;
   sha1: string;
+}
+
+/**
+ * Enhanced network entry for session.network log (JSON Lines format)
+ * Balances debugging capability with implementation simplicity
+ */
+export interface NetworkEntry {
+  // Basic request/response data
+  timestamp: string;      // ISO 8601 UTC
+  url: string;           // Full request URL
+  method: string;        // GET, POST, PUT, DELETE, etc.
+  status: number;        // HTTP status code (200, 404, etc.)
+  statusText: string;    // "OK", "Not Found", etc.
+  contentType: string;   // MIME type
+  size: number;          // Response body size in bytes
+  sha1?: string;         // SHA1 filename if resource was captured
+
+  // Resource identification
+  resourceType: string;  // "document", "stylesheet", "script", "image", "font", "xhr", "fetch", etc.
+  initiator?: string;    // What triggered the request (optional)
+
+  // Timing breakdown (all in milliseconds)
+  timing: {
+    start: number;       // Timestamp when request started (relative to session start)
+    dns?: number;        // DNS resolution time (if available)
+    connect?: number;    // TCP + SSL connection time (if available)
+    ttfb: number;        // Time to first byte (server processing time)
+    download: number;    // Time to download response body
+    total: number;       // Total request duration
+  };
+
+  // Cache information
+  fromCache: boolean;    // Was served from browser cache?
+
+  // Error tracking (only present if request failed)
+  error?: string;        // Error message if request failed
+}
+
+/**
+ * Console log entry for session.console log (JSON Lines format)
+ * Captures all console output during the session
+ */
+export interface ConsoleEntry {
+  level: 'log' | 'error' | 'warn' | 'info' | 'debug';
+  timestamp: string;      // ISO 8601 UTC
+  args: any[];           // Serialized console arguments
+  stack?: string;        // Stack trace for error/warn
 }

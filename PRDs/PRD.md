@@ -5,12 +5,14 @@
 **Current Gap**: Playwright's existing tracing and codegen tools capture **programmatic** actions (test scripts, MCP tool calls), but we need to capture **USER** actions (manual clicks, typing, navigation) for user behavior analysis and voice recording alignment.
 
 **Core Difference**:
+
 - **Playwright Trace**: Records `page.click()`, `page.fill()` API calls from test scripts
 - **Session Recorder**: Records actual user interactions in the browser (what the user manually does)
 
 ## 2. Goals
 
 ### POC 1 Goals (Initial Release)
+
 - ✅ Capture before/after HTML snapshots with full interactive state
 - ✅ Capture before/after screenshots
 - ✅ Detect and record user actions (click, input, change, submit, keydown)
@@ -20,12 +22,14 @@
 - ✅ Support Shadow DOM capture
 
 ### POC 2 Goals (Future)
+
 - Console logs for each action
 - Network requests/responses for each action
 
 ## 3. Technical Requirements
 
 ### Snapshot Requirements
+
 - Full HTML with interactive state preserved
 - Form field values captured (input, textarea, select)
 - Checkbox/radio button states
@@ -35,11 +39,13 @@
 - Special attributes: `__playwright_value_`, `__playwright_checked_`, `__playwright_selected_`, `__playwright_scroll_top_`, `__playwright_scroll_left_`, `__playwright_shadow_root_`, `__playwright_current_src__`
 
 ### Screenshot Requirements
+
 - PNG format
 - Viewport screenshots (not full page for performance)
 - Before and after for each action
 
 ### Action Detection
+
 - Click events
 - Input events (typing)
 - Change events (select, checkbox, radio)
@@ -47,11 +53,13 @@
 - Keydown events (Enter, Tab, Escape)
 
 ### Data Storage
+
 - JSON format for session metadata
 - Separate PNG files for screenshots
 - Organized directory structure per session
 
 ### Performance
+
 - Minimal delay between action and capture (~100ms)
 - Non-blocking recording (queue actions)
 - Efficient snapshot generation (plain HTML, no complex compression)
@@ -104,6 +112,7 @@
 ## 7. Data Format
 
 ### session.json Structure
+
 ```json
 {
   "sessionId": "session-1733097000000",
@@ -142,23 +151,28 @@
 ## 8. Architecture
 
 ### Files to Extract from Playwright
+
 - **snapshotterInjected.ts** (lines 40-52, 335-579): Core snapshot logic
 - **snapshot.ts**: Type definitions (adapted for plain HTML format)
 
 ### Key Technical Decisions
 
 **Decision 1: Snapshot Format**
+
 - **Choice**: Plain HTML string with embedded special attributes
 - **Rationale**: Simpler, can load in iframe, smaller file size, easier to debug
 
 **Decision 2: Action Capture Timing**
+
 - Add marker → Capture before → Let action execute → Wait 100ms → Capture after → Remove marker
 - **Rationale**: Before shows what was clicked, delay allows DOM updates
 
 **Decision 3: Screenshot Strategy**
+
 - **Choice**: Viewport screenshots using `page.screenshot()`
 - **Rationale**: Faster, matches user view, cross-browser compatible
 
 **Decision 4: Error Handling**
+
 - **Choice**: Continue recording on errors
 - **Rationale**: One failed action shouldn't break entire session
