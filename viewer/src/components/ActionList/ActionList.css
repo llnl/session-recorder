@@ -2,23 +2,125 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  background-color: #ffffff;
-  border-right: 1px solid #e0e0e0;
+  background-color: #242830;
+  border-right: 1px solid #3a3f4b;
 }
 
 .action-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   padding: 1rem;
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid #3a3f4b;
+  background-color: #2a2f3a;
 }
 
 .action-list-header h3 {
   margin: 0;
   font-size: 1rem;
   font-weight: 600;
+  color: #e4e6eb;
+}
+
+.action-list-count {
+  font-size: 0.75rem;
+  color: #a0a3a8;
+  background-color: #3a3f4b;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
 }
 
 .action-list-content {
   flex: 1;
   overflow-y: auto;
+}
+
+.action-list-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.action-list-items {
   padding: 0.5rem;
+}
+
+.action-list-item {
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  background-color: #2a2f3a;
+  border: 1px solid #3a3f4b;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.action-list-item:hover {
+  background-color: #32374a;
+  border-color: #667eea;
+  transform: translateX(2px);
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+}
+
+.action-list-item.selected {
+  background-color: #2d3142;
+  border-color: #667eea;
+  border-width: 2px;
+  box-shadow: 0 2px 12px rgba(102, 126, 234, 0.3);
+}
+
+.action-list-item-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.action-list-item-icon {
+  font-size: 1rem;
+}
+
+.action-list-item-type {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #e4e6eb;
+  text-transform: capitalize;
+}
+
+.action-list-item-time {
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: #9ca3af;
+  font-family: 'Courier New', monospace;
+}
+
+.action-list-item-details {
+  margin: 0.25rem 0;
+  font-size: 0.75rem;
+  color: #9ca3af;
+}
+
+.action-list-item-value {
+  font-family: 'Courier New', monospace;
+  background-color: #3a3f4b;
+  color: #fbbf24;
+  padding: 0.125rem 0.25rem;
+  border-radius: 3px;
+}
+
+.action-list-item-key {
+  font-weight: 600;
+  color: #a0a3a8;
+}
+
+.action-list-item-url {
+  font-size: 0.7rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }

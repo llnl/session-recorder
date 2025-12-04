@@ -81,6 +81,10 @@ async function main() {
   console.log('\nStopping recording...');
   await recorder.stop();
 
+  // 5.5. Create zip file
+  console.log('\n📦 Creating zip file...');
+  const zipPath = await recorder.createZip();
+
   // 6. Verify results
   const sessionData = recorder.getSessionData();
   const sessionDir = path.join(__dirname, '../output', sessionId);
@@ -89,7 +93,8 @@ async function main() {
   console.log('\n📊 CONSOLE TEST RESULTS');
   console.log('=======================');
   console.log(`Session ID: ${sessionId}`);
-  console.log(`Session Dir: ${sessionDir}\n`);
+  console.log(`Session Dir: ${sessionDir}`);
+  console.log(`Zip File: ${zipPath}\n`);
 
   // Check if console log file exists
   const consoleFileExists = fs.existsSync(consoleLogPath);

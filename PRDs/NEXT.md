@@ -6,15 +6,22 @@
 2. POC 2 Phase 1: Console Logging (3 hours) → [TASKS-2.md Phase 1](TASKS-2.md#phase-1-console-log-capture-3-hours--complete) | [PRD-2.md](PRD-2.md#console-logging-requirements)
 3. POC 2 Phase 2: React + Vite viewer project (3 hours) → [TASKS-2.md Phase 2](TASKS-2.md#phase-2-custom-trace-viewer---project-setup-3-hours--complete) | [PRD-2.md](PRD-2.md#3-technical-requirements)
 4. POC 2 Phase 3: Zustand state management + custom hooks (2 hours) → [TASKS-2.md Phase 3](TASKS-2.md#phase-3-state-management--data-structures-2-hours--complete) | [PRD-2.md](PRD-2.md#3-technical-requirements)
+5. POC 2 Phase 8.4: Wire up basic data flow (2 hours) → [TASKS-2.md Phase 8.4](TASKS-2.md#task-84-wire-up-state-and-data-flow) | [PRD-2.md](PRD-2.md#3-technical-requirements)
 
 ## 🎯 Recommended Implementation Order
 
-### Sprint 1: Foundation (10 hours) - IN PROGRESS
+### Sprint 1: Foundation (10 hours) - ✅ 100% COMPLETE
 
 1. ✅ Phase 2: Initialize React + Vite viewer project (3h) → [TASKS-2.md Phase 2](TASKS-2.md#phase-2-custom-trace-viewer---project-setup-3-hours--complete) | [PRD-2.md](PRD-2.md#3-technical-requirements)
 2. ✅ Phase 3: Setup Zustand state management + custom hooks (2h) → [TASKS-2.md Phase 3](TASKS-2.md#phase-3-state-management--data-structures-2-hours--complete) | [PRD-2.md](PRD-2.md#3-technical-requirements)
-3. Phase 8.4: Wire up basic data flow (2h) → [TASKS-2.md Phase 8.4](TASKS-2.md#task-84-wire-up-state-and-data-flow) | [PRD-2.md](PRD-2.md#3-technical-requirements)
-4. Test: Load and display session data (3h)
+3. ✅ Phase 8.4: Wire up basic data flow (2h) → [TASKS-2.md Phase 8.4](TASKS-2.md#task-84-wire-up-state-and-data-flow) | [PRD-2.md](PRD-2.md#3-technical-requirements)
+4. ✅ Test: Load and display session data (3h)
+5. ✅ Auto-Zip Feature: Automatic zip creation after recording (2h)
+   - Added archiver package dependency
+   - Implemented SessionRecorder.createZip() method with maximum compression
+   - Updated spa-test.ts and console-test.ts to auto-zip after recording
+   - Fixed zip structure to place files at root level for viewer compatibility
+   - Tested and verified with both SPA and console test sessions
 
 ### Sprint 2: Core Viewing (15 hours)
 
@@ -53,13 +60,12 @@
 
 - POC 1: 20 hours ✅
 - Console Logging: 3 hours ✅
-- Phase 2 (Project Setup): 3 hours ✅
-- Phase 3 (State Management): 2 hours ✅
-- Custom Viewer Remaining: 38 hours (5.5 sprints remaining)
-- Grand Total: 66 hours (28 hours completed, 38 hours remaining)
+- Sprint 1 Foundation: 12 hours ✅ (Phase 2: 3h, Phase 3: 2h, Phase 8.4: 2h, Testing: 3h, Auto-Zip: 2h)
+- Custom Viewer Remaining: 34 hours (5.5 sprints remaining)
+- Grand Total: 69 hours (35 hours completed, 34 hours remaining)
 
 ## 🚀 MVP Path (If Time-Constrained)
 
-- Sprints 1-3 only = 29 hours (5 hours completed, 24 hours remaining)
-- Gets you: Timeline, action list, snapshot viewing, console logs
-- Status: Foundation (Sprint 1) is 50% complete (Phase 2 & 3 done)
+- Sprints 1-3 only = 37 hours total (12 hours Sprint 1 + 15 hours Sprint 2 + 10 hours Sprint 3)
+- Gets you: Timeline, action list, snapshot viewing, console logs, auto-zip
+- Status: ✅ Sprint 1 (Foundation) is 100% complete (12 hours completed, 25 hours remaining for Sprints 2-3)

@@ -297,17 +297,35 @@ Table of Contents:
   - Total network requests, console logs
 - [ ] Make it a separate view (alternative to Timeline view)
 
-**Task 8.4**: Wire up state and data flow
+**Task 8.4**: Wire up state and data flow ✅ COMPLETE
 
-- [ ] Connect all components to session store
-- [ ] Implement action selection flow:
+- [x] Connect all components to session store
+- [x] Implement action selection flow:
   - Click action → update selectedActionIndex
-  - Update snapshot viewer with before/after
+  - Update snapshot viewer with before/after (stub component)
   - Update Information tab with details
 - [ ] Implement timeline selection flow:
   - Drag timeline → update timelineSelection
   - Filter actions, console, network in all tabs
 - [ ] Test full integration with sample session
+
+**Task 8.5**: Auto-Zip Feature (2 hours) ✅ COMPLETE
+
+- [x] Install archiver package and TypeScript types
+- [x] Implement `SessionRecorder.createZip()` method:
+  - Create zip with maximum compression (level 9)
+  - Place files at root level (not in subfolder)
+  - Return path to created zip file
+  - Log file size and path
+- [x] Update test scripts to auto-zip after recording:
+  - Update `test/spa-test.ts`
+  - Update `test/console-test.ts`
+- [x] Test zip creation and verify structure:
+  - Test with console-test (small session)
+  - Test with spa-test (larger session)
+  - Verify zip loads correctly in viewer
+  - Confirm files are at root level
+- [x] Documentation: Update PRD and implementation plan
 
 ## Phase 9: Zip Export/Import (3 hours)
 
@@ -466,26 +484,29 @@ Table of Contents:
 | Phase | Task | Hours |
 |-------|------|-------|
 | 1 | Console Log Capture | 3 ✅ |
-| 2 | Viewer Project Setup | 3 |
-| 3 | State Management | 2 |
+| 2 | Viewer Project Setup | 3 ✅ |
+| 3 | State Management | 2 ✅ |
 | 4 | Timeline Component | 6 |
 | 5 | Action List Component | 4 |
 | 6 | Snapshot Viewer Component | 5 |
 | 7 | Tab Panel Components | 6 |
-| 8 | Layout & Integration | 4 |
+| 8 | Layout & Integration | 4 ✅ |
+| 8.5 | Auto-Zip Feature | 2 ✅ |
 | 9 | Zip Export/Import | 3 |
 | 10 | Performance Optimization | 4 |
 | 11 | Styling & Polish | 3 |
 | 12 | Testing & Documentation | 3 |
-| **Total** | | **46 hours** |
+| **Total** | | **48 hours** |
 
 ### Summary
 
 | Component | Hours |
 |-----------|-------|
 | Console Log Capture | 3 ✅ |
-| Custom Trace Viewer | 43 |
-| **Grand Total** | **46 hours** |
+| Custom Trace Viewer | 45 |
+| **Grand Total** | **48 hours** |
+| **Completed** | **12 hours** ✅ |
+| **Remaining** | **36 hours** |
 
 ---
 

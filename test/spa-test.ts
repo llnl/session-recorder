@@ -71,6 +71,10 @@ async function main() {
   console.log('\nStopping recording...');
   await recorder.stop();
 
+  // 5.5. Create zip file
+  console.log('\n📦 Creating zip file...');
+  const zipPath = await recorder.createZip();
+
   // 6. Show results
   const sessionData = recorder.getSessionData();
   const summary = recorder.getSummary();
@@ -81,7 +85,8 @@ async function main() {
   console.log(`Start: ${sessionData.startTime}`);
   console.log(`End: ${sessionData.endTime}`);
   console.log(`Duration: ${summary.duration}ms`);
-  console.log(`Total Actions: ${sessionData.actions.length}\n`);
+  console.log(`Total Actions: ${sessionData.actions.length}`);
+  console.log(`Zip File: ${zipPath}\n`);
 
   if (sessionData.actions.length > 0) {
     console.log('📋 RECORDED ACTIONS:');

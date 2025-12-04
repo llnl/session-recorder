@@ -6,6 +6,7 @@ import { Page } from '@playwright/test';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
+import archiver from 'archiver';
 import { SessionData, RecordedAction, HarEntry, SnapshotterBlob, NetworkEntry, ConsoleEntry } from './types';
 
 export class SessionRecorder {
@@ -285,6 +286,57 @@ export class SessionRecorder {
     console.log(`📄 Session data: ${sessionJsonPath}`);
 
     this.page = null;
+  }
+
+  /**
+   * Create a zip file of the recorded session
+   * @returns Promise<string> - Path to the created zip file
+   */
+  async createZip(): Promise<string> {
+    const outputDir = path.dirname(this.sessionDir);
+    const zipPath = path.join(outputDir, `${this.sessionData.sessionId}.zip`);
+
+    return new Promise((resolve, reject) => {
+      // Create a file to stream archive data to
+      const output = fs.createWriteStream(zipPath);
+      const archive = archiver('zip', {
+        zlib: { level: 9 } // Maximum compression
+      });
+
+      // Listen for all archive data to be written
+      output.on('close', () => {
+        console.log(`📦 Created zip file: ${zipPath}`);
+        console.log(`   Size: ${(archive.pointer() / 1024 / 1024).toFixed(2)} MB`);
+        resolve(zipPath);
+      });
+
+      // Handle warnings
+      archive.on('warning', (err) => {
+        if (err.code === 'ENOENT') {
+          console.warn('⚠️  Zip warning:', err);
+        } else {
+          reject(err);
+        }
+      });
+
+      // Handle errors
+      archive.on('error', (err) => {
+        reject(err);
+      });
+
+      // Pipe archive data to the file
+      archive.pipe(output);
+
+      // Add the entire session directory to the zip (with false to put files at root level)
+      archive.directory(this.sessionDir, false);
+
+      // Finalize the archive
+      archive.finalize();
+    });
+  }
+
+  getSessionDir(): string {
+    return this.sessionDir;
   }
 
   getSessionData(): SessionData {

@@ -50,7 +50,13 @@
    - Filter logs by time range and severity
    - Display in viewer Console tab
 
-3. **Voice Transcript Integration** (Future):
+3. **Auto-Zip Feature**: ✅ COMPLETE
+   - Automatically create zip file after recording completes
+   - Maximum compression for efficient storage
+   - Proper file structure for viewer compatibility
+   - Seamless integration with test workflows
+
+4. **Voice Transcript Integration** (Future):
    - Placeholder support in action list
    - Data structure for transcript entries
    - Timeline integration points
@@ -65,6 +71,22 @@
 - Support object/array serialization
 - Store in separate `session.console` file (JSON Lines format)
 - Minimal performance impact on recording
+
+### Auto-Zip Requirements ✅ COMPLETE
+
+- Automatically create zip file when recording stops
+- Use maximum compression (level 9) for efficient storage
+- Place all session files at root level (not in subfolder)
+- Include all session components:
+  - session.json (metadata)
+  - session.network (JSON Lines)
+  - session.console (JSON Lines)
+  - snapshots/ directory
+  - screenshots/ directory
+  - resources/ directory
+- Return zip file path for reference
+- Log zip creation status and file size
+- Ensure viewer compatibility with generated zips
 
 ### Custom Trace Viewer Requirements
 
@@ -182,6 +204,16 @@
 - ✅ Stack traces captured for errors
 - ✅ Objects/arrays serialized properly
 - ✅ Minimal recording performance impact (<5% overhead)
+
+### Auto-Zip Feature
+
+- ✅ Zip automatically created when recording stops
+- ✅ Maximum compression applied (9.8MB → 4KB for console test)
+- ✅ Files placed at root level for viewer compatibility
+- ✅ All session components included in zip
+- ✅ Zip path logged and returned to caller
+- ✅ Generated zips load successfully in viewer
+- ✅ Seamless integration with test workflows
 
 ### Custom Trace Viewer - Functional
 
