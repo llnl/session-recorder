@@ -2,7 +2,22 @@
 
 ## 🆕 Latest Updates (2025-12-05)
 
-**New Architecture Documentation:**
+**New Production Readiness Documentation:**
+
+- 🚀 [PRD-4.md](PRD-4.md) - Production Polish & Voice Recording Integration
+  - **Desktop Application** for non-developers (one-click recording)
+  - **MCP Server** for AI coding assistants (Claude Code, Cline, Continue.dev)
+  - **Voice Recording** with transcription and timeline integration
+  - Full production deployment strategy
+- 📋 [TASKS-4.md](TASKS-4.md) - Production Implementation Tasks
+  - Phase 1: Desktop Application (20 hours)
+  - Phase 2: MCP Server (12 hours)
+  - Phase 3: Voice Recording Backend (16 hours)
+  - Phase 4: Viewer Integration (14 hours)
+  - Phase 5: Testing & Documentation (8 hours)
+  - **Total: 70 hours**
+
+**Previous Architecture Updates:**
 
 - 📘 [PRD-3.md](PRD-3.md) - Playwright-Inspired Snapshot Architecture Analysis
   - Complete breakdown of Playwright's proven 3-phase snapshot system
@@ -197,6 +212,54 @@
    - Measure and validate file size reduction
    - **Impact:** 40-60% file size reduction for subsequent snapshots
 
+### Sprint 8: Production Deployment (70 hours) - 🚀 FINAL POLISH
+
+**Based on:** [PRD-4.md](PRD-4.md) | [TASKS-4.md](TASKS-4.md)
+
+**Goal:** Make session recorder production-ready for all company employees
+
+**User Flows:**
+1. **Non-Developer Flow:** Desktop app with one-click recording
+2. **Developer Flow:** MCP server for AI coding assistants
+
+**Key Features:**
+- Desktop Application (Electron-based)
+- MCP Server for Claude Code/Cline/Continue.dev
+- Voice recording with transcription
+- Timeline integration with voice segments
+- Audio playback with word-level highlighting
+
+**Phases:**
+1. **Phase 1: Desktop Application** (20h) → [TASKS-4.md Phase 1](TASKS-4.md#phase-1-desktop-application-20-hours)
+   - Electron app structure
+   - Recording controls UI
+   - Voice capture integration
+   - Browser automation
+   - Zip creation and viewer links
+
+2. **Phase 2: MCP Server** (12h) → [TASKS-4.md Phase 2](TASKS-4.md#phase-2-mcp-server-12-hours)
+   - MCP server setup
+   - 5 recording tools (start/stop browser/voice/combined, get status)
+   - SessionRecorder integration
+   - Error handling
+
+3. **Phase 3: Voice Recording Backend** (16h) → [TASKS-4.md Phase 3](TASKS-4.md#phase-3-voice-recording-backend-16-hours)
+   - Audio capture
+   - Whisper API transcription
+   - UTC timestamp alignment
+   - Transcript storage
+
+4. **Phase 4: Viewer Integration** (14h) → [TASKS-4.md Phase 4](TASKS-4.md#phase-4-viewer-integration-14-hours)
+   - Timeline voice indicators
+   - Action list voice entries
+   - VoiceTranscriptViewer component
+   - Audio playback controls
+
+5. **Phase 5: Testing & Documentation** (8h) → [TASKS-4.md Phase 5](TASKS-4.md#phase-5-testing--documentation-8-hours)
+   - End-to-end testing
+   - User documentation
+   - Deployment guides
+
 ## 📊 Total Effort
 
 ### Completed Work ✅
@@ -209,20 +272,31 @@
 - Sprint 4 Debugging Tools: 8 hours ✅ (Phase 7.1: 1h, Phase 7.3: 2h, Phase 7.4: 4h, Testing: 1h)
 - **Subtotal Completed: 68 hours** ✅
 
-### Remaining Work (Based on PRD-3.md Playwright Architecture)
+### Remaining Work
 
-- Sprint 5a Snapshot Fixes (Playwright Phase 1): 9 hours 🚨 **CRITICAL** (Restoration: 4h, Additional state: 3h, Shadow DOM: 2h)
+**Snapshot Architecture (PRD-3.md):**
+- Sprint 5a Snapshot Fixes (Phase 1): 9 hours 🚨 **CRITICAL** (Restoration: 4h, Additional state: 3h, Shadow DOM: 2h)
 - Sprint 5b UI Enhancements: 5 hours 🎯 **HIGH** (Resizable panels: 3h, Hover zoom: 2h)
-- Sprint 5c Resource Management (Playwright Phase 2): 12 hours 📦 **MEDIUM** (Extraction: 5h, SHA1 storage: 4h, Serving: 3h)
-- Sprint 5d Performance & Polish: 7 hours (Performance: 4h, Metadata: 2h, Testing: 1h) - **Zip export removed**
+- Sprint 5c Resource Management (Phase 2): 12 hours 📦 **MEDIUM** (Extraction: 5h, SHA1 storage: 4h, Serving: 3h)
+- Sprint 5d Performance & Polish: 7 hours (Performance: 4h, Metadata: 2h, Testing: 1h)
 - Sprint 6 Polish & Ship: 6 hours (Phase 11: 3h, Phase 12: 3h)
-- Sprint 7 Advanced Optimization (Playwright Phase 3): 14 hours ⚡ **OPTIONAL** (NodeSnapshot: 8h, Incremental: 6h)
-- **Subtotal Remaining: 53 hours** (39 hours core + 14 hours optional)
+- Sprint 7 Advanced Optimization (Phase 3): 14 hours ⚡ **OPTIONAL** (NodeSnapshot: 8h, Incremental: 6h)
+- **Subtotal: 53 hours** (39 hours core + 14 hours optional)
+
+**Production Deployment (PRD-4.md):**
+- Sprint 8 Phase 1: Desktop Application: 20 hours 🚀 **PRODUCTION**
+- Sprint 8 Phase 2: MCP Server: 12 hours 🚀 **PRODUCTION**
+- Sprint 8 Phase 3: Voice Recording Backend: 16 hours 🚀 **PRODUCTION**
+- Sprint 8 Phase 4: Viewer Integration: 14 hours 🚀 **PRODUCTION**
+- Sprint 8 Phase 5: Testing & Documentation: 8 hours 🚀 **PRODUCTION**
+- **Subtotal: 70 hours**
 
 ### Grand Total
 
-- **Core Features: 107 hours** (68 completed ✅ + 39 remaining)
+- **Core Features (POC 1-3): 107 hours** (68 completed ✅ + 39 remaining)
 - **With Advanced Optimization: 121 hours** (68 completed ✅ + 53 remaining)
+- **Production Ready (POC 1-4): 177 hours** (68 completed ✅ + 39 core + 70 production)
+- **Complete with Optimization: 191 hours** (68 completed ✅ + 53 + 70 production)
 
 ## 🚀 Recommended Path
 
@@ -279,7 +353,7 @@
 
 ---
 
-### Path 3: Full Production (Core Features = 107 hours) - 🏆 COMPLETE IMPLEMENTATION
+### Path 3: Full Production Core (107 hours) - 🏆 COMPLETE IMPLEMENTATION
 
 **Goal:** Fully polished, production-ready viewer
 
@@ -297,24 +371,51 @@
 - ✅ Keyboard shortcuts & accessibility
 - ✅ Comprehensive documentation
 
-**Result:** Enterprise-grade session recorder ready for production use
+**Result:** Enterprise-grade session recorder ready for internal use
 
 ---
 
-### Path 4: With Advanced Optimization (121 hours total) - ⚡ FUTURE ENHANCEMENT
+### Path 4: Company-Wide Production (177 hours) - 🚀 FULL DEPLOYMENT
 
-**Goal:** Maximum file size reduction (for large sessions)
+**Goal:** Make recorder accessible to ALL employees (developers + non-developers)
 
 **What to do:**
 
 - Path 3 (Sprints 1-6) - 107 hours
+- Sprint 8 (Production Deployment) - 70 hours
+  - Desktop Application for non-developers (20h)
+  - MCP Server for AI assistants (12h)
+  - Voice recording with transcription (16h)
+  - Viewer voice integration (14h)
+  - Testing & documentation (8h)
+
+**Impact:**
+
+- ✅ Everything from Path 3
+- ✅ One-click recording for QA/PM/Support staff
+- ✅ Claude Code / Cline / Continue.dev integration
+- ✅ Voice narration with browser actions
+- ✅ Audio playback with synchronized transcripts
+- ✅ Ready for company-wide rollout
+
+**Result:** Production-ready tool accessible to all company employees
+
+---
+
+### Path 5: With Advanced Optimization (191 hours) - ⚡ COMPLETE SYSTEM
+
+**Goal:** Maximum performance and file size optimization
+
+**What to do:**
+
+- Path 4 (Sprints 1-8) - 177 hours
 - Sprint 7 (Advanced Optimization) - 14 hours
   - NodeSnapshot structure refactoring (8h)
   - Incremental snapshots with references (6h)
 
 **Impact:**
 
-- ✅ Everything from Path 3
+- ✅ Everything from Path 4
 - ✅ 40-60% file size reduction for subsequent snapshots
 - ✅ Faster capture times (~40ms vs ~60ms)
 
@@ -324,11 +425,18 @@
 
 ## 💡 Recommendation
 
+**For Immediate Use (Technical Team):**
 **Start with Path 1 (Sprint 5a Task 1.1 only - 4 hours)** to immediately fix snapshot rendering, then evaluate:
-
 - If snapshots work well → Move to Sprint 5b (UI polish)
 - If you need better resource handling → Do Sprint 5c next
 - Otherwise → Continue with full Path 2 implementation
 
+**For Company-Wide Deployment:**
+**Follow Path 4 (177 hours total)** to make the tool accessible to all employees:
+1. Complete Path 3 first (107 hours) - Core viewer functionality
+2. Then implement Sprint 8 (70 hours) - Desktop app + MCP + Voice
+3. Optional: Add Sprint 7 (14 hours) if file size is an issue
+
 The Playwright architecture in PRD-3.md is battle-tested and worth following completely.
+The production deployment in PRD-4.md makes the tool usable by non-technical staff.
 

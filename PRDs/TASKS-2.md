@@ -189,6 +189,8 @@ Table of Contents:
 - [ ] Update filtered list based on search/filter
 - [x] Show result count (implemented)
 
+**Note:** Voice transcript integration moved to [PRD-4.md](../PRDs/PRD-4.md) and [TASKS-4.md](../PRDs/TASKS-4.md)
+
 ## Phase 6: Snapshot Viewer Component (5 hours) ✅ COMPLETE
 
 **Task 6.1**: Create iframe-based snapshot viewer ✅

@@ -17,14 +17,15 @@
 - ✅ Capture before/after screenshots
 - ✅ Detect and record user actions (click, input, change, submit, keydown)
 - ✅ Mark interacted elements with `data-recorded-el` attribute in before snapshot
-- ✅ Store all data with UTC timestamps for voice recording synchronization
+- ✅ Store all data with UTC timestamps for precise timing
 - ✅ Preserve form state (input values, checkbox states, select options)
 - ✅ Support Shadow DOM capture
 
-### POC 2 Goals (Future)
+### POC 2 Goals (See PRD-2.md)
 
 - Console logs for each action
 - Network requests/responses for each action
+- Custom trace viewer application
 
 ## 3. Technical Requirements
 

@@ -56,10 +56,11 @@
    - Proper file structure for viewer compatibility
    - Seamless integration with test workflows
 
-4. **Voice Transcript Integration** (Future):
-   - Placeholder support in action list
-   - Data structure for transcript entries
-   - Timeline integration points
+4. **Voice Recording Integration**: See [PRD-4.md](./PRD-4.md)
+   - Voice recording with transcription
+   - Desktop application for non-developers
+   - MCP server for developers
+   - Timeline and viewer integration
 
 ## 3. Technical Requirements
 
@@ -322,7 +323,9 @@
 - ❌ Action replay or code generation
 - ❌ Selector generation/DOM tree viewer
 - ❌ Source code viewer or debugging
-- ❌ Voice recording capture (transcript integration only)
+- ❌ Voice recording capture (moved to PRD-4)
+- ❌ Desktop application (moved to PRD-4)
+- ❌ MCP server integration (moved to PRD-4)
 - ❌ Multi-user collaboration features
 - ❌ Cloud storage or session hosting
 - ❌ Real-time session streaming
