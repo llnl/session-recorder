@@ -54,14 +54,56 @@
    - Error and loading states with user feedback
    - Build compilation successful
 
-### Sprint 4: Debugging Tools (8 hours)
+### Sprint 4: Debugging Tools (8 hours) - ✅ 100% COMPLETE
 
-1. Phase 7.3: Console tab with filtering (2h) → [TASKS-2.md Phase 7.3](TASKS-2.md#task-73-console-tab) | [PRD-2.md](PRD-2.md#console-logging-requirements)
-2. Phase 7.4: Network tab with waterfall (4h) → [TASKS-2.md Phase 7.4](TASKS-2.md#task-74-network-tab) | [PRD-2.md](PRD-2.md#custom-trace-viewer-requirements)
-3. Phase 7.1: Tab panel structure (1h) → [TASKS-2.md Phase 7.1](TASKS-2.md#task-71-create-tab-panel-structure) | [PRD-2.md](PRD-2.md#custom-trace-viewer-requirements)
-4. Test: Console and network inspection (1h)
+1. ✅ Phase 7.3: Console tab with filtering (2h) → [TASKS-2.md Phase 7.3](TASKS-2.md#task-73-console-tab) | [PRD-2.md](PRD-2.md#console-logging-requirements)
+2. ✅ Phase 7.4: Network tab with waterfall (4h) → [TASKS-2.md Phase 7.4](TASKS-2.md#task-74-network-tab) | [PRD-2.md](PRD-2.md#custom-trace-viewer-requirements)
+3. ✅ Phase 7.1: Tab panel structure (1h) → [TASKS-2.md Phase 7.1](TASKS-2.md#task-71-create-tab-panel-structure) | [PRD-2.md](PRD-2.md#custom-trace-viewer-requirements)
+4. ✅ Test: Console and network inspection (1h)
+   - Implemented Console tab with level filtering (all, error, warn, info, log, debug)
+   - Added clear filter button with counts for each level
+   - Implemented stack trace expansion for error logs
+   - Better formatting for complex objects and arguments
+   - Implemented Network tab with waterfall visualization
+   - Color-coded timing phases (DNS, connect, TTFB, download)
+   - Added resource type filtering (all, document, stylesheet, script, image, xhr, fetch, font, other)
+   - Added sorting options (time, duration, size)
+   - Click to expand/collapse request details
+   - Detailed timing breakdown in expanded view
+   - Build compilation successful
 
-### Sprint 5: Export & Optimization (10 hours)
+### Sprint 5a: Critical Bug Fixes (9 hours) - 🚨 HIGH PRIORITY
+
+1. **Fix Input Value Capture** (2h) - CRITICAL → [TASKS-2.md Issue 1](TASKS-2.md#known-issues--bug-fixes) | [PRD-2.md](PRD-2.md#critical-issues)
+   - Serialize input values to DOM attributes before snapshot
+   - Handle textarea, select, checkbox, radio states
+   - Test with various input types and form interactions
+2. **Fix Incomplete HTML Snapshots** (4h) - HIGH → [TASKS-2.md Issue 2](TASKS-2.md#known-issues--bug-fixes) | [PRD-2.md](PRD-2.md#high-priority-issues)
+   - Add configurable delay after actions (wait for renders/animations)
+   - Wait for resources to load (images, fonts, stylesheets)
+   - Handle Shadow DOM serialization
+   - Capture scroll position and restore in viewer
+   - Capture computed styles for dynamic elements
+3. **Fix Resource Loading** (3h) - MEDIUM → [TASKS-2.md Issue 3](TASKS-2.md#known-issues--bug-fixes) | [PRD-2.md](PRD-2.md#high-priority-issues)
+   - Ensure images captured as data URLs or SHA1 refs
+   - Handle CSS background images
+   - Capture and embed web fonts
+   - Test with various resource types
+
+### Sprint 5b: UI Enhancements (5 hours) - 🎯 HIGH PRIORITY
+
+1. **Resizable Panels** (3h) - HIGH → [TASKS-2.md Task 11.2](TASKS-2.md#phase-11-styling--polish-3-hours) | [PRD-2.md](PRD-2.md#enhancement-requests)
+   - Add drag handles between sections (Timeline/Content, ActionList/Snapshot, Snapshot/TabPanel)
+   - Save panel sizes to localStorage
+   - Implement min/max size constraints
+   - Smooth resize animations
+2. **Screenshot Hover Zoom** (2h) - HIGH → [TASKS-2.md Task 11.2](TASKS-2.md#phase-11-styling--polish-3-hours) | [PRD-2.md](PRD-2.md#enhancement-requests)
+   - Show enlarged preview on timeline thumbnail hover
+   - Tooltip with action details (type, timestamp, target)
+   - Position tooltip to avoid edge clipping
+   - Smooth fade-in/out transitions
+
+### Sprint 5c: Export & Optimization (10 hours)
 
 1. Phase 9: Zip export/import (3h) → [TASKS-2.md Phase 9](TASKS-2.md#phase-9-zip-exportimport-3-hours) | [PRD-2.md](PRD-2.md#data-format-requirements)
 2. Phase 10: Performance optimization (4h) → [TASKS-2.md Phase 10](TASKS-2.md#phase-10-performance-optimization-4-hours) | [PRD-2.md](PRD-2.md#performance-requirements)
@@ -70,7 +112,7 @@
 
 ### Sprint 6: Polish & Ship (6 hours)
 
-1. Phase 11: Styling, keyboard shortcuts, accessibility (3h) → [TASKS-2.md Phase 11](TASKS-2.md#phase-11-styling--polish-3-hours) | [PRD-2.md](PRD-2.md#5-success-criteria)
+1. Phase 11: Remaining styling, keyboard shortcuts, accessibility (3h) → [TASKS-2.md Phase 11](TASKS-2.md#phase-11-styling--polish-3-hours) | [PRD-2.md](PRD-2.md#5-success-criteria)
 2. Phase 12: Testing + documentation (3h) → [TASKS-2.md Phase 12](TASKS-2.md#phase-12-testing--documentation-3-hours) | [PRD-2.md](PRD-2.md#5-success-criteria)
 
 ## 📊 Total Effort
@@ -80,15 +122,32 @@
 - Sprint 1 Foundation: 12 hours ✅ (Phase 2: 3h, Phase 3: 2h, Phase 8.4: 2h, Testing: 3h, Auto-Zip: 2h)
 - Sprint 2 Core Viewing: 15 hours ✅ (Phase 4: 6h, Phase 5: 4h, Phase 8.1: 2h, Testing: 3h)
 - Sprint 3 Snapshot Display: 10 hours ✅ (Phase 6: 5h, Phase 7.2: 2h, Phase 8.2: 2h, Testing: 1h)
-- Custom Viewer Remaining: 9 hours (2 sprints remaining)
-- Grand Total: 69 hours (60 hours completed, 9 hours remaining)
+- Sprint 4 Debugging Tools: 8 hours ✅ (Phase 7.1: 1h, Phase 7.3: 2h, Phase 7.4: 4h, Testing: 1h)
+- Sprint 5a Bug Fixes: 9 hours 🚨 (Input values: 2h, Incomplete snapshots: 4h, Resources: 3h)
+- Sprint 5b UI Enhancements: 5 hours 🎯 (Resizable panels: 3h, Hover zoom: 2h)
+- Sprint 5c Export & Optimization: 10 hours (Phase 9: 3h, Phase 10: 4h, Phase 8.3: 2h, Testing: 1h)
+- Sprint 6 Polish & Ship: 6 hours (Phase 11 remaining: 3h, Phase 12: 3h)
+- **Grand Total: 101 hours** (64 hours completed ✅, **37 hours remaining**)
 
-## 🚀 MVP Path (If Time-Constrained)
+## 🚀 Recommended Path
 
-- Sprints 1-3 only = 37 hours total (12 hours Sprint 1 + 15 hours Sprint 2 + 10 hours Sprint 3)
-- Gets you: Timeline, action list, snapshot viewing with element highlighting, console logs, auto-zip, session stats
-- Status:
-  - ✅ Sprint 1 (Foundation) is 100% complete (12 hours)
-  - ✅ Sprint 2 (Core Viewing) is 100% complete (15 hours)
-  - ✅ Sprint 3 (Snapshot Display) is 100% complete (10 hours)
+### Critical Path (Sprints 1-4 + 5a + 5b = 59 hours)
+Delivers a fully functional viewer with accurate snapshots and professional UX:
+
+- ✅ Sprint 1 (Foundation) - 12 hours - **COMPLETE**
+- ✅ Sprint 2 (Core Viewing) - 15 hours - **COMPLETE**
+- ✅ Sprint 3 (Snapshot Display) - 10 hours - **COMPLETE**
+- ✅ Sprint 4 (Debugging Tools) - 8 hours - **COMPLETE**
+- 🚨 Sprint 5a (Bug Fixes) - 9 hours - **CRITICAL PRIORITY** (fixes input values, incomplete snapshots, resource loading)
+- 🎯 Sprint 5b (UI Enhancements) - 5 hours - **HIGH PRIORITY** (resizable panels, hover zoom)
+
+**Delivers**: Fully functional viewer with accurate snapshots, resizable UI, all debugging tools, professional UX
+
+### Full Production Path (All Sprints = 101 hours)
+Adds performance optimizations, export features, and polish:
+
+- Add Sprint 5c (Export & Optimization) - 10 hours
+- Add Sprint 6 (Polish & Ship) - 6 hours
+
+**Delivers**: Production-ready viewer with all features, optimizations, keyboard shortcuts, accessibility, and comprehensive documentation
 

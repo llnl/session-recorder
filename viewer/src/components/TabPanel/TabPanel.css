@@ -86,6 +86,66 @@
   border: 1px solid #3a3f4b;
 }
 
+/* Tab Controls */
+.tab-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 0;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid #3a3f4b;
+}
+
+.control-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.control-group label {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+.filter-select {
+  padding: 0.4rem 0.75rem;
+  background-color: #2a2f3a;
+  border: 1px solid #3a3f4b;
+  border-radius: 6px;
+  color: #e4e6eb;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.filter-select:hover {
+  border-color: #667eea;
+  background-color: #242830;
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+}
+
+.clear-filter-btn {
+  padding: 0.4rem 0.75rem;
+  background-color: #3a3f4b;
+  border: none;
+  border-radius: 6px;
+  color: #e4e6eb;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.clear-filter-btn:hover {
+  background-color: #667eea;
+  color: white;
+}
+
 /* Console Tab */
 .console-list {
   display: flex;
@@ -135,6 +195,10 @@
   color: #9ca3af;
 }
 
+.console-level.debug {
+  color: #a78bfa;
+}
+
 .console-item.error {
   border-left-color: #f87171;
   background-color: rgba(248, 113, 113, 0.1);
@@ -150,10 +214,65 @@
   background-color: rgba(96, 165, 250, 0.1);
 }
 
-.console-message {
+.console-item.debug {
+  border-left-color: #a78bfa;
+  background-color: rgba(167, 139, 250, 0.1);
+}
+
+.console-content {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.console-message {
   color: #e4e6eb;
   word-break: break-word;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.console-arg {
+  display: block;
+  white-space: pre-wrap;
+}
+
+.console-stack-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-top: 0.5rem;
+}
+
+.stack-toggle-btn {
+  align-self: flex-start;
+  padding: 0.25rem 0.5rem;
+  background-color: #3a3f4b;
+  border: none;
+  border-radius: 4px;
+  color: #9ca3af;
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: 'Courier New', monospace;
+}
+
+.stack-toggle-btn:hover {
+  background-color: #4a4f5b;
+  color: #e4e6eb;
+}
+
+.console-stack {
+  margin: 0;
+  padding: 0.5rem;
+  background-color: #1a1d23;
+  border-radius: 4px;
+  color: #f87171;
+  font-size: 0.7rem;
+  overflow-x: auto;
+  border: 1px solid #3a3f4b;
 }
 
 /* Network Tab */
@@ -166,17 +285,30 @@
 .network-item {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  padding: 0.75rem;
   background-color: #2a2f3a;
   border: 1px solid #3a3f4b;
   border-radius: 6px;
+  overflow: hidden;
 }
 
 .network-item-header {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  padding: 0.75rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.network-item-header:hover {
+  background-color: #242830;
+}
+
+.expand-icon {
+  color: #9ca3af;
+  font-size: 0.7rem;
+  width: 16px;
+  flex-shrink: 0;
 }
 
 .network-method {
@@ -255,6 +387,83 @@
   font-family: 'Courier New', monospace;
   color: #e4e6eb;
   word-break: break-all;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.network-duration {
+  flex-shrink: 0;
+  font-size: 0.7rem;
+  font-family: 'Courier New', monospace;
+  color: #9ca3af;
+  min-width: 50px;
+  text-align: right;
+}
+
+/* Network Waterfall Visualization */
+.network-waterfall {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 0.75rem 0.75rem 0.75rem;
+}
+
+.waterfall-container {
+  flex: 1;
+  height: 20px;
+  background-color: #1a1d23;
+  border-radius: 4px;
+  display: flex;
+  overflow: hidden;
+  border: 1px solid #3a3f4b;
+}
+
+.waterfall-bar {
+  height: 100%;
+  transition: opacity 0.2s;
+}
+
+.waterfall-bar:hover {
+  opacity: 0.8;
+}
+
+.waterfall-bar.dns {
+  background-color: #8b5cf6; /* Purple */
+}
+
+.waterfall-bar.connect {
+  background-color: #f59e0b; /* Orange */
+}
+
+.waterfall-bar.ttfb {
+  background-color: #10b981; /* Green */
+}
+
+.waterfall-bar.download {
+  background-color: #3b82f6; /* Blue */
+}
+
+.waterfall-total {
+  flex-shrink: 0;
+  font-size: 0.7rem;
+  font-family: 'Courier New', monospace;
+  color: #9ca3af;
+  min-width: 50px;
+  text-align: right;
+}
+
+/* Network Item Expanded Details */
+.network-item-expanded {
+  padding: 0.75rem;
+  background-color: #1f2329;
+  border-top: 1px solid #3a3f4b;
+}
+
+.network-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.75rem;
 }
 
 .network-item-details {
@@ -266,17 +475,25 @@
 
 .network-detail {
   display: flex;
+  flex-direction: column;
   gap: 0.25rem;
 }
 
 .network-detail-label {
   font-weight: 600;
   color: #9ca3af;
+  font-size: 0.7rem;
+  text-transform: uppercase;
 }
 
 .network-detail-value {
   font-family: 'Courier New', monospace;
-  color: #a0a3a8;
+  color: #e4e6eb;
+  font-size: 0.75rem;
+}
+
+.network-error .network-detail-value {
+  color: #f87171;
 }
 
 /* Metadata Tab */

@@ -217,14 +217,14 @@ Table of Contents:
 - [x] Display snapshot metadata (timestamp, URL, viewport)
 - [x] Smooth transitions and animations
 
-## Phase 7: Tab Panel Components (6 hours)
+## Phase 7: Tab Panel Components (6 hours) ✅ COMPLETE
 
-**Task 7.1**: Create tab panel structure
+**Task 7.1**: Create tab panel structure ✅ COMPLETE
 
-- [ ] Create `src/components/TabPanel/TabPanel.tsx`
-- [ ] Implement tab switching UI
-- [ ] Add tabs: Information, Console, Network
-- [ ] Connect to active tab state
+- [x] Create `src/components/TabPanel/TabPanel.tsx`
+- [x] Implement tab switching UI
+- [x] Add tabs: Information, Console, Network, Metadata
+- [x] Connect to active tab state
 
 **Task 7.2**: Information tab ✅ COMPLETE
 
@@ -238,29 +238,30 @@ Table of Contents:
 - [x] Style as key-value pairs with clean layout
 - [x] Empty state handling
 
-**Task 7.3**: Console tab
+**Task 7.3**: Console tab ✅ COMPLETE
 
-- [ ] Create `src/components/TabPanel/ConsoleTab.tsx`
-- [ ] Display filtered console logs from store
-- [ ] Color-code by log level (red=error, yellow=warn, blue=info, grey=log)
-- [ ] Show timestamp for each entry
-- [ ] Show log message and serialized arguments
-- [ ] Expand/collapse stack traces for errors
-- [ ] Add "Clear" button
-- [ ] Add filter dropdown (all, errors only, warnings only)
+- [x] Console tab integrated in TabPanel.tsx
+- [x] Display filtered console logs from store
+- [x] Color-code by log level (red=error, yellow=warn, blue=info, grey=log, purple=debug)
+- [x] Show timestamp for each entry
+- [x] Show log message and serialized arguments with proper formatting
+- [x] Expand/collapse stack traces for errors
+- [x] Add "Clear Filter" button
+- [x] Add filter dropdown (all, errors only, warnings only, info, logs, debug) with counts
 
-**Task 7.4**: Network tab
+**Task 7.4**: Network tab ✅ COMPLETE
 
-- [ ] Create `src/components/TabPanel/NetworkTab.tsx`
-- [ ] Display filtered network requests from store
-- [ ] Show: method, URL, status, size, timing
-- [ ] Implement network waterfall visualization:
-  - Horizontal bars showing request lifecycle
-  - Color-coded by phase (DNS, connect, TTFB, download)
-  - Aligned to timeline scale
-- [ ] Add click to expand request/response details
-- [ ] Add filter by resource type (XHR, script, stylesheet, image, etc.)
-- [ ] Add sort options (time, duration, size)
+- [x] Network tab integrated in TabPanel.tsx
+- [x] Display filtered network requests from store
+- [x] Show: method, URL, status, cached indicator, duration
+- [x] Implement network waterfall visualization:
+  - Horizontal bars showing request lifecycle phases
+  - Color-coded by phase (DNS=purple, connect=orange, TTFB=green, download=blue)
+  - Proportional to timing breakdown
+- [x] Add click to expand request/response details
+- [x] Expandable detailed view showing: type, size, status, content-type, timing breakdown, errors
+- [x] Add filter by resource type (all, document, stylesheet, script, image, xhr, fetch, font, other)
+- [x] Add sort options (time, duration, size)
 
 ## Phase 8: Layout & Integration (4 hours)
 
@@ -414,14 +415,24 @@ Table of Contents:
 - [ ] Add hover/active/focus states
 - [ ] Ensure WCAG AA contrast compliance
 
-**Task 11.2**: Add UI polish
+**Task 11.2**: Add UI polish and resizable panels (PRIORITY)
 
+- [ ] **Resizable Panels**: Add drag handles between sections (HIGH PRIORITY)
+  - Resize handle between Timeline and Action List/Snapshot area
+  - Resize handle between Action List and Snapshot Viewer (vertical)
+  - Resize handle between Snapshot Viewer and Tab Panel (horizontal)
+  - Save panel sizes to localStorage
+  - Minimum/maximum size constraints
+- [ ] **Timeline Screenshot Hover Zoom**: Show enlarged preview on hover (HIGH PRIORITY)
+  - Absolute positioned tooltip with larger screenshot
+  - Position tooltip to avoid edge clipping
+  - Smooth fade-in/out transitions
+  - Show action details in tooltip (type, timestamp)
 - [ ] Loading states with spinners/skeletons
 - [ ] Empty states with helpful messages
 - [ ] Error states with actionable guidance
 - [ ] Success notifications (e.g., "Session exported successfully")
 - [ ] Smooth transitions and animations (subtle)
-- [ ] **Timeline hover tooltip**: Show enlarged screenshot preview on hover (absolute positioned tooltip with larger image)
 - [ ] Keyboard shortcuts:
   - Arrow keys: Navigate actions
   - B/A: Switch before/after snapshots
@@ -491,7 +502,7 @@ Table of Contents:
 | 4 | Timeline Component | 6 ✅ |
 | 5 | Action List Component | 4 ✅ |
 | 6 | Snapshot Viewer Component | 5 ✅ |
-| 7 | Tab Panel Components | 6 (partial) |
+| 7 | Tab Panel Components | 6 ✅ |
 | 8 | Layout & Integration | 4 ✅ |
 | 8.5 | Auto-Zip Feature | 2 ✅ |
 | 9 | Zip Export/Import | 3 |
@@ -507,8 +518,8 @@ Table of Contents:
 | Console Log Capture | 3 ✅ |
 | Custom Trace Viewer | 45 |
 | **Grand Total** | **48 hours** |
-| **Completed** | **35 hours** ✅ |
-| **Remaining** | **13 hours** |
+| **Completed** | **41 hours** ✅ |
+| **Remaining** | **7 hours** |
 
 ---
 
@@ -538,6 +549,54 @@ Table of Contents:
 
 ---
 
+## Known Issues & Bug Fixes
+
+**Issue 1: Input Values Not Captured in Snapshots** (CRITICAL)
+
+- **Problem**: After typing into an input field, the snapshot doesn't show the entered value
+- **Root Cause**: HTML snapshots don't serialize input values to `value` attribute
+- **Impact**: Can't see form state in before/after snapshots
+- **Fix Required**: Update SessionRecorder snapshot capture to:
+  - Iterate through all input/textarea/select elements
+  - Set `value` attribute equal to current `.value` property
+  - Set `checked` attribute for checkboxes/radios
+  - Preserve selected options in dropdowns
+- **Estimated Time**: 2 hours
+- **Priority**: CRITICAL - breaks debugging workflow
+
+**Issue 2: Incomplete HTML Snapshots** (HIGH)
+
+- **Problem**: Missing elements when viewing snapshots (tabs not visible, images missing on scroll)
+- **Root Cause**: Multiple potential issues:
+  - Resources not fully captured or linked correctly
+  - Lazy-loaded content not waited for
+  - Shadow DOM not being serialized
+  - CSS that depends on scroll position or dynamic classes
+  - Components rendered outside snapshot timing
+- **Impact**: Snapshots don't represent actual page state accurately
+- **Fix Required**:
+  - Add delay after action before capturing "after" snapshot (wait for animations/renders)
+  - Ensure all image resources are captured and base64-encoded or linked correctly
+  - Capture computed styles for elements
+  - Wait for fonts, images, and stylesheets to load before snapshot
+  - Handle shadow DOM serialization
+  - Capture scroll position and restore in viewer
+- **Estimated Time**: 4 hours
+- **Priority**: HIGH - affects snapshot accuracy
+
+**Issue 3: Snapshot Resource Loading** (MEDIUM)
+
+- **Problem**: Images and other resources may not load correctly in snapshots
+- **Root Cause**: Resources may be referenced with relative URLs or not captured
+- **Impact**: Incomplete visual representation of page state
+- **Fix Required**:
+  - Ensure all image `src` attributes are captured as data URLs or SHA1 references
+  - Capture CSS background images
+  - Handle iframe content
+  - Capture web fonts
+- **Estimated Time**: 3 hours
+- **Priority**: MEDIUM - visual accuracy
+
 ## Future Enhancements (Out of Current Scope)
 
 **Multi-Tab/Context Support** (4-6 hours):
@@ -549,9 +608,15 @@ Table of Contents:
 - Update action list to filter by active tab
 - Handle cross-tab interactions and navigation
 
-**Enhanced Hover Preview** (Included in Phase 11):
+**Enhanced Hover Preview**:
 
-- ✅ Added to Task 11.2: Show enlarged screenshot tooltip on hover
+- ✅ Moved to Task 11.2 (HIGH PRIORITY): Show enlarged screenshot tooltip on hover
 - Position tooltip to avoid edge clipping
 - Add smooth fade-in/out transitions
 - Show action details in tooltip (type, timestamp)
+
+**Resizable Panels**:
+
+- ✅ Moved to Task 11.2 (HIGH PRIORITY): Drag handles to resize viewer sections
+- Save panel sizes to localStorage
+- Minimum/maximum size constraints

@@ -229,8 +229,13 @@
 - ✅ Zoom controls (50%-200%) for snapshot inspection
 - ✅ Element highlighting with automatic scroll-to-view
 - ✅ Information tab shows action details
-- ✅ Console tab shows filtered logs with color-coding
+- ✅ Console tab shows filtered logs with color-coding by level
+- ✅ Console tab supports level filtering (all, error, warn, info, log, debug)
+- ✅ Console tab supports stack trace expansion for errors
 - ✅ Network tab shows filtered requests with timing
+- ✅ Network tab displays waterfall visualization (DNS, connect, TTFB, download)
+- ✅ Network tab supports resource type filtering and sorting
+- ✅ Network requests expandable to show detailed timing breakdown
 - ✅ All tabs filter based on timeline selection
 - ✅ Session statistics displayed in header
 - ✅ Session can be exported as zip
@@ -255,7 +260,64 @@
 - ✅ Error messages are actionable
 - ✅ Cross-browser support (Chrome, Firefox, Safari)
 
-## 6. Non-Goals (Out of Scope for POC 2)
+## 6. Known Issues & Required Fixes
+
+### Critical Issues
+
+**Input Values Not Captured in Snapshots**:
+- **Problem**: After typing into input fields, the "after" snapshot doesn't show the entered value
+- **Impact**: Cannot debug form interactions properly
+- **Root Cause**: HTML serialization doesn't preserve runtime input values to DOM attributes
+- **Fix**: Serialize input `.value` property to `value` attribute before capturing snapshot
+- **Estimated Time**: 2 hours
+- **Priority**: CRITICAL
+
+### High Priority Issues
+
+**Incomplete HTML Snapshots**:
+- **Problem**: Missing elements in snapshots (tabs not visible, images missing on scroll, dynamic content)
+- **Impact**: Snapshots don't accurately represent actual page state
+- **Root Causes**:
+  - Resources not fully captured or linked correctly
+  - Lazy-loaded content not waited for
+  - Shadow DOM not serialized
+  - CSS dependent on scroll position or dynamic classes
+  - Components rendered outside snapshot timing window
+- **Fixes Required**:
+  - Add configurable delay after action before "after" snapshot
+  - Ensure all images are captured (base64 or SHA1 references)
+  - Capture computed styles for critical elements
+  - Wait for fonts, images, stylesheets to load
+  - Handle Shadow DOM serialization
+  - Capture and restore scroll position
+- **Estimated Time**: 4 hours
+- **Priority**: HIGH
+
+**Resource Loading in Snapshots**:
+- **Problem**: Images and resources may not load correctly in viewer
+- **Impact**: Incomplete visual representation
+- **Fixes**:
+  - Capture all image `src` as data URLs or SHA1 references
+  - Capture CSS background images
+  - Handle iframe content properly
+  - Capture and embed web fonts
+- **Estimated Time**: 3 hours
+- **Priority**: MEDIUM
+
+### Enhancement Requests
+
+**Resizable Panels** (HIGH PRIORITY):
+- Add drag handles between viewer sections
+- Persist panel sizes to localStorage
+- Minimum/maximum size constraints
+- **Estimated Time**: 3 hours
+
+**Screenshot Hover Zoom** (HIGH PRIORITY):
+- Show enlarged screenshot preview on timeline thumbnail hover
+- Tooltip with action details
+- **Estimated Time**: 2 hours
+
+## 7. Non-Goals (Out of Scope for POC 2)
 
 - ❌ Action replay or code generation
 - ❌ Selector generation/DOM tree viewer
@@ -267,7 +329,7 @@
 - ❌ Video recording
 - ❌ Mobile app version of viewer
 
-## 7. Dependencies
+## 8. Dependencies
 
 **Console Logging**:
 
