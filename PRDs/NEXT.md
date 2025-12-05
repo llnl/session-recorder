@@ -1,6 +1,23 @@
 # Implementation Strategy
 
-✅ Already Complete
+## 🆕 Latest Updates (2025-12-05)
+
+**New Architecture Documentation:**
+
+- 📘 [PRD-3.md](PRD-3.md) - Playwright-Inspired Snapshot Architecture Analysis
+  - Complete breakdown of Playwright's proven 3-phase snapshot system
+  - Current implementation gaps and missing components
+  - Detailed technical specifications and code examples
+- 📋 [TASKS-3.md](TASKS-3.md) - Actionable Implementation Tasks
+  - Phase 1: Critical snapshot fixes with restoration script (9 hours)
+  - Phase 2: Resource management with SHA1 deduplication (12 hours)
+  - Phase 3: Advanced optimization with NodeSnapshot structure (14 hours)
+
+**Key Discovery:** Current snapshot capture is ~70% correct, but **viewer never restores state**. A 4-hour restoration script fix will solve 80% of snapshot issues!
+
+---
+
+## ✅ Already Complete
 
 1. POC 1: Session Recorder (Phases 1-10) - 20 hours → [TASKS.md Phases 1-10](TASKS.md) | [PRD.md](PRD.md)
 2. POC 2 Phase 1: Console Logging (3 hours) → [TASKS-2.md Phase 1](TASKS-2.md#phase-1-console-log-capture-3-hours--complete) | [PRD-2.md](PRD-2.md#console-logging-requirements)
@@ -72,23 +89,38 @@
    - Detailed timing breakdown in expanded view
    - Build compilation successful
 
-### Sprint 5a: Critical Bug Fixes (9 hours) - 🚨 HIGH PRIORITY
+### Sprint 5a: Critical Snapshot Fixes - Playwright Architecture (9 hours) - 🚨 CRITICAL PRIORITY
 
-1. **Fix Input Value Capture** (2h) - CRITICAL → [TASKS-2.md Issue 1](TASKS-2.md#known-issues--bug-fixes) | [PRD-2.md](PRD-2.md#critical-issues)
-   - Serialize input values to DOM attributes before snapshot
-   - Handle textarea, select, checkbox, radio states
-   - Test with various input types and form interactions
-2. **Fix Incomplete HTML Snapshots** (4h) - HIGH → [TASKS-2.md Issue 2](TASKS-2.md#known-issues--bug-fixes) | [PRD-2.md](PRD-2.md#high-priority-issues)
-   - Add configurable delay after actions (wait for renders/animations)
-   - Wait for resources to load (images, fonts, stylesheets)
-   - Handle Shadow DOM serialization
-   - Capture scroll position and restore in viewer
-   - Capture computed styles for dynamic elements
-3. **Fix Resource Loading** (3h) - MEDIUM → [TASKS-2.md Issue 3](TASKS-2.md#known-issues--bug-fixes) | [PRD-2.md](PRD-2.md#high-priority-issues)
-   - Ensure images captured as data URLs or SHA1 refs
-   - Handle CSS background images
-   - Capture and embed web fonts
-   - Test with various resource types
+**Based on:** [PRD-3.md](PRD-3.md) | [TASKS-3.md Phase 1](TASKS-3.md#phase-1-critical-snapshot-fixes-9-hours--high-priority)
+
+**Problem:** Snapshots capture state but never restore it. Form fields appear empty even though values are in attributes.
+
+**Solution:** Implement Playwright's 3-phase architecture (Capture → Storage → Render with restoration script)
+
+1. **Task 1.1: Snapshot Restoration Script** (4h) - CRITICAL → [TASKS-3.md Task 1.1](TASKS-3.md#task-11-create-snapshot-restoration-script-4-hours)
+   - Create `snapshotRestoration.ts` with self-executing restoration script
+   - Inject script into snapshot HTML in viewer
+   - Restore input values: `__playwright_value_` → `input.value`
+   - Restore checkbox/radio: `__playwright_checked_` → `input.checked`
+   - Restore select options: `__playwright_selected_` → `option.selected`
+   - Restore scroll positions: `__playwright_scroll_top_` → `element.scrollTop`
+   - Unit tests with JSDOM
+   - **Impact:** Fixes 80% of snapshot issues with viewer-only changes
+
+2. **Task 1.2: Capture Additional Interactive State** (3h) - HIGH → [TASKS-3.md Task 1.2](TASKS-3.md#task-12-capture-additional-interactive-state-3-hours)
+   - Canvas bounding rects (`__playwright_bounding_rect__`)
+   - Iframe positions and dimensions
+   - Popover state (`:popover-open` detection)
+   - Dialog state (modal vs non-modal)
+   - Custom elements tracking
+   - **Impact:** Complete interactive state capture
+
+3. **Task 1.3: Fix Shadow DOM Rendering** (2h) - HIGH → [TASKS-3.md Task 1.3](TASKS-3.md#task-13-fix-shadow-dom-template-rendering-2-hours)
+   - Declarative Shadow DOM with `<template shadowrootmode="open">`
+   - Adopted stylesheets restoration
+   - Recursive Shadow DOM traversal
+   - Integration tests
+   - **Impact:** Shadow DOM components render correctly
 
 ### Sprint 5b: UI Enhancements (5 hours) - 🎯 HIGH PRIORITY
 
@@ -103,19 +135,71 @@
    - Position tooltip to avoid edge clipping
    - Smooth fade-in/out transitions
 
-### Sprint 5c: Export & Optimization (10 hours)
+### Sprint 5c: Resource Management - Playwright Architecture (12 hours) - 📦 MEDIUM PRIORITY
 
-1. Phase 9: Zip export/import (3h) → [TASKS-2.md Phase 9](TASKS-2.md#phase-9-zip-exportimport-3-hours) | [PRD-2.md](PRD-2.md#data-format-requirements)
-2. Phase 10: Performance optimization (4h) → [TASKS-2.md Phase 10](TASKS-2.md#phase-10-performance-optimization-4-hours) | [PRD-2.md](PRD-2.md#performance-requirements)
-3. Phase 8.3: Metadata view (2h) → [TASKS-2.md Phase 8.3](TASKS-2.md#task-83-create-metadata-view) | [PRD-2.md](PRD-2.md#custom-trace-viewer-requirements)
-4. Test: Large session handling (1h)
+**Based on:** [PRD-3.md](PRD-3.md) | [TASKS-3.md Phase 2](TASKS-3.md#phase-2-resource-management-12-hours--medium-priority)
+
+**Problem:** External CSS, images, and fonts don't load correctly. No resource deduplication leads to massive file sizes.
+
+**Solution:** Implement HAR-like resource storage with SHA1 deduplication (Playwright's proven approach)
+
+1. **Task 2.1: Resource Extraction During Capture** (5h) → [TASKS-3.md Task 2.1](TASKS-3.md#task-21-resource-extraction-during-capture-5-hours)
+   - Extract external stylesheets content
+   - Convert small images (<100KB) to data URLs
+   - Handle CORS gracefully with fallbacks
+   - Add `resourceOverrides` array to snapshot data
+   - **Impact:** Resources captured for offline viewing
+
+2. **Task 2.2: SHA1-Based Resource Storage** (4h) → [TASKS-3.md Task 2.2](TASKS-3.md#task-22-sha1-based-resource-storage-4-hours)
+   - Create `ResourceStorage` class with SHA1 hashing
+   - Automatic deduplication (same content = same SHA1)
+   - Import/export to JSON format
+   - Size tracking and statistics
+   - **Impact:** 40%+ file size reduction through deduplication
+
+3. **Task 2.3: Resource Serving in Viewer** (3h) → [TASKS-3.md Task 2.3](TASKS-3.md#task-23-resource-serving-in-viewer-3-hours)
+   - Load resources from storage map
+   - Intercept fetch requests in iframe
+   - Serve resources from blob storage
+   - Fallback to network if resource missing
+   - **Impact:** External CSS and images render correctly
+
+### Sprint 5d: Performance & Polish (7 hours)
+
+**Note:** Zip export/import removed - session recorder already creates recordings
+
+1. Phase 10: Performance optimization (4h) → [TASKS-2.md Phase 10](TASKS-2.md#phase-10-performance-optimization-4-hours) | [PRD-2.md](PRD-2.md#performance-requirements)
+2. Phase 8.3: Metadata view (2h) → [TASKS-2.md Phase 8.3](TASKS-2.md#task-83-create-metadata-view) | [PRD-2.md](PRD-2.md#custom-trace-viewer-requirements)
+3. Test: Large session handling (1h)
 
 ### Sprint 6: Polish & Ship (6 hours)
 
 1. Phase 11: Remaining styling, keyboard shortcuts, accessibility (3h) → [TASKS-2.md Phase 11](TASKS-2.md#phase-11-styling--polish-3-hours) | [PRD-2.md](PRD-2.md#5-success-criteria)
 2. Phase 12: Testing + documentation (3h) → [TASKS-2.md Phase 12](TASKS-2.md#phase-12-testing--documentation-3-hours) | [PRD-2.md](PRD-2.md#5-success-criteria)
 
+### Sprint 7: Advanced Optimization (14 hours) - ⚡ LOW PRIORITY (Future Enhancement)
+
+**Based on:** [PRD-3.md](PRD-3.md) | [TASKS-3.md Phase 3](TASKS-3.md#phase-3-nodesnapshot-optimization-14-hours--low-priority)
+
+**Goal:** Reduce file sizes through structured snapshots and reference caching (40-60% reduction)
+
+**Note:** Only implement this AFTER Sprints 5a-6 are stable. This is a complex refactoring.
+
+1. **Task 3.1: NodeSnapshot Structure** (8h) → [TASKS-3.md Task 3.1](TASKS-3.md#task-31-implement-nodesnapshot-structure-8-hours)
+   - Refactor from string-based HTML to structured NodeSnapshot tree
+   - Implement reference-based caching for unchanged nodes
+   - Post-order indexing for efficient lookups
+   - **Impact:** Foundation for file size optimization
+
+2. **Task 3.2: Incremental Snapshots** (6h)
+   - Track unchanged DOM subtrees
+   - Reference previous snapshots for unchanged nodes
+   - Measure and validate file size reduction
+   - **Impact:** 40-60% file size reduction for subsequent snapshots
+
 ## 📊 Total Effort
+
+### Completed Work ✅
 
 - POC 1: 20 hours ✅
 - Console Logging: 3 hours ✅
@@ -123,31 +207,128 @@
 - Sprint 2 Core Viewing: 15 hours ✅ (Phase 4: 6h, Phase 5: 4h, Phase 8.1: 2h, Testing: 3h)
 - Sprint 3 Snapshot Display: 10 hours ✅ (Phase 6: 5h, Phase 7.2: 2h, Phase 8.2: 2h, Testing: 1h)
 - Sprint 4 Debugging Tools: 8 hours ✅ (Phase 7.1: 1h, Phase 7.3: 2h, Phase 7.4: 4h, Testing: 1h)
-- Sprint 5a Bug Fixes: 9 hours 🚨 (Input values: 2h, Incomplete snapshots: 4h, Resources: 3h)
-- Sprint 5b UI Enhancements: 5 hours 🎯 (Resizable panels: 3h, Hover zoom: 2h)
-- Sprint 5c Export & Optimization: 10 hours (Phase 9: 3h, Phase 10: 4h, Phase 8.3: 2h, Testing: 1h)
-- Sprint 6 Polish & Ship: 6 hours (Phase 11 remaining: 3h, Phase 12: 3h)
-- **Grand Total: 101 hours** (64 hours completed ✅, **37 hours remaining**)
+- **Subtotal Completed: 68 hours** ✅
+
+### Remaining Work (Based on PRD-3.md Playwright Architecture)
+
+- Sprint 5a Snapshot Fixes (Playwright Phase 1): 9 hours 🚨 **CRITICAL** (Restoration: 4h, Additional state: 3h, Shadow DOM: 2h)
+- Sprint 5b UI Enhancements: 5 hours 🎯 **HIGH** (Resizable panels: 3h, Hover zoom: 2h)
+- Sprint 5c Resource Management (Playwright Phase 2): 12 hours 📦 **MEDIUM** (Extraction: 5h, SHA1 storage: 4h, Serving: 3h)
+- Sprint 5d Performance & Polish: 7 hours (Performance: 4h, Metadata: 2h, Testing: 1h) - **Zip export removed**
+- Sprint 6 Polish & Ship: 6 hours (Phase 11: 3h, Phase 12: 3h)
+- Sprint 7 Advanced Optimization (Playwright Phase 3): 14 hours ⚡ **OPTIONAL** (NodeSnapshot: 8h, Incremental: 6h)
+- **Subtotal Remaining: 53 hours** (39 hours core + 14 hours optional)
+
+### Grand Total
+
+- **Core Features: 107 hours** (68 completed ✅ + 39 remaining)
+- **With Advanced Optimization: 121 hours** (68 completed ✅ + 53 remaining)
 
 ## 🚀 Recommended Path
 
-### Critical Path (Sprints 1-4 + 5a + 5b = 59 hours)
-Delivers a fully functional viewer with accurate snapshots and professional UX:
+### Path 1: Critical Snapshot Fix (Sprint 5a only = 9 hours) - 🚨 IMMEDIATE ACTION
 
-- ✅ Sprint 1 (Foundation) - 12 hours - **COMPLETE**
-- ✅ Sprint 2 (Core Viewing) - 15 hours - **COMPLETE**
-- ✅ Sprint 3 (Snapshot Display) - 10 hours - **COMPLETE**
-- ✅ Sprint 4 (Debugging Tools) - 8 hours - **COMPLETE**
-- 🚨 Sprint 5a (Bug Fixes) - 9 hours - **CRITICAL PRIORITY** (fixes input values, incomplete snapshots, resource loading)
-- 🎯 Sprint 5b (UI Enhancements) - 5 hours - **HIGH PRIORITY** (resizable panels, hover zoom)
+**Goal:** Fix broken snapshot rendering (80% of issues)
 
-**Delivers**: Fully functional viewer with accurate snapshots, resizable UI, all debugging tools, professional UX
+**What to do:**
 
-### Full Production Path (All Sprints = 101 hours)
-Adds performance optimizations, export features, and polish:
+- ✅ Sprints 1-4 Complete (68 hours) - Already done
+- 🚨 **Sprint 5a Task 1.1 ONLY** (4 hours) - **DO THIS FIRST**
+  - Implement restoration script
+  - Inject into viewer
+  - Test with real forms
 
-- Add Sprint 5c (Export & Optimization) - 10 hours
-- Add Sprint 6 (Polish & Ship) - 6 hours
+**Impact:**
 
-**Delivers**: Production-ready viewer with all features, optimizations, keyboard shortcuts, accessibility, and comprehensive documentation
+- ✅ Input fields show values
+- ✅ Checkboxes show correct state
+- ✅ Scroll positions restored
+- ✅ NO capture changes needed (viewer-only fix)
+
+**Result:** Snapshots immediately become useful for debugging
+
+---
+
+### Path 2: Complete Playwright Architecture (Sprints 5a + 5b + 5c = 26 hours) - 🎯 RECOMMENDED
+
+**Goal:** Production-grade snapshot system with Playwright's proven architecture
+
+**What to do:**
+
+- 🚨 Sprint 5a (Snapshot Fixes) - 9 hours
+  - Restoration script (4h) - fixes 80% of issues
+  - Additional state capture (3h) - canvas, popovers, dialogs
+  - Shadow DOM fixes (2h) - proper reconstruction
+- 🎯 Sprint 5b (UI Enhancements) - 5 hours
+  - Resizable panels (3h)
+  - Screenshot hover zoom (2h)
+- 📦 Sprint 5c (Resource Management) - 12 hours
+  - Resource extraction (5h)
+  - SHA1 storage with deduplication (4h)
+  - Resource serving in viewer (3h)
+
+**Impact:**
+
+- ✅ All snapshots render accurately (95%+ accuracy)
+- ✅ Professional UI with resizable panels
+- ✅ External CSS/images/fonts work
+- ✅ 40%+ file size reduction through deduplication
+- ✅ Follows Playwright's battle-tested architecture
+
+**Result:** Production-ready snapshot system matching Playwright trace viewer quality
+
+---
+
+### Path 3: Full Production (Core Features = 107 hours) - 🏆 COMPLETE IMPLEMENTATION
+
+**Goal:** Fully polished, production-ready viewer
+
+**What to do:**
+
+- Path 2 (Sprints 5a + 5b + 5c) - 26 hours
+- Sprint 5d (Performance & Polish) - 7 hours
+- Sprint 6 (Polish & Ship) - 6 hours
+
+**Impact:**
+
+- ✅ Everything from Path 2
+- ✅ Performance optimizations
+- ✅ Metadata view
+- ✅ Keyboard shortcuts & accessibility
+- ✅ Comprehensive documentation
+
+**Result:** Enterprise-grade session recorder ready for production use
+
+---
+
+### Path 4: With Advanced Optimization (121 hours total) - ⚡ FUTURE ENHANCEMENT
+
+**Goal:** Maximum file size reduction (for large sessions)
+
+**What to do:**
+
+- Path 3 (Sprints 1-6) - 107 hours
+- Sprint 7 (Advanced Optimization) - 14 hours
+  - NodeSnapshot structure refactoring (8h)
+  - Incremental snapshots with references (6h)
+
+**Impact:**
+
+- ✅ Everything from Path 3
+- ✅ 40-60% file size reduction for subsequent snapshots
+- ✅ Faster capture times (~40ms vs ~60ms)
+
+**Note:** Only implement Sprint 7 if file sizes become a real problem. This is complex refactoring.
+
+---
+
+## 💡 Recommendation
+
+**Start with Path 1 (Sprint 5a Task 1.1 only - 4 hours)** to immediately fix snapshot rendering, then evaluate:
+
+- If snapshots work well → Move to Sprint 5b (UI polish)
+- If you need better resource handling → Do Sprint 5c next
+- Otherwise → Continue with full Path 2 implementation
+
+The Playwright architecture in PRD-3.md is battle-tested and worth following completely.
 
