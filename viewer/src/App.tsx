@@ -69,6 +69,33 @@ function App() {
                 {sessionData.sessionId.substring(0, 8)}
               </span>
             </div>
+            <div className="app-header-stats">
+              <span className="stat-item">
+                <strong>{sessionData.actions.length}</strong> actions
+              </span>
+              {sessionData.endTime && (
+                <span className="stat-item">
+                  <strong>
+                    {Math.round(
+                      (new Date(sessionData.endTime).getTime() -
+                        new Date(sessionData.startTime).getTime()) /
+                        1000
+                    )}s
+                  </strong>{' '}
+                  duration
+                </span>
+              )}
+              {sessionData.network && (
+                <span className="stat-item">
+                  <strong>{sessionData.network.count}</strong> requests
+                </span>
+              )}
+              {sessionData.console && (
+                <span className="stat-item">
+                  <strong>{sessionData.console.count}</strong> logs
+                </span>
+              )}
+            </div>
             <div className="app-header-actions">
               <button type="button" className="btn-secondary" onClick={clearSession}>
                 Close Session

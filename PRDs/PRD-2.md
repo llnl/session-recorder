@@ -222,13 +222,17 @@
 - ✅ Click thumbnail navigates to action
 - ✅ Drag on timeline creates time-range filter
 - ✅ Action list shows all actions with virtual scrolling
-- ✅ Click action updates selected state (snapshot viewer pending Phase 6)
+- ✅ Click action updates selected state and snapshot viewer
 - ✅ HTML snapshots load in interactive iframe
 - ✅ Visual dot/highlight shows interacted element location
+- ✅ Before/After snapshot toggle with smooth transitions
+- ✅ Zoom controls (50%-200%) for snapshot inspection
+- ✅ Element highlighting with automatic scroll-to-view
 - ✅ Information tab shows action details
 - ✅ Console tab shows filtered logs with color-coding
 - ✅ Network tab shows filtered requests with timing
 - ✅ All tabs filter based on timeline selection
+- ✅ Session statistics displayed in header
 - ✅ Session can be exported as zip
 - ✅ Session can be imported from zip
 

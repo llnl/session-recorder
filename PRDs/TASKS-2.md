@@ -189,34 +189,33 @@ Table of Contents:
 - [ ] Update filtered list based on search/filter
 - [x] Show result count (implemented)
 
-## Phase 6: Snapshot Viewer Component (5 hours)
+## Phase 6: Snapshot Viewer Component (5 hours) ✅ COMPLETE
 
-**Task 6.1**: Create iframe-based snapshot viewer
+**Task 6.1**: Create iframe-based snapshot viewer ✅
 
-- [ ] Create `src/components/SnapshotViewer/SnapshotViewer.tsx`
-- [ ] Render before/after iframes
-- [ ] Load HTML snapshot content
-- [ ] Handle base URL for relative resources
-- [ ] Add loading spinner
-- [ ] Handle errors (missing snapshots)
+- [x] Create `src/components/SnapshotViewer/SnapshotViewer.tsx`
+- [x] Render before/after iframes
+- [x] Load HTML snapshot content from resources
+- [x] Handle base URL for relative resources
+- [x] Add loading spinner
+- [x] Handle errors (missing snapshots)
 
-**Task 6.2**: Implement element highlighting
+**Task 6.2**: Implement element highlighting ✅
 
-- [ ] Parse `data-recorded-el` attribute from before snapshot HTML
-- [ ] Query element in iframe after load
-- [ ] Inject CSS to highlight element (border + background)
-- [ ] Add visual dot indicator at element position
-- [ ] Calculate element viewport position
-- [ ] Auto-scroll iframe to show element
+- [x] Parse `data-recorded-el` attribute from before snapshot HTML
+- [x] Query element in iframe after load
+- [x] Inject CSS to highlight element (border + background)
+- [x] Add visual dot indicator at element position
+- [x] Calculate element viewport position
+- [x] Auto-scroll iframe to show element
 
-**Task 6.3**: Add snapshot controls
+**Task 6.3**: Add snapshot controls ✅
 
-- [ ] Create toggle switch: "Before" / "After"
-- [ ] Or implement side-by-side split view
-- [ ] Add zoom in/out buttons
-- [ ] Add reset view button
-- [ ] Display snapshot metadata (timestamp, URL)
-- [ ] Handle keyboard shortcuts (B/A for before/after)
+- [x] Create toggle switch: "Before" / "After"
+- [x] Add zoom in/out buttons (50% - 200%)
+- [x] Add reset view button
+- [x] Display snapshot metadata (timestamp, URL, viewport)
+- [x] Smooth transitions and animations
 
 ## Phase 7: Tab Panel Components (6 hours)
 
@@ -227,17 +226,17 @@ Table of Contents:
 - [ ] Add tabs: Information, Console, Network
 - [ ] Connect to active tab state
 
-**Task 7.2**: Information tab
+**Task 7.2**: Information tab ✅ COMPLETE
 
-- [ ] Create `src/components/TabPanel/InformationTab.tsx`
-- [ ] Display selected action details:
+- [x] Information tab integrated in TabPanel.tsx
+- [x] Display selected action details:
   - Action type, timestamp (formatted)
   - Coordinates (x, y)
-  - Target element selector/path
-  - Before/after URLs
+  - Value and key for input actions
+  - URL
   - Viewport size
-- [ ] Add section for voice transcript (placeholder)
-- [ ] Style as key-value pairs
+- [x] Style as key-value pairs with clean layout
+- [x] Empty state handling
 
 **Task 7.3**: Console tab
 
@@ -276,14 +275,15 @@ Table of Contents:
 - [x] Make layout responsive (handle window resize)
 - [ ] Add resize handles between sections (Deferred to Phase 11)
 
-**Task 8.2**: Implement top navigation
+**Task 8.2**: Implement top navigation ✅ COMPLETE (Sprint 3 Scope)
 
-- [ ] Create `src/components/TopNav/TopNav.tsx`
-- [ ] Add tab switcher: "Metadata" and "Timeline" views
-- [ ] Add session title/ID display
-- [ ] Add "Export Session" button (triggers zip export)
-- [ ] Add "Import Session" button (file picker + zip import)
-- [ ] Add session statistics (action count, duration, etc.)
+- [x] Top navigation integrated in App.tsx header
+- [x] Add session title/ID display
+- [x] Add "Export Session" button (triggers zip export)
+- [x] Import handled by SessionLoader component
+- [x] Add session statistics (action count, duration, requests, logs)
+- [x] Responsive header layout with visual styling
+- [ ] Tab switcher: "Metadata" and "Timeline" views (Deferred to Sprint 5)
 
 **Task 8.3**: Create metadata view
 
@@ -490,8 +490,8 @@ Table of Contents:
 | 3 | State Management | 2 ✅ |
 | 4 | Timeline Component | 6 ✅ |
 | 5 | Action List Component | 4 ✅ |
-| 6 | Snapshot Viewer Component | 5 |
-| 7 | Tab Panel Components | 6 |
+| 6 | Snapshot Viewer Component | 5 ✅ |
+| 7 | Tab Panel Components | 6 (partial) |
 | 8 | Layout & Integration | 4 ✅ |
 | 8.5 | Auto-Zip Feature | 2 ✅ |
 | 9 | Zip Export/Import | 3 |
@@ -507,8 +507,8 @@ Table of Contents:
 | Console Log Capture | 3 ✅ |
 | Custom Trace Viewer | 45 |
 | **Grand Total** | **48 hours** |
-| **Completed** | **25 hours** ✅ |
-| **Remaining** | **23 hours** |
+| **Completed** | **35 hours** ✅ |
+| **Remaining** | **13 hours** |
 
 ---
 
