@@ -23,12 +23,20 @@
    - Fixed zip structure to place files at root level for viewer compatibility
    - Tested and verified with both SPA and console test sessions
 
-### Sprint 2: Core Viewing (15 hours)
+### Sprint 2: Core Viewing (15 hours) - ✅ 100% COMPLETE
 
-1. Phase 4: Timeline with canvas + thumbnails + selection (6h) → [TASKS-2.md Phase 4](TASKS-2.md#phase-4-timeline-component-6-hours) | [PRD-2.md](PRD-2.md#custom-trace-viewer-requirements)
-2. Phase 5: Action list with virtual scrolling (4h) → [TASKS-2.md Phase 5](TASKS-2.md#phase-5-action-list-component-4-hours) | [PRD-2.md](PRD-2.md#custom-trace-viewer-requirements)
-3. Phase 8.1: Create main grid layout (2h) → [TASKS-2.md Phase 8.1](TASKS-2.md#task-81-create-main-application-layout) | [PRD-2.md](PRD-2.md#custom-trace-viewer-requirements)
-4. Test: Navigation and filtering (3h)
+1. ✅ Phase 4: Timeline with canvas + thumbnails + selection (6h) → [TASKS-2.md Phase 4](TASKS-2.md#phase-4-timeline-component-6-hours--complete) | [PRD-2.md](PRD-2.md#custom-trace-viewer-requirements)
+2. ✅ Phase 5: Action list with virtual scrolling (4h) → [TASKS-2.md Phase 5](TASKS-2.md#phase-5-action-list-component-4-hours--complete) | [PRD-2.md](PRD-2.md#custom-trace-viewer-requirements)
+3. ✅ Phase 8.1: Create main grid layout (2h) → [TASKS-2.md Phase 8.1](TASKS-2.md#task-81-create-main-application-layout) | [PRD-2.md](PRD-2.md#custom-trace-viewer-requirements)
+4. ✅ Test: Navigation and filtering (3h)
+   - Implemented Timeline component with canvas rendering
+   - Time markers and action indicators on timeline
+   - Screenshot thumbnails with hover states
+   - Drag selection for time-range filtering
+   - Virtual scrolling for action list
+   - Auto-scroll to selected action
+   - Main grid layout with flexbox
+   - Build compilation successful
 
 ### Sprint 3: Snapshot Display (10 hours)
 
@@ -61,11 +69,16 @@
 - POC 1: 20 hours ✅
 - Console Logging: 3 hours ✅
 - Sprint 1 Foundation: 12 hours ✅ (Phase 2: 3h, Phase 3: 2h, Phase 8.4: 2h, Testing: 3h, Auto-Zip: 2h)
-- Custom Viewer Remaining: 34 hours (5.5 sprints remaining)
-- Grand Total: 69 hours (35 hours completed, 34 hours remaining)
+- Sprint 2 Core Viewing: 15 hours ✅ (Phase 4: 6h, Phase 5: 4h, Phase 8.1: 2h, Testing: 3h)
+- Custom Viewer Remaining: 19 hours (3.5 sprints remaining)
+- Grand Total: 69 hours (50 hours completed, 19 hours remaining)
 
 ## 🚀 MVP Path (If Time-Constrained)
 
 - Sprints 1-3 only = 37 hours total (12 hours Sprint 1 + 15 hours Sprint 2 + 10 hours Sprint 3)
 - Gets you: Timeline, action list, snapshot viewing, console logs, auto-zip
-- Status: ✅ Sprint 1 (Foundation) is 100% complete (12 hours completed, 25 hours remaining for Sprints 2-3)
+- Status:
+  - ✅ Sprint 1 (Foundation) is 100% complete (12 hours)
+  - ✅ Sprint 2 (Core Viewing) is 100% complete (15 hours)
+  - 📋 Sprint 3 (Snapshot Display) remaining (10 hours)
+

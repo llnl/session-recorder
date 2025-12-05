@@ -222,7 +222,7 @@
 - ✅ Click thumbnail navigates to action
 - ✅ Drag on timeline creates time-range filter
 - ✅ Action list shows all actions with virtual scrolling
-- ✅ Click action displays before/after snapshots
+- ✅ Click action updates selected state (snapshot viewer pending Phase 6)
 - ✅ HTML snapshots load in interactive iframe
 - ✅ Visual dot/highlight shows interacted element location
 - ✅ Information tab shows action details

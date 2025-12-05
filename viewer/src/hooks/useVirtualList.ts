@@ -9,7 +9,7 @@ import type { RefObject } from 'react';
 export interface UseVirtualListOptions<T> {
   items: T[];
   estimateSize: number;
-  scrollElement?: RefObject<HTMLDivElement>;
+  scrollElement?: RefObject<HTMLDivElement | null>;
   overscan?: number;
 }
 

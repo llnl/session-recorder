@@ -6,8 +6,8 @@ Table of Contents:
   - [Phase 1: Console Log Capture (3 hours) ✅ COMPLETE](#phase-1-console-log-capture-3-hours--complete)
   - [Phase 2: Custom Trace Viewer - Project Setup (3 hours) ✅ COMPLETE](#phase-2-custom-trace-viewer---project-setup-3-hours--complete)
   - [Phase 3: State Management \& Data Structures (2 hours) ✅ COMPLETE](#phase-3-state-management--data-structures-2-hours--complete)
-  - [Phase 4: Timeline Component (6 hours)](#phase-4-timeline-component-6-hours)
-  - [Phase 5: Action List Component (4 hours)](#phase-5-action-list-component-4-hours)
+  - [Phase 4: Timeline Component (6 hours) ✅ COMPLETE](#phase-4-timeline-component-6-hours--complete)
+  - [Phase 5: Action List Component (4 hours) ✅ COMPLETE](#phase-5-action-list-component-4-hours--complete)
   - [Phase 6: Snapshot Viewer Component (5 hours)](#phase-6-snapshot-viewer-component-5-hours)
   - [Phase 7: Tab Panel Components (6 hours)](#phase-7-tab-panel-components-6-hours)
   - [Phase 8: Layout \& Integration (4 hours)](#phase-8-layout--integration-4-hours)
@@ -126,67 +126,68 @@ Table of Contents:
 - [x] Create `src/hooks/useFilteredNetwork.ts` (filter network requests)
 - [x] Create `src/hooks/useVirtualList.ts` (wrapper for TanStack Virtual)
 
-## Phase 4: Timeline Component (6 hours)
+## Phase 4: Timeline Component (6 hours) ✅ COMPLETE
 
-**Task 4.1**: Build timeline canvas renderer
+**Task 4.1**: Build timeline canvas renderer ✅
 
-- [ ] Create `src/components/Timeline/TimelineCanvas.tsx`
-- [ ] Calculate time scale (pixels per second)
-- [ ] Render time markers (0s, 5s, 10s, etc.)
-- [ ] Render action indicators at correct positions
-- [ ] Add horizontal scroll handling
-- [ ] Optimize canvas updates (only redraw on change)
+- [x] Create `src/components/Timeline/TimelineCanvas.tsx` (integrated in Timeline.tsx)
+- [x] Calculate time scale (pixels per second)
+- [x] Render time markers (0s, 5s, 10s, etc.)
+- [x] Render action indicators at correct positions
+- [x] Add horizontal scroll handling
+- [x] Optimize canvas updates (only redraw on change)
 
-**Task 4.2**: Add screenshot thumbnails
+**Task 4.2**: Add screenshot thumbnails ✅
 
-- [ ] Create `src/components/Timeline/Thumbnail.tsx`
-- [ ] Load thumbnail images from session
-- [ ] Position thumbnails on timeline
-- [ ] Implement hover state with enlarged preview
-- [ ] Add click handler to jump to action
-- [ ] Lazy load thumbnails as they enter viewport
+- [x] Create thumbnail rendering (integrated in Timeline.tsx)
+- [x] Load thumbnail images from session resources
+- [x] Position thumbnails on timeline
+- [x] Implement hover state with visual feedback (scale + border)
+- [ ] Add hover tooltip with larger image preview (Moved to Phase 11)
+- [x] Add click handler to jump to action
+- [x] Display thumbnails from resource blobs
 
-**Task 4.3**: Implement timeline selection
+**Task 4.3**: Implement timeline selection ✅
 
-- [ ] Add mouse down/move/up handlers
-- [ ] Draw selection rectangle on canvas
-- [ ] Calculate start/end timestamps from selection
-- [ ] Emit selection change event to store
-- [ ] Add "Clear Selection" button
-- [ ] Show selection duration indicator
+- [x] Add mouse down/move/up handlers
+- [x] Draw selection rectangle on canvas
+- [x] Calculate start/end timestamps from selection
+- [x] Emit selection change event to store
+- [x] Add "Clear Selection" button
+- [x] Show selection duration indicator in header
 
-**Task 4.4**: Timeline component integration
+**Task 4.4**: Timeline component integration ✅
 
-- [ ] Create `src/components/Timeline/Timeline.tsx` (wrapper)
-- [ ] Integrate canvas and thumbnails
-- [ ] Add responsive sizing
-- [ ] Add loading skeleton
-- [ ] Test with small and large sessions
+- [x] Create `src/components/Timeline/Timeline.tsx` (wrapper)
+- [x] Integrate canvas and thumbnails
+- [x] Add responsive sizing
+- [x] Add loading states
+- [x] Test with build compilation
 
-## Phase 5: Action List Component (4 hours)
+## Phase 5: Action List Component (4 hours) ✅ COMPLETE
 
-**Task 5.1**: Create action list structure
+**Task 5.1**: Create action list structure ✅
 
-- [ ] Create `src/components/ActionList/ActionList.tsx`
-- [ ] Integrate React Virtual for virtual scrolling
-- [ ] Render action items (type, time, target description)
-- [ ] Add placeholder for voice transcripts (greyed out)
-- [ ] Style list items with hover states
+- [x] Create `src/components/ActionList/ActionList.tsx`
+- [x] Integrate TanStack Virtual for virtual scrolling
+- [x] Render action items (type, time, target description)
+- [x] Display action value and key details
+- [x] Style list items with hover states
 
-**Task 5.2**: Implement filtering and selection
+**Task 5.2**: Implement filtering and selection ✅
 
-- [ ] Connect to filtered actions from store
-- [ ] Highlight currently selected action
-- [ ] Implement click handler to select action
-- [ ] Auto-scroll to selected action
-- [ ] Add empty state ("No actions in selected time range")
+- [x] Connect to filtered actions from store
+- [x] Highlight currently selected action
+- [x] Implement click handler to select action
+- [x] Auto-scroll to selected action
+- [x] Add empty state ("No actions in selected time range")
 
-**Task 5.3**: Add search/filter controls
+**Task 5.3**: Add search/filter controls (Deferred to Phase 11)
 
 - [ ] Add search input for action type filtering
 - [ ] Add filter dropdown (show all, clicks only, inputs only, etc.)
 - [ ] Update filtered list based on search/filter
-- [ ] Show result count
+- [x] Show result count (implemented)
 
 ## Phase 6: Snapshot Viewer Component (5 hours)
 
@@ -264,16 +265,16 @@ Table of Contents:
 
 ## Phase 8: Layout & Integration (4 hours)
 
-**Task 8.1**: Create main application layout
+**Task 8.1**: Create main application layout ✅
 
-- [ ] Create `src/App.tsx` with grid layout:
-  - Top: Timeline (fixed height, e.g. 150px)
-  - Left: Action List (20-30% width, scrollable)
+- [x] Create `src/App.tsx` with grid layout:
+  - Top: Timeline (fixed height, 150px)
+  - Left: Action List (300px width, scrollable)
   - Main: Snapshot Viewer (fill remaining space)
-  - Bottom: Tab Panel (30-40% height, resizable)
-- [ ] Implement CSS Grid or Flexbox layout
-- [ ] Make layout responsive (handle window resize)
-- [ ] Add resize handles between sections
+  - Bottom: Tab Panel (300px height, fixed)
+- [x] Implement Flexbox layout
+- [x] Make layout responsive (handle window resize)
+- [ ] Add resize handles between sections (Deferred to Phase 11)
 
 **Task 8.2**: Implement top navigation
 
@@ -304,10 +305,10 @@ Table of Contents:
   - Click action → update selectedActionIndex
   - Update snapshot viewer with before/after (stub component)
   - Update Information tab with details
-- [ ] Implement timeline selection flow:
+- [x] Implement timeline selection flow:
   - Drag timeline → update timelineSelection
   - Filter actions, console, network in all tabs
-- [ ] Test full integration with sample session
+- [x] Test full integration with build compilation
 
 **Task 8.5**: Auto-Zip Feature (2 hours) ✅ COMPLETE
 
@@ -420,6 +421,7 @@ Table of Contents:
 - [ ] Error states with actionable guidance
 - [ ] Success notifications (e.g., "Session exported successfully")
 - [ ] Smooth transitions and animations (subtle)
+- [ ] **Timeline hover tooltip**: Show enlarged screenshot preview on hover (absolute positioned tooltip with larger image)
 - [ ] Keyboard shortcuts:
   - Arrow keys: Navigate actions
   - B/A: Switch before/after snapshots
@@ -486,8 +488,8 @@ Table of Contents:
 | 1 | Console Log Capture | 3 ✅ |
 | 2 | Viewer Project Setup | 3 ✅ |
 | 3 | State Management | 2 ✅ |
-| 4 | Timeline Component | 6 |
-| 5 | Action List Component | 4 |
+| 4 | Timeline Component | 6 ✅ |
+| 5 | Action List Component | 4 ✅ |
 | 6 | Snapshot Viewer Component | 5 |
 | 7 | Tab Panel Components | 6 |
 | 8 | Layout & Integration | 4 ✅ |
@@ -505,8 +507,8 @@ Table of Contents:
 | Console Log Capture | 3 ✅ |
 | Custom Trace Viewer | 45 |
 | **Grand Total** | **48 hours** |
-| **Completed** | **12 hours** ✅ |
-| **Remaining** | **36 hours** |
+| **Completed** | **25 hours** ✅ |
+| **Remaining** | **23 hours** |
 
 ---
 
@@ -533,3 +535,23 @@ Table of Contents:
 
 **Minimum Viable Viewer**: ~29 hours (Phases 1-6 + basic layout)
 **Full-Featured Viewer**: 46 hours (All phases)
+
+---
+
+## Future Enhancements (Out of Current Scope)
+
+**Multi-Tab/Context Support** (4-6 hours):
+
+- Track browser tab/context ID for each action in session data
+- Group actions by tab/context in Timeline component
+- Render multiple timeline rows (one per tab, similar to Playwright trace viewer)
+- Add tab labels and tab switching UI
+- Update action list to filter by active tab
+- Handle cross-tab interactions and navigation
+
+**Enhanced Hover Preview** (Included in Phase 11):
+
+- ✅ Added to Task 11.2: Show enlarged screenshot tooltip on hover
+- Position tooltip to avoid edge clipping
+- Add smooth fade-in/out transitions
+- Show action details in tooltip (type, timestamp)

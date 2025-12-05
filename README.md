@@ -2,6 +2,10 @@
 
 A Playwright-based session recorder that captures **USER** actions (manual clicks, typing, form interactions) with before/after HTML snapshots and screenshots.
 
+## Implementing next step
+
+Implement the following items below. Once complete, Update the TASKS and PRD accordingly to state what is completed, as well as the @session-recorder/PRDs/NEXT.md
+
 ## Overview
 
 Unlike Playwright's built-in tracing which captures programmatic API calls, this recorder captures actual user interactions in the browser. Perfect for:
