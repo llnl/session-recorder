@@ -9,22 +9,24 @@ import json
 import argparse
 import signal
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
 import time
 
+# Only import recording dependencies at startup (fast imports)
 try:
     import sounddevice as sd
     import soundfile as sf
     import numpy as np
-    import whisper
-    import torch
 except ImportError as e:
     print(json.dumps({
         "success": False,
-        "error": f"Required packages not installed. Run: pip install sounddevice soundfile openai-whisper torch numpy\nMissing: {str(e)}",
-        "timestamp": datetime.utcnow().isoformat()
+        "error": f"Recording packages not installed. Run: pip install sounddevice soundfile numpy\nMissing: {str(e)}",
+        "timestamp": datetime.now(timezone.utc).isoformat()
     }), flush=True)
     sys.exit(1)
+
+# Whisper and torch are imported lazily when transcription starts
+# This allows recording to start immediately without waiting for torch to load
 
 
 class AudioRecorder:
@@ -42,7 +44,7 @@ class AudioRecorder:
             print(json.dumps({
                 "type": "warning",
                 "message": f"Audio status: {status}",
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.now(timezone.utc).isoformat()
             }), file=sys.stderr, flush=True)
 
         if self.recording:
@@ -66,7 +68,7 @@ class AudioRecorder:
         print(json.dumps({
             "type": "status",
             "message": "Recording started",
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }), flush=True)
 
     def stop_recording(self, output_path):
@@ -82,7 +84,7 @@ class AudioRecorder:
             return {
                 "success": False,
                 "error": "No audio data recorded",
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.now(timezone.utc).isoformat()
             }
 
         audio_data = np.concatenate(self.frames, axis=0)
@@ -95,7 +97,7 @@ class AudioRecorder:
                 "type": "status",
                 "message": f"Recording saved to {output_path}",
                 "duration": len(audio_data) / self.sample_rate,
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.now(timezone.utc).isoformat()
             }), flush=True)
 
             return {
@@ -109,21 +111,23 @@ class AudioRecorder:
             return {
                 "success": False,
                 "error": f"Failed to save audio: {str(e)}",
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.now(timezone.utc).isoformat()
             }
 
 
-def detect_device():
+def detect_device(torch_module):
     """Detect available compute device (CUDA/MPS/CPU)"""
-    if torch.cuda.is_available():
+    if torch_module.cuda.is_available():
         return "cuda"
-    elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+    elif hasattr(torch_module.backends, "mps") and \
+            torch_module.backends.mps.is_available():
         return "mps"
     else:
         return "cpu"
 
 
-def transcribe_audio(audio_path: str, model_size: str = "base", device: str = None) -> dict:
+def transcribe_audio(audio_path: str, model_size: str = "base",
+                     device: str = None) -> dict:
     """
     Transcribe audio file using Whisper
 
@@ -136,14 +140,24 @@ def transcribe_audio(audio_path: str, model_size: str = "base", device: str = No
         dict with success, segments, words, metadata
     """
     try:
+        # Import whisper and torch lazily (these are slow to import)
+        print(json.dumps({
+            "type": "status",
+            "message": "Loading transcription libraries...",
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }), flush=True)
+
+        import torch
+        import whisper
+
         # Auto-detect device if not specified
         if device is None:
-            device = detect_device()
+            device = detect_device(torch)
 
         print(json.dumps({
             "type": "status",
             "message": f"Loading Whisper model '{model_size}' on {device}...",
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }), flush=True)
 
         # Load model
@@ -152,7 +166,7 @@ def transcribe_audio(audio_path: str, model_size: str = "base", device: str = No
         print(json.dumps({
             "type": "status",
             "message": "Transcribing audio...",
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }), flush=True)
 
         # Transcribe with word-level timestamps
@@ -200,14 +214,14 @@ def transcribe_audio(audio_path: str, model_size: str = "base", device: str = No
             "words": all_words,
             "device": device,
             "model": model_size,
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
     except Exception as e:
         return {
             "success": False,
             "error": f"Transcription failed: {str(e)}",
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
 
@@ -239,7 +253,7 @@ def main():
     print(json.dumps({
         "type": "ready",
         "message": "Recording... Send SIGINT/SIGTERM to stop",
-        "timestamp": datetime.utcnow().isoformat()
+        "timestamp": datetime.now(timezone.utc).isoformat()
     }), flush=True)
 
     # Flag to track if we're stopping
@@ -251,11 +265,11 @@ def main():
         if stopping:
             return
         stopping = True
-        
+
         print(json.dumps({
             "type": "status",
             "message": "Stopping recording...",
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }), flush=True)
 
         # Stop recording
@@ -284,8 +298,8 @@ def main():
             }
         }
 
-        # Output final result as JSON
-        print(json.dumps(final_result, indent=2), flush=True)
+        # Output final result as single-line JSON for easy parsing
+        print(json.dumps(final_result), flush=True)
 
         sys.exit(0 if transcription_result["success"] else 1)
 
@@ -307,7 +321,7 @@ def main():
             print(json.dumps({
                 "type": "status",
                 "message": "Stdin monitor started",
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.now(timezone.utc).isoformat()
             }), file=sys.stderr, flush=True)
 
             try:
@@ -317,14 +331,14 @@ def main():
                         print(json.dumps({
                             "type": "status",
                             "message": f"Stdin received: {repr(line)}",
-                            "timestamp": datetime.utcnow().isoformat()
+                            "timestamp": datetime.now(timezone.utc).isoformat()
                         }), file=sys.stderr, flush=True)
 
                         if not line:  # EOF - stdin closed
                             print(json.dumps({
                                 "type": "status",
                                 "message": "Stdin EOF",
-                                "timestamp": datetime.utcnow().isoformat()
+                                "timestamp": datetime.now(timezone.utc).isoformat()
                             }), file=sys.stderr, flush=True)
                             stop_event.set()
                             break
@@ -332,7 +346,7 @@ def main():
                             print(json.dumps({
                                 "type": "status",
                                 "message": "STOP command received",
-                                "timestamp": datetime.utcnow().isoformat()
+                                "timestamp": datetime.now(timezone.utc).isoformat()
                             }), file=sys.stderr, flush=True)
                             stop_event.set()
                             break
@@ -340,7 +354,7 @@ def main():
                         print(json.dumps({
                             "type": "status",
                             "message": f"Stdin read error: {e}",
-                            "timestamp": datetime.utcnow().isoformat()
+                            "timestamp": datetime.now(timezone.utc).isoformat()
                         }), file=sys.stderr, flush=True)
                         stop_event.set()
                         break
@@ -348,7 +362,7 @@ def main():
                 print(json.dumps({
                     "type": "status",
                     "message": f"Stdin monitor error: {e}",
-                    "timestamp": datetime.utcnow().isoformat()
+                    "timestamp": datetime.now(timezone.utc).isoformat()
                 }), file=sys.stderr, flush=True)
                 stop_event.set()
 
@@ -364,7 +378,7 @@ def main():
         print(json.dumps({
             "type": "status",
             "message": "Stop event detected, processing...",
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }), flush=True)
         handle_stop()
 

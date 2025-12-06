@@ -89,6 +89,7 @@ export class VoiceRecorder {
 
   /**
    * Start audio recording via Python
+   * Returns a Promise that resolves when recording has actually started
    * Python will handle both recording AND transcription when stopped
    */
   async startRecording(audioDir: string, sessionStartTime: number): Promise<void> {
@@ -146,62 +147,80 @@ export class VoiceRecorder {
     }
 
     console.log(`🐍 Using Python: ${pythonCmd}`);
+    console.log(`🎙️  Starting voice recorder...`);
 
-    // Spawn Python process for recording
-    this.pythonProcess = spawn(pythonCmd, args, {
-      stdio: ['pipe', 'pipe', 'pipe']  // pipe stdin for Windows compatibility
-    });
+    // Return a promise that resolves when recording has actually started
+    return new Promise((resolve, reject) => {
+      // Spawn Python process for recording
+      this.pythonProcess = spawn(pythonCmd, args, {
+        stdio: ['pipe', 'pipe', 'pipe']
+      });
 
-    this.outputBuffer = '';
+      this.outputBuffer = '';
+      let recordingStarted = false;
 
-    // Capture status messages on stdout
-    this.pythonProcess.stdout?.on('data', (data) => {
-      const output = data.toString();
-      this.outputBuffer += output;
+      // Capture status messages on stdout
+      this.pythonProcess.stdout?.on('data', (data) => {
+        const output = data.toString();
+        this.outputBuffer += output;
 
-      // Log status messages with unified formatting
-      const lines = output.split('\n').filter((l: string) => l.trim());
-      for (const line of lines) {
-        if (line.trim().startsWith('{')) {
-          try {
-            const msg = JSON.parse(line);
-            if (msg.type === 'status') {
-              console.log(`🎙️  ${msg.message}`);
-            } else if (msg.type === 'ready') {
-              console.log(`✅ ${msg.message}`);
-            } else if (msg.type === 'error') {
-              console.error(`❌ ${msg.message}`);
-            } else if (msg.success !== undefined) {
-              // This is a result object, log it
-              console.log(`📋 Result: ${JSON.stringify(msg).substring(0, 200)}...`);
+        // Log status messages with unified formatting
+        const lines = output.split('\n').filter((l: string) => l.trim());
+        for (const line of lines) {
+          if (line.trim().startsWith('{')) {
+            try {
+              const msg = JSON.parse(line);
+              if (msg.type === 'status') {
+                console.log(`🎙️  ${msg.message}`);
+                // Check if recording has started
+                if (msg.message === 'Recording started' && !recordingStarted) {
+                  recordingStarted = true;
+                  this.recording = true;
+                  console.log(`✅ Voice recording ready: ${this.audioFilePath}`);
+                  resolve();
+                }
+              } else if (msg.type === 'ready') {
+                console.log(`✅ ${msg.message}`);
+              } else if (msg.type === 'error') {
+                console.error(`❌ ${msg.message}`);
+                if (!recordingStarted) {
+                  reject(new Error(msg.message));
+                }
+              } else if (msg.success !== undefined) {
+                // This is a result object, log it
+                console.log(`📋 Result: ${JSON.stringify(msg).substring(0, 200)}...`);
+              }
+            } catch (e) {
+              // Not JSON, log as raw output
+              console.log(`🎙️  ${line}`);
             }
-          } catch (e) {
-            // Not JSON, log as raw output
+          } else if (line.trim()) {
+            // Non-JSON output from Python
             console.log(`🎙️  ${line}`);
           }
-        } else if (line.trim()) {
-          // Non-JSON output from Python
-          console.log(`🎙️  ${line}`);
         }
-      }
-    });
+      });
 
-    this.pythonProcess.stderr?.on('data', (data) => {
-      const errors = data.toString().split('\n').filter((l: string) => l.trim());
-      errors.forEach((err: string) => console.error(`⚠️  Python stderr: ${err}`));
-    });
+      this.pythonProcess.stderr?.on('data', (data) => {
+        const errors = data.toString().split('\n').filter((l: string) => l.trim());
+        errors.forEach((err: string) => console.error(`⚠️  Python stderr: ${err}`));
+      });
 
-    this.pythonProcess.on('error', (error) => {
-      console.error('❌ Python recording process error:', error);
-      this.recording = false;
-    });
+      this.pythonProcess.on('error', (error) => {
+        console.error('❌ Python recording process error:', error);
+        this.recording = false;
+        if (!recordingStarted) {
+          reject(error);
+        }
+      });
 
-    this.pythonProcess.on('exit', (code, signal) => {
-      console.log(`🎙️  Python process exited (code: ${code}, signal: ${signal})`);
+      this.pythonProcess.on('exit', (code, signal) => {
+        console.log(`🎙️  Python process exited (code: ${code}, signal: ${signal})`);
+        if (!recordingStarted) {
+          reject(new Error(`Python process exited before recording started (code: ${code})`));
+        }
+      });
     });
-
-    this.recording = true;
-    console.log(`🎙️  Voice recording started: ${this.audioFilePath}`);
   }
 
   /**
@@ -235,23 +254,38 @@ export class VoiceRecorder {
         try {
           // Extract the final JSON result from output buffer
           console.log(`📝 Output buffer length: ${this.outputBuffer.length} bytes`);
-          const lines = this.outputBuffer.split('\n').filter(l => l.trim());
 
-          // The last valid JSON line should be the transcription result
+          // The result JSON is pretty-printed (multi-line), so we need to find it differently
+          // Look for the final JSON object that starts with { and has "success":
+          const successMatch = this.outputBuffer.match(/\{\s*\n?\s*"success":\s*true[\s\S]*?"recording":\s*\{[\s\S]*?\}\s*\}/);
+
           let result: TranscriptResult | null = null;
-          for (let i = lines.length - 1; i >= 0; i--) {
-            const line = lines[i];
-            if (line.trim().startsWith('{')) {
-              try {
-                const parsed = JSON.parse(line);
-                // Look for transcription result (has segments or success field)
-                if (parsed.segments !== undefined || parsed.success !== undefined) {
-                  result = parsed;
-                  console.log(`✅ Found result at line ${i}: success=${parsed.success}`);
-                  break;
+
+          if (successMatch) {
+            try {
+              result = JSON.parse(successMatch[0]);
+              console.log(`✅ Found success result via regex`);
+            } catch (e) {
+              console.error(`Failed to parse matched JSON: ${e}`);
+            }
+          }
+
+          // Fallback: try to find any JSON with segments (single line)
+          if (!result) {
+            const lines = this.outputBuffer.split('\n').filter(l => l.trim());
+            for (let i = lines.length - 1; i >= 0; i--) {
+              const line = lines[i];
+              if (line.trim().startsWith('{')) {
+                try {
+                  const parsed = JSON.parse(line);
+                  if (parsed.segments !== undefined || parsed.success !== undefined) {
+                    result = parsed;
+                    console.log(`✅ Found result at line ${i}: success=${parsed.success}`);
+                    break;
+                  }
+                } catch (e) {
+                  continue;
                 }
-              } catch (e) {
-                continue;
               }
             }
           }
@@ -281,6 +315,7 @@ export class VoiceRecorder {
 
       // Send SIGINT to stop recording and trigger transcription
       console.log('⏹️  Stopping recording and transcribing...');
+      console.log('   (Whisper model may download on first run - please wait)');
 
       // For Windows compatibility: Send STOP command via stdin, then close it
       try {
@@ -301,19 +336,8 @@ export class VoiceRecorder {
         }
       }
 
-      // 3. If process doesn't exit within 10 seconds, force kill
-      const forceKillTimer = setTimeout(() => {
-        if (this.pythonProcess && !this.pythonProcess.killed) {
-          console.error('⚠️  Force killing Python process (timeout after 10s)');
-          console.error('Output buffer so far:', this.outputBuffer);
-          this.pythonProcess.kill('SIGKILL');
-        }
-      }, 10000);
-
-      // Clear timer if process exits normally
-      this.pythonProcess.on('close', () => {
-        clearTimeout(forceKillTimer);
-      });
+      // No timeout - just wait for the process to complete naturally
+      // The process will exit when transcription is done
     });
   }
 

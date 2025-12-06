@@ -96,6 +96,14 @@ export class SessionRecorder {
     // Create output directories
     fs.mkdirSync(this.sessionDir, { recursive: true });
 
+    // Start voice recording FIRST if enabled (before browser setup)
+    // This ensures we capture audio from the very beginning
+    if (this.options.voice_record && this.voiceRecorder) {
+      console.log(`🎙️  Initializing voice recording...`);
+      await this.voiceRecorder.startRecording(this.audioDir, this.sessionStartTime);
+      console.log(`✅ Voice recording is ready - proceeding with browser setup`);
+    }
+
     if (this.options.browser_record) {
       fs.mkdirSync(path.join(this.sessionDir, 'screenshots'), { recursive: true });
       fs.mkdirSync(path.join(this.sessionDir, 'snapshots'), { recursive: true });
@@ -191,11 +199,6 @@ export class SessionRecorder {
       });
 
       console.log(`📹 Browser recording started: ${this.sessionData.sessionId}`);
-    }
-
-    // Start voice recording if enabled
-    if (this.options.voice_record && this.voiceRecorder) {
-      await this.voiceRecorder.startRecording(this.audioDir, this.sessionStartTime);
     }
 
     console.log(`📹 Session recording started: ${this.sessionData.sessionId}`);
