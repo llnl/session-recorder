@@ -6,7 +6,7 @@ export interface SessionData {
   sessionId: string;
   startTime: string;  // ISO 8601 UTC
   endTime?: string;   // ISO 8601 UTC
-  actions: RecordedAction[];
+  actions: (RecordedAction | VoiceTranscriptAction)[];
   resources?: string[];  // List of captured resource SHA1s
   network?: {
     file: string;  // Relative path to network log file: session.network
@@ -15,6 +15,15 @@ export interface SessionData {
   console?: {
     file: string;  // Relative path to console log file: session.console
     count: number; // Number of console entries logged
+  };
+  voiceRecording?: {
+    enabled: boolean;
+    audioFile?: string;   // Relative path to audio file: audio/recording.wav
+    transcriptFile?: string;  // Relative path to transcript: transcript.json
+    model?: string;       // Whisper model used
+    device?: string;      // Device used (cuda/mps/cpu)
+    language?: string;    // Detected language
+    duration?: number;    // Total audio duration in seconds
   };
 }
 
@@ -26,6 +35,26 @@ export interface RecordedAction {
   before: SnapshotWithScreenshot;
   action: ActionDetails;
   after: SnapshotWithScreenshot;
+}
+
+export interface VoiceTranscriptAction {
+  id: string;
+  type: 'voice_transcript';
+  timestamp: string;  // ISO 8601 UTC - when segment started
+  transcript: {
+    text: string;
+    startTime: string;  // ISO 8601 UTC
+    endTime: string;    // ISO 8601 UTC
+    confidence: number; // 0-1 probability
+    words?: Array<{
+      word: string;
+      startTime: string;  // ISO 8601 UTC
+      endTime: string;    // ISO 8601 UTC
+      probability: number;
+    }>;
+  };
+  audioFile?: string;  // Relative path to audio segment
+  nearestSnapshotId?: string;
 }
 
 export interface SnapshotWithScreenshot {

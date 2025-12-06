@@ -7,6 +7,8 @@ import { useState, useMemo } from 'react';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useFilteredConsole } from '@/hooks/useFilteredConsole';
 import { useFilteredNetwork } from '@/hooks/useFilteredNetwork';
+import type { VoiceTranscriptAction } from '@/types/session';
+import { VoiceTranscriptViewer } from '@/components/VoiceTranscriptViewer';
 import './TabPanel.css';
 
 type ConsoleLevelFilter = 'all' | 'error' | 'warn' | 'info' | 'log' | 'debug';
@@ -18,6 +20,7 @@ export const TabPanel = () => {
   const setActiveTab = useSessionStore((state) => state.setActiveTab);
   const sessionData = useSessionStore((state) => state.sessionData);
   const selectedAction = useSessionStore((state) => state.getSelectedAction());
+  const audioBlob = useSessionStore((state) => state.audioBlob);
 
   const consoleLogs = useFilteredConsole();
   const networkRequests = useFilteredNetwork();
@@ -131,6 +134,15 @@ export const TabPanel = () => {
             <span className="tab-badge">{networkRequests.length}</span>
           )}
         </button>
+        {sessionData?.voiceRecording?.enabled && (
+          <button
+            type="button"
+            className={`tab-button ${activeTab === 'voice' ? 'active' : ''}`}
+            onClick={() => setActiveTab('voice')}
+          >
+            🎙️ Voice
+          </button>
+        )}
         <button
           type="button"
           className={`tab-button ${activeTab === 'metadata' ? 'active' : ''}`}
@@ -153,38 +165,92 @@ export const TabPanel = () => {
                   <span className="info-label">Timestamp:</span>
                   <span className="info-value">{formatTimestamp(selectedAction.timestamp)}</span>
                 </div>
-                {selectedAction.action.x !== undefined && (
-                  <div className="info-item">
-                    <span className="info-label">Coordinates:</span>
-                    <span className="info-value">({selectedAction.action.x}, {selectedAction.action.y})</span>
-                  </div>
+                
+                {selectedAction.type === 'voice_transcript' ? (
+                  // Voice transcript specific fields
+                  <>
+                    <div className="info-item">
+                      <span className="info-label">Transcript:</span>
+                      <span className="info-value">{(selectedAction as VoiceTranscriptAction).transcript.text}</span>
+                    </div>
+                    <div className="info-item">
+                      <span className="info-label">Duration:</span>
+                      <span className="info-value">
+                        {((new Date((selectedAction as VoiceTranscriptAction).transcript.endTime).getTime() -
+                          new Date((selectedAction as VoiceTranscriptAction).transcript.startTime).getTime()) / 1000).toFixed(1)}s
+                      </span>
+                    </div>
+                    <div className="info-item">
+                      <span className="info-label">Confidence:</span>
+                      <span className="info-value">
+                        {((selectedAction as VoiceTranscriptAction).transcript.confidence * 100).toFixed(0)}%
+                      </span>
+                    </div>
+                    {(selectedAction as VoiceTranscriptAction).transcript.words && (
+                      <div className="info-item">
+                        <span className="info-label">Word Count:</span>
+                        <span className="info-value">
+                          {(selectedAction as VoiceTranscriptAction).transcript.words!.length}
+                        </span>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  // Browser action specific fields
+                  <>
+                    {selectedAction.action.x !== undefined && (
+                      <div className="info-item">
+                        <span className="info-label">Coordinates:</span>
+                        <span className="info-value">({selectedAction.action.x}, {selectedAction.action.y})</span>
+                      </div>
+                    )}
+                    {selectedAction.action.value && (
+                      <div className="info-item">
+                        <span className="info-label">Value:</span>
+                        <span className="info-value">{selectedAction.action.value}</span>
+                      </div>
+                    )}
+                    {selectedAction.action.key && (
+                      <div className="info-item">
+                        <span className="info-label">Key:</span>
+                        <span className="info-value">{selectedAction.action.key}</span>
+                      </div>
+                    )}
+                    <div className="info-item">
+                      <span className="info-label">URL:</span>
+                      <span className="info-value">{selectedAction.before.url}</span>
+                    </div>
+                    <div className="info-item">
+                      <span className="info-label">Viewport:</span>
+                      <span className="info-value">
+                        {selectedAction.before.viewport.width} x {selectedAction.before.viewport.height}
+                      </span>
+                    </div>
+                  </>
                 )}
-                {selectedAction.action.value && (
-                  <div className="info-item">
-                    <span className="info-label">Value:</span>
-                    <span className="info-value">{selectedAction.action.value}</span>
-                  </div>
-                )}
-                {selectedAction.action.key && (
-                  <div className="info-item">
-                    <span className="info-label">Key:</span>
-                    <span className="info-value">{selectedAction.action.key}</span>
-                  </div>
-                )}
-                <div className="info-item">
-                  <span className="info-label">URL:</span>
-                  <span className="info-value">{selectedAction.before.url}</span>
-                </div>
-                <div className="info-item">
-                  <span className="info-label">Viewport:</span>
-                  <span className="info-value">
-                    {selectedAction.before.viewport.width} x {selectedAction.before.viewport.height}
-                  </span>
-                </div>
               </div>
             ) : (
               <div className="tab-empty">
                 <p>Select an action to view details</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'voice' && (
+          <div className="tab-content">
+            {selectedAction && selectedAction.type === 'voice_transcript' ? (
+              <VoiceTranscriptViewer
+                voiceAction={selectedAction as VoiceTranscriptAction}
+                audioUrl={audioBlob ? URL.createObjectURL(audioBlob) : null}
+              />
+            ) : (
+              <div className="tab-empty">
+                <p>
+                  {sessionData?.voiceRecording?.enabled
+                    ? 'Select a voice transcript action to view details'
+                    : 'Voice recording not enabled for this session'}
+                </p>
               </div>
             )}
           </div>

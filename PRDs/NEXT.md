@@ -1,35 +1,108 @@
 # Implementation Strategy
 
-## 🆕 Latest Updates (2025-12-05)
+## 🆕 Latest Updates (2025-12-06)
+
+**✅ ARCHITECTURAL IMPROVEMENT - Python Unified Recording:**
+
+- ✅ **VoiceRecorder Architecture Refactored** - Single Python process for recording + transcription
+  - **Previous:** TypeScript recorded audio, spawned Python for transcription (2 processes)
+  - **New:** Python handles BOTH recording and transcription (1 process)
+  - Simplified architecture with cleaner IPC
+  - Single point of failure instead of split processes
+  - TypeScript spawns `record_and_transcribe.py`, sends SIGINT to stop
+  - Python streams status messages, outputs final transcription on exit
+  - Dependencies: `sounddevice`, `soundfile`, `openai-whisper`, `torch`, `numpy`
+
+**Files Modified:**
+- `src/voice/VoiceRecorder.ts` - Refactored to spawn single Python process
+- `src/voice/record_and_transcribe.py` - NEW: Unified recording + transcription
+- `src/node/SessionRecorder.ts` - Updated to use new VoiceRecorder API
+- `README.md` - Added Python dependency installation instructions
+- `PRDs/PRD-4.md` - Documented architectural change with code examples
+
+**Build Status:** ✅ Compiles successfully (`npm run build`)
+
+---
+
+**✅ INITIATIVE 2 (CORE) COMPLETE - Viewer Voice Integration:**
+
+- ✅ **PRD-4.md Initiative 2** - Viewer Voice Integration (14 hours) - **COMPLETE**
+  - Timeline green voice bars with hover tooltips showing transcript previews
+  - Action list intermixes voice transcripts chronologically with browser actions
+  - VoiceTranscriptViewer component with word-level highlighting + audio playback
+  - Voice tab in TabPanel (auto-shows when voice recording enabled)
+  - SessionLoader loads audio files from zip/directory
+  - Comprehensive voice-related CSS styling
+
+**Files Created:**
+- `viewer/src/components/VoiceTranscriptViewer/VoiceTranscriptViewer.tsx`
+- `viewer/src/components/VoiceTranscriptViewer/VoiceTranscriptViewer.css`
+- `viewer/src/components/VoiceTranscriptViewer/index.ts`
+
+**Files Modified:**
+- `viewer/src/types/session.ts` - Added `VoiceTranscriptAction` type
+- `viewer/src/stores/sessionStore.ts` - Added voice tab and audioBlob state
+- `viewer/src/components/Timeline/Timeline.tsx` - Voice segment indicators
+- `viewer/src/components/Timeline/Timeline.css` - Voice tooltip styling
+- `viewer/src/components/ActionList/ActionList.tsx` - Voice entry rendering
+- `viewer/src/components/ActionList/ActionList.css` - Voice item styling
+- `viewer/src/components/TabPanel/TabPanel.tsx` - Voice tab integration
+- `viewer/src/components/SnapshotViewer/SnapshotViewer.tsx` - Voice action guards
+- `viewer/src/utils/zipHandler.ts` - Audio file loading from zip
+- `viewer/src/utils/sessionLoader.ts` - Audio file loading from directory
+- `viewer/src/hooks/useFilteredActions.ts` - Voice action support
+
+**Next Steps:**
+- 🎯 **Optional:** Initiative 3 - Desktop Application (20 hours)
+- 🎯 **Optional:** Initiative 4 - MCP Server (12 hours)
+
+---
+
+**✅ INITIATIVE 1 (CORE) COMPLETE - Voice Recording Backend:**
+
+- ✅ **PRD-4.md Initiative 1** - Voice Recording in SessionRecorder (16 hours) - **COMPLETE**
+  - `browser_record` + `voice_record` boolean flags implemented
+  - Word-level timestamps with millisecond precision
+  - **Python Whisper (official OpenAI) for maximum accuracy**
+  - Auto-detects GPU (CUDA/MPS) with CPU fallback - works on any computer
+  - Optional: 10x speedup with GPU, ~1-2 min CPU for 10-min audio
+  - **NEW:** Unified Python process for recording + transcription (simplified architecture)
+  - Automatic chronological merging of voice and browser actions
+  - Test suite: `test/voice-test.ts`
+
+**Files Created:**
+- `src/voice/VoiceRecorder.ts` - TypeScript process manager
+- `src/voice/record_and_transcribe.py` - Python unified recorder + transcriber
+- `src/voice/whisper_transcribe.py` - Standalone transcription script (optional)
+- `test/voice-test.ts` - Voice recording test suite
+
+**Files Modified:**
+- `src/node/SessionRecorder.ts` - Added voice recording support
+- `src/node/types.ts` - Added `VoiceTranscriptAction` type
+- `package.json` - Added `test:voice` script
+- `test/simple-test.ts`, `test/spa-test.ts` - Type guards for voice actions
+
+**Next Steps:**
+- 🎯 **Optional:** Initiative 3 - Desktop Application (20 hours)
+- 🎯 **Optional:** Initiative 4 - MCP Server (12 hours)
+
+---
 
 **New Production Readiness & Voice Recording Documentation:**
 
 - 🚀 [PRD-4.md](PRD-4.md) - Production Polish & Voice Recording Integration
-  - **Initiative 1 (Core):** SessionRecorder voice integration with Python child process (38h)
-    - `browser_record` + `voice_record` boolean flags
-    - Word-level timestamps with millisecond precision
-    - **Python Whisper (official OpenAI) for maximum accuracy**
-    - Auto-detects GPU (CUDA/MPS) with CPU fallback - works on any computer
-    - Optional: 10x speedup with GPU, ~1-2 min CPU for 10-min audio
-    - Python child process spawned from TypeScript SessionRecorder
-  - **Initiative 2 (Core):** Viewer voice integration (included in 38h)
-    - Timeline green voice bars with hover tooltips
-    - Action list intermixing voice + browser chronologically
-    - VoiceTranscriptViewer with word highlighting + audio playback
+  - **✅ Initiative 1 (Core) COMPLETE:** SessionRecorder voice integration (16h)
+  - **✅ Initiative 2 (Core) COMPLETE:** Viewer voice integration (14 hours)
   - **Initiative 3 (Future):** Desktop Application for non-developers (20h)
-    - Electron-based one-click recording
-    - Auto zip creation + viewer link
   - **Initiative 4 (Future):** MCP Server for AI assistants (12h)
-    - Claude Code, Cline, Continue.dev integration
-    - 5 MCP tools for recording control
 - 📋 [TASKS-4.md](TASKS-4.md) - Production Implementation Tasks
-  - Phase 1: Voice Recording Backend (16 hours)
-  - Phase 2: Viewer Integration (14 hours)
-  - Phase 3: Testing & Documentation for Phases 1-2 (4 hours)
+  - ✅ Phase 1: Voice Recording Backend (16 hours) - **COMPLETE**
+  - ✅ Phase 2: Viewer Integration (14 hours) - **COMPLETE**
+  - Phase 3: Testing & Documentation for Phases 1-2 (4 hours) - Optional
   - Phase 4: MCP Server (12 hours) - Optional Future
   - Phase 5: Desktop Application (20 hours) - Optional Future
   - Phase 6: Final Testing & Documentation (12 hours) - Optional Future
-  - **Total: 78 hours (38h core + 40h optional future)**
+  - **Total: 78 hours (30h complete, 48h optional future)**
 
 **Previous Architecture Updates:**
 
@@ -269,6 +342,7 @@ Sprint 6 is broken into 6 phases.
 
 #### Phase 6.1: Voice Recording Backend (16h) → [TASKS-4.md Phase 1](TASKS-4.md#phase-1-voice-recording-backend-16-hours)
 
+- Python parallel process
 - Audio capture enhancements
 - Whisper API integration
 - UTC timestamp alignment

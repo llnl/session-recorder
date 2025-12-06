@@ -1,0 +1,1 @@
+export { VoiceTranscriptViewer } from './VoiceTranscriptViewer';

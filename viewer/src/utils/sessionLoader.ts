@@ -85,12 +85,16 @@ export async function loadSessionFromFiles(files: FileList): Promise<LoadedSessi
 
   // Load resources (snapshot HTML, screenshots, etc.)
   const resources = new Map<string, Blob>();
+  let audioBlob: Blob | undefined;
+
   Array.from(files).forEach(file => {
     // Store snapshots, screenshots, and resources by relative path
     if (file.name.startsWith('snapshots/') ||
         file.name.startsWith('screenshots/') ||
         file.name.startsWith('resources/')) {
       resources.set(file.name, file);
+    } else if (file.name.startsWith('audio/') && file.name.endsWith('.wav')) {
+      audioBlob = file;
     }
   });
 
@@ -99,6 +103,7 @@ export async function loadSessionFromFiles(files: FileList): Promise<LoadedSessi
     networkEntries,
     consoleEntries,
     resources,
+    audioBlob,
   };
 }
 

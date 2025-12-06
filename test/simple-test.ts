@@ -90,6 +90,9 @@ async function main() {
     let allChecksPassed = true;
 
     sessionData.actions.forEach((action, index) => {
+      // Skip voice transcript actions in this test
+      if (action.type === 'voice_transcript') return;
+
       console.log(`Action ${index + 1}: ${action.type}`);
 
       // Read HTML snapshot files

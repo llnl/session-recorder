@@ -53,6 +53,12 @@ export const SnapshotViewer = () => {
   useEffect(() => {
     if (!selectedAction || !iframeRef.current) return;
 
+    // Voice actions don't have snapshots
+    if (selectedAction.type === 'voice_transcript') {
+      setError('Voice transcript actions do not have snapshots');
+      return;
+    }
+
     const snapshot = currentView === 'before' ? selectedAction.before : selectedAction.after;
     const htmlPath = snapshot.html;
 
@@ -161,6 +167,16 @@ export const SnapshotViewer = () => {
       <div className="snapshot-viewer">
         <div className="snapshot-viewer-empty">
           <p>Select an action to view snapshots</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (selectedAction.type === 'voice_transcript') {
+    return (
+      <div className="snapshot-viewer">
+        <div className="snapshot-viewer-empty">
+          <p>Voice transcript actions do not have snapshots</p>
         </div>
       </div>
     );

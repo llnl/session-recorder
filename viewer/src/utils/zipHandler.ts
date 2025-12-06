@@ -49,19 +49,27 @@ export async function importSessionFromZip(zipFile: File): Promise<LoadedSession
 
     // Load all resources (snapshots, screenshots, etc.)
     const resources = new Map<string, Blob>();
+    let audioBlob: Blob | undefined;
     const filePromises: Promise<void>[] = [];
 
     zipData.forEach((relativePath, file) => {
-      if (!file.dir && (
-        relativePath.startsWith('snapshots/') ||
-        relativePath.startsWith('screenshots/') ||
-        relativePath.startsWith('resources/')
-      )) {
-        filePromises.push(
-          file.async('blob').then((blob) => {
-            resources.set(relativePath, blob);
-          })
-        );
+      if (!file.dir) {
+        if (relativePath.startsWith('snapshots/') ||
+            relativePath.startsWith('screenshots/') ||
+            relativePath.startsWith('resources/')) {
+          filePromises.push(
+            file.async('blob').then((blob) => {
+              resources.set(relativePath, blob);
+            })
+          );
+        } else if (relativePath.startsWith('audio/') && relativePath.endsWith('.wav')) {
+          // Load audio file for voice recording
+          filePromises.push(
+            file.async('blob').then((blob) => {
+              audioBlob = blob;
+            })
+          );
+        }
       }
     });
 
@@ -73,6 +81,7 @@ export async function importSessionFromZip(zipFile: File): Promise<LoadedSession
       networkEntries,
       consoleEntries,
       resources,
+      audioBlob,
     };
   } catch (error) {
     if (error instanceof Error) {

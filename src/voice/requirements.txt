@@ -1,0 +1,23 @@
+# Voice Recording and Transcription Dependencies
+# Install with: pip install -r requirements.txt
+
+# Audio recording
+sounddevice>=0.4.6
+soundfile>=0.12.1
+
+# Speech-to-text transcription
+openai-whisper>=20231117
+
+# Deep learning framework (required by Whisper)
+torch>=2.0.0
+
+# Numerical computing
+numpy>=1.24.0
+
+# Optional: GPU acceleration
+# For NVIDIA GPUs (CUDA):
+# Install torch with CUDA support instead:
+# pip install torch --index-url https://download.pytorch.org/whl/cu118
+
+# For Apple Silicon (MPS):
+# Default PyTorch installation already supports MPS on macOS

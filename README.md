@@ -32,6 +32,29 @@ npm install
 npm run build
 ```
 
+### Voice Recording Setup (Optional)
+
+If you want to enable voice recording and transcription:
+
+### Quick Install
+
+```bash
+cd src/voice
+python -m venv .venv
+.venv\Scripts\activate  # Windows
+# or
+source .venv/bin/activate  # macOS/Linux
+
+pip install -r requirements.txt
+```
+
+**Note**: Voice recording requires Python 3.8+ and the packages listed above. The recorder uses:
+- `sounddevice` and `soundfile` for audio recording
+- OpenAI Whisper for speech-to-text transcription
+- `torch` for running the Whisper model (supports CUDA/MPS/CPU)
+
+To enable voice recording, set `voice_record: true` in SessionRecorder options.
+
 ## Quick Start
 
 ```typescript

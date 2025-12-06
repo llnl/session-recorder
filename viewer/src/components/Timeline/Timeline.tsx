@@ -5,6 +5,7 @@
 
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { useSessionStore } from '@/stores/sessionStore';
+import type { VoiceTranscriptAction } from '@/types/session';
 import './Timeline.css';
 
 const PIXELS_PER_SECOND = 50;
@@ -24,6 +25,8 @@ export const Timeline = () => {
   const [dragEnd, setDragEnd] = useState<number | null>(null);
   const [hoveredActionIndex, setHoveredActionIndex] = useState<number | null>(null);
   const [hoverPosition, setHoverPosition] = useState<{ x: number; y: number } | null>(null);
+  const [hoveredVoiceAction, setHoveredVoiceAction] = useState<VoiceTranscriptAction | null>(null);
+  const [voiceHoverPosition, setVoiceHoverPosition] = useState<{ x: number; y: number } | null>(null);
 
   // Calculate timeline duration
   const getDuration = useCallback(() => {
@@ -93,6 +96,8 @@ export const Timeline = () => {
 
     // Draw action indicators
     sessionData.actions.forEach((action, index) => {
+      if (action.type === 'voice_transcript') return; // Skip voice actions, rendered separately
+      
       const x = timestampToX(action.timestamp);
 
       // Draw vertical line for action
@@ -108,6 +113,45 @@ export const Timeline = () => {
       ctx.beginPath();
       ctx.arc(x, 40, index === selectedActionIndex ? 4 : 2, 0, Math.PI * 2);
       ctx.fill();
+    });
+
+    // Draw voice transcript segments
+    const voiceActions = sessionData.actions.filter(
+      (action): action is VoiceTranscriptAction => action.type === 'voice_transcript'
+    );
+
+    voiceActions.forEach((voiceAction) => {
+      const startTime = new Date(voiceAction.transcript.startTime).getTime();
+      const endTime = new Date(voiceAction.transcript.endTime).getTime();
+      const sessionStart = new Date(sessionData.startTime).getTime();
+
+      const startX = ((startTime - sessionStart) / 1000) * PIXELS_PER_SECOND;
+      const endX = ((endTime - sessionStart) / 1000) * PIXELS_PER_SECOND;
+      const width = endX - startX;
+
+      // Draw green bar for voice segment
+      ctx.fillStyle = 'rgba(76, 175, 80, 0.6)';
+      ctx.strokeStyle = '#4CAF50';
+      ctx.lineWidth = 1;
+
+      // Rounded rectangle
+      const radius = 3;
+      const y = 5;
+      const height = 15;
+
+      ctx.beginPath();
+      ctx.moveTo(startX + radius, y);
+      ctx.lineTo(startX + width - radius, y);
+      ctx.quadraticCurveTo(startX + width, y, startX + width, y + radius);
+      ctx.lineTo(startX + width, y + height - radius);
+      ctx.quadraticCurveTo(startX + width, y + height, startX + width - radius, y + height);
+      ctx.lineTo(startX + radius, y + height);
+      ctx.quadraticCurveTo(startX, y + height, startX, y + height - radius);
+      ctx.lineTo(startX, y + radius);
+      ctx.quadraticCurveTo(startX, y, startX + radius, y);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
     });
 
     // Draw selection rectangle if dragging or selection exists
@@ -153,8 +197,36 @@ export const Timeline = () => {
     if (isDragging) {
       setDragEnd(x);
     } else {
-      // Find hovered action
+      // Check if hovering over voice segment
+      const voiceActions = sessionData.actions.filter(
+        (action): action is VoiceTranscriptAction => action.type === 'voice_transcript'
+      );
+
+      let foundVoice = false;
+      for (const voiceAction of voiceActions) {
+        const startTime = new Date(voiceAction.transcript.startTime).getTime();
+        const endTime = new Date(voiceAction.transcript.endTime).getTime();
+        const sessionStart = new Date(sessionData.startTime).getTime();
+
+        const startX = ((startTime - sessionStart) / 1000) * PIXELS_PER_SECOND;
+        const endX = ((endTime - sessionStart) / 1000) * PIXELS_PER_SECOND;
+
+        if (x >= startX && x <= endX && e.clientY - rect.top < 25) {
+          setHoveredVoiceAction(voiceAction);
+          setVoiceHoverPosition({ x: e.clientX, y: e.clientY });
+          foundVoice = true;
+          break;
+        }
+      }
+
+      if (!foundVoice) {
+        setHoveredVoiceAction(null);
+        setVoiceHoverPosition(null);
+      }
+
+      // Find hovered action (browser actions only)
       const hoveredIndex = sessionData.actions.findIndex((action) => {
+        if (action.type === 'voice_transcript') return false;
         const actionX = timestampToX(action.timestamp);
         return Math.abs(actionX - x) < 5;
       });
@@ -170,22 +242,51 @@ export const Timeline = () => {
 
     // If selection is too small (< 10px), treat as click
     if (maxX - minX < 10) {
-      // Find closest action
       if (sessionData) {
-        let closestIndex = -1;
-        let closestDistance = Infinity;
+        // Check if clicking on voice segment
+        const voiceActions = sessionData.actions.filter(
+          (action): action is VoiceTranscriptAction => action.type === 'voice_transcript'
+        );
 
-        sessionData.actions.forEach((action, index) => {
-          const actionX = timestampToX(action.timestamp);
-          const distance = Math.abs(actionX - dragStart);
-          if (distance < closestDistance && distance < 10) {
-            closestDistance = distance;
-            closestIndex = index;
+        let clickedVoice = false;
+        for (let i = 0; i < voiceActions.length; i++) {
+          const voiceAction = voiceActions[i];
+          const startTime = new Date(voiceAction.transcript.startTime).getTime();
+          const endTime = new Date(voiceAction.transcript.endTime).getTime();
+          const sessionStart = new Date(sessionData.startTime).getTime();
+
+          const startX = ((startTime - sessionStart) / 1000) * PIXELS_PER_SECOND;
+          const endX = ((endTime - sessionStart) / 1000) * PIXELS_PER_SECOND;
+
+          if (dragStart >= startX && dragStart <= endX) {
+            // Find the index in the full actions array
+            const voiceIndex = sessionData.actions.findIndex(a => a.id === voiceAction.id);
+            if (voiceIndex !== -1) {
+              selectAction(voiceIndex);
+              clickedVoice = true;
+              break;
+            }
           }
-        });
+        }
 
-        if (closestIndex !== -1) {
-          selectAction(closestIndex);
+        // If not clicked on voice, find closest browser action
+        if (!clickedVoice) {
+          let closestIndex = -1;
+          let closestDistance = Infinity;
+
+          sessionData.actions.forEach((action, index) => {
+            if (action.type === 'voice_transcript') return;
+            const actionX = timestampToX(action.timestamp);
+            const distance = Math.abs(actionX - dragStart);
+            if (distance < closestDistance && distance < 10) {
+              closestDistance = distance;
+              closestIndex = index;
+            }
+          });
+
+          if (closestIndex !== -1) {
+            selectAction(closestIndex);
+          }
         }
       }
       setTimelineSelection(null);
@@ -204,6 +305,8 @@ export const Timeline = () => {
   const handleMouseLeave = () => {
     setHoveredActionIndex(null);
     setHoverPosition(null);
+    setHoveredVoiceAction(null);
+    setVoiceHoverPosition(null);
   };
 
   const handleThumbnailMouseEnter = (e: React.MouseEvent, index: number) => {
@@ -259,6 +362,9 @@ export const Timeline = () => {
 
         <div className="timeline-thumbnails" style={{ width: timelineWidth }}>
           {sessionData.actions.map((action, index) => {
+            // Skip voice actions (no thumbnails)
+            if (action.type === 'voice_transcript') return null;
+
             const x = timestampToX(action.timestamp);
             const screenshotPath = action.before.screenshot;
             const screenshotBlob = resources.get(screenshotPath);
@@ -295,6 +401,7 @@ export const Timeline = () => {
             <div className="timeline-hover-zoom-preview">
               {(() => {
                 const action = sessionData.actions[hoveredActionIndex];
+                if (action.type === 'voice_transcript') return null;
                 const screenshotPath = action.before.screenshot;
                 const screenshotBlob = resources.get(screenshotPath);
                 const screenshotUrl = screenshotBlob ? URL.createObjectURL(screenshotBlob) : null;
@@ -313,11 +420,38 @@ export const Timeline = () => {
                 {((new Date(sessionData.actions[hoveredActionIndex].timestamp).getTime() -
                    new Date(sessionData.startTime).getTime()) / 1000).toFixed(2)}s
               </div>
-              {sessionData.actions[hoveredActionIndex].before.url && (
+              {sessionData.actions[hoveredActionIndex].type !== 'voice_transcript' && 
+               sessionData.actions[hoveredActionIndex].before?.url && (
                 <div className="timeline-hover-zoom-tooltip-target">
                   {sessionData.actions[hoveredActionIndex].before.url}
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* Voice Segment Hover Tooltip */}
+        {hoveredVoiceAction && voiceHoverPosition && (
+          <div
+            className="timeline-voice-tooltip"
+            style={{
+              left: `${voiceHoverPosition.x}px`,
+              top: `${voiceHoverPosition.y + 10}px`,
+            }}
+          >
+            <div className="timeline-voice-tooltip-time">
+              {((new Date(hoveredVoiceAction.transcript.startTime).getTime() -
+                 new Date(sessionData.startTime).getTime()) / 1000).toFixed(2)}s
+            </div>
+            <div className="timeline-voice-tooltip-text">
+              {hoveredVoiceAction.transcript.text.slice(0, 100)}
+              {hoveredVoiceAction.transcript.text.length > 100 ? '...' : ''}
+            </div>
+            <div className="timeline-voice-tooltip-duration">
+              Duration: {((new Date(hoveredVoiceAction.transcript.endTime).getTime() -
+                          new Date(hoveredVoiceAction.transcript.startTime).getTime()) / 1000).toFixed(1)}s
+              {' | '}
+              Confidence: {(hoveredVoiceAction.transcript.confidence * 100).toFixed(0)}%
             </div>
           </div>
         )}

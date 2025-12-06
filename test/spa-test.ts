@@ -42,7 +42,7 @@ async function main() {
 
   // 2. Create and start recorder
   console.log('Creating session recorder...');
-  const recorder = new SessionRecorder(`spa-test-${Date.now()}`);
+  const recorder = new SessionRecorder(`spa-test-${Date.now()}`, { browser_record: true, voice_record: true });
   await recorder.start(page);
 
   // 3. Navigate to Angular Material site
@@ -93,9 +93,14 @@ async function main() {
     console.log('===================\n');
 
     sessionData.actions.forEach((action, index) => {
-      console.log(`${index + 1}. ${action.type} at (${action.action.x}, ${action.action.y})`);
-      console.log(`   URL: ${action.after.url}`);
-      console.log(`   Snapshots: ${action.before.html} → ${action.after.html}`);
+      if (action.type === 'voice_transcript') {
+        console.log(`${index + 1}. voice_transcript: "${action.transcript.text.slice(0, 50)}..."`);
+        console.log(`   Duration: ${((new Date(action.transcript.endTime).getTime() - new Date(action.transcript.startTime).getTime()) / 1000).toFixed(1)}s`);
+      } else {
+        console.log(`${index + 1}. ${action.type} at (${action.action.x}, ${action.action.y})`);
+        console.log(`   URL: ${action.after.url}`);
+        console.log(`   Snapshots: ${action.before.html} → ${action.after.html}`);
+      }
       console.log('');
     });
   } else {

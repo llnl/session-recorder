@@ -7,8 +7,16 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
 import archiver from 'archiver';
-import { SessionData, RecordedAction, HarEntry, SnapshotterBlob, NetworkEntry, ConsoleEntry } from './types';
+import { SessionData, RecordedAction, HarEntry, SnapshotterBlob, NetworkEntry, ConsoleEntry, VoiceTranscriptAction } from './types';
 import { ResourceStorage } from '../storage/resourceStorage';
+import { VoiceRecorder } from '../voice/VoiceRecorder';
+
+export interface SessionRecorderOptions {
+  browser_record?: boolean;  // Capture DOM + actions (default: true)
+  voice_record?: boolean;    // Capture audio + transcript (default: false)
+  whisper_model?: 'tiny' | 'base' | 'small' | 'medium' | 'large';
+  whisper_device?: 'cuda' | 'mps' | 'cpu';
+}
 
 export class SessionRecorder {
   private page: Page | null = null;
@@ -25,8 +33,26 @@ export class SessionRecorder {
   private consoleLogCount = 0;
   private sessionStartTime: number = 0;
   private resourceStorage: ResourceStorage; // SHA1-based resource deduplication
+  private voiceRecorder: VoiceRecorder | null = null;
+  private audioDir: string;
+  private options: SessionRecorderOptions;
 
-  constructor(sessionId?: string) {
+  constructor(sessionId?: string, options: SessionRecorderOptions = {}) {
+    // Validate options - at least one must be true
+    const {browser_record: browserRecord, voice_record: voiceRecord} = options;
+    console.log('browser_record:', browserRecord, 'voice_record:', voiceRecord);
+
+    if (!browserRecord && !voiceRecord) {
+      throw new Error('At least one of browser_record or voice_record must be true');
+    }
+
+    this.options = {
+      browser_record: browserRecord,
+      voice_record: voiceRecord,
+      whisper_model: options.whisper_model || 'base',
+      whisper_device: options.whisper_device
+    }
+
     this.sessionData = {
       sessionId: sessionId || `session-${Date.now()}`,
       startTime: new Date().toISOString(),
@@ -37,11 +63,26 @@ export class SessionRecorder {
     const outputDir = path.join(__dirname, '../../output');
     this.sessionDir = path.join(outputDir, this.sessionData.sessionId);
     this.resourcesDir = path.join(this.sessionDir, 'resources');
+    this.audioDir = path.join(this.sessionDir, 'audio');
     this.networkLogPath = path.join(this.sessionDir, 'session.network');
     this.consoleLogPath = path.join(this.sessionDir, 'session.console');
 
     // Initialize resource storage with SHA1 deduplication
     this.resourceStorage = new ResourceStorage(this.sessionData.sessionId);
+
+    // Initialize voice recorder if enabled
+    if (this.options.voice_record) {
+      this.voiceRecorder = new VoiceRecorder({
+        model: this.options.whisper_model,
+        device: this.options.whisper_device
+      });
+
+      this.sessionData.voiceRecording = {
+        enabled: true,
+        model: this.options.whisper_model,
+        device: this.options.whisper_device
+      };
+    }
   }
 
   async start(page: Page): Promise<void> {
@@ -54,44 +95,46 @@ export class SessionRecorder {
 
     // Create output directories
     fs.mkdirSync(this.sessionDir, { recursive: true });
-    fs.mkdirSync(path.join(this.sessionDir, 'screenshots'), { recursive: true });
-    fs.mkdirSync(path.join(this.sessionDir, 'snapshots'), { recursive: true });
-    fs.mkdirSync(this.resourcesDir, { recursive: true });
 
-    // Create network log file (JSON Lines format)
-    fs.writeFileSync(this.networkLogPath, '', 'utf-8');
+    if (this.options.browser_record) {
+      fs.mkdirSync(path.join(this.sessionDir, 'screenshots'), { recursive: true });
+      fs.mkdirSync(path.join(this.sessionDir, 'snapshots'), { recursive: true });
+      fs.mkdirSync(this.resourcesDir, { recursive: true });
 
-    // Create console log file (JSON Lines format)
-    fs.writeFileSync(this.consoleLogPath, '', 'utf-8');
+      // Create network log file (JSON Lines format)
+      fs.writeFileSync(this.networkLogPath, '', 'utf-8');
 
-    // Setup network resource capture (like HarTracer)
-    page.on('response', async (response) => {
-      await this._handleNetworkResponse(response);
-    });
+      // Create console log file (JSON Lines format)
+      fs.writeFileSync(this.consoleLogPath, '', 'utf-8');
 
-    // Read compiled browser-side code
-    // When compiled, __dirname is dist/src/node, so browser code is at ../browser
-    const browserDir = path.join(__dirname, '../browser');
+      // Setup network resource capture (like HarTracer)
+      page.on('response', async (response) => {
+        await this._handleNetworkResponse(response);
+      });
 
-    const snapshotCaptureCode = fs.readFileSync(
-      path.join(browserDir, 'snapshotCapture.js'),
-      'utf-8'
-    );
-    const actionListenerCode = fs.readFileSync(
-      path.join(browserDir, 'actionListener.js'),
-      'utf-8'
-    );
-    const consoleCaptureCode = fs.readFileSync(
-      path.join(browserDir, 'consoleCapture.js'),
-      'utf-8'
-    );
-    const injectedCode = fs.readFileSync(
-      path.join(browserDir, 'injected.js'),
-      'utf-8'
-    );
+      // Read compiled browser-side code
+      // When compiled, __dirname is dist/src/node, so browser code is at ../browser
+      const browserDir = path.join(__dirname, '../browser');
 
-    // Bundle and inject browser-side code (already compiled to JS, no type stripping needed)
-    const fullInjectedCode = `
+      const snapshotCaptureCode = fs.readFileSync(
+        path.join(browserDir, 'snapshotCapture.js'),
+        'utf-8'
+      );
+      const actionListenerCode = fs.readFileSync(
+        path.join(browserDir, 'actionListener.js'),
+        'utf-8'
+      );
+      const consoleCaptureCode = fs.readFileSync(
+        path.join(browserDir, 'consoleCapture.js'),
+        'utf-8'
+      );
+      const injectedCode = fs.readFileSync(
+        path.join(browserDir, 'injected.js'),
+        'utf-8'
+      );
+
+      // Bundle and inject browser-side code (already compiled to JS, no type stripping needed)
+      const fullInjectedCode = `
       console.log('🎬 Starting session recorder injection...');
 
       try {
@@ -128,26 +171,36 @@ export class SessionRecorder {
       }
     `;
 
-    await page.addInitScript(fullInjectedCode);
+      await page.addInitScript(fullInjectedCode);
 
-    // Expose callbacks for browser to call
-    await page.exposeFunction('__recordActionBefore', async (data: any) => {
-      this.actionQueue = this.actionQueue.then(() =>
-        this._handleActionBefore(data)
-      );
-    });
+      // Expose callbacks for browser to call
+      await page.exposeFunction('__recordActionBefore', async (data: any) => {
+        this.actionQueue = this.actionQueue.then(() =>
+          this._handleActionBefore(data)
+        );
+      });
 
-    await page.exposeFunction('__recordActionAfter', async (data: any) => {
-      this.actionQueue = this.actionQueue.then(() =>
-        this._handleActionAfter(data)
-      );
-    });
+      await page.exposeFunction('__recordActionAfter', async (data: any) => {
+        this.actionQueue = this.actionQueue.then(() =>
+          this._handleActionAfter(data)
+        );
+      });
 
-    await page.exposeFunction('__recordConsoleLog', async (entry: ConsoleEntry) => {
-      this._handleConsoleLog(entry);
-    });
+      await page.exposeFunction('__recordConsoleLog', async (entry: ConsoleEntry) => {
+        this._handleConsoleLog(entry);
+      });
+
+      console.log(`📹 Browser recording started: ${this.sessionData.sessionId}`);
+    }
+
+    // Start voice recording if enabled
+    if (this.options.voice_record && this.voiceRecorder) {
+      await this.voiceRecorder.startRecording(this.audioDir, this.sessionStartTime);
+    }
 
     console.log(`📹 Session recording started: ${this.sessionData.sessionId}`);
+    console.log(`   Browser: ${this.options.browser_record ? '✅' : '❌'}`);
+    console.log(`   Voice: ${this.options.voice_record ? '✅' : '❌'}`);
     console.log(`📁 Output: ${this.sessionDir}`);
   }
 
@@ -268,18 +321,59 @@ export class SessionRecorder {
     // Wait for any pending actions to complete
     await this.actionQueue;
 
+    // Stop voice recording if enabled
+    if (this.options.voice_record && this.voiceRecorder) {
+      console.log('🎙️  Stopping voice recording...');
+      const transcript = await this.voiceRecorder.stopRecording();
+
+      if (transcript && transcript.success) {
+        console.log(`✅ Transcription successful: ${transcript.text?.slice(0, 100)}...`);
+
+        // Save full transcript as JSON
+        const transcriptPath = path.join(this.sessionDir, 'transcript.json');
+        fs.writeFileSync(transcriptPath, JSON.stringify(transcript, null, 2), 'utf-8');
+
+        // Update session metadata
+        if (this.sessionData.voiceRecording) {
+          this.sessionData.voiceRecording.audioFile = 'audio/recording.wav';
+          this.sessionData.voiceRecording.transcriptFile = 'transcript.json';
+          this.sessionData.voiceRecording.language = transcript.language;
+          this.sessionData.voiceRecording.duration = transcript.duration;
+          this.sessionData.voiceRecording.device = transcript.device;
+        }
+
+        // Convert transcript to voice actions and merge with browser actions
+        const voiceActions = this.voiceRecorder.convertToVoiceActions(
+          transcript,
+          'audio/recording.wav',
+          (timestamp: string) => this._findNearestSnapshot(timestamp)
+        );
+
+        // Merge and sort all actions chronologically
+        const allActions = [...this.sessionData.actions, ...voiceActions];
+        allActions.sort((a, b) =>
+          new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+        );
+        this.sessionData.actions = allActions;
+
+        console.log(`🎙️  Added ${voiceActions.length} voice transcript segments`);
+      } else {
+        console.error(`❌ Transcription failed: ${transcript?.error || 'Unknown error'}`);
+      }
+    }
+
     this.sessionData.endTime = new Date().toISOString();
 
-    // Add network metadata
-    if (this.networkRequestCount > 0) {
+    // Add network metadata (only if browser recording enabled)
+    if (this.options.browser_record && this.networkRequestCount > 0) {
       this.sessionData.network = {
         file: 'session.network',
         count: this.networkRequestCount
       };
     }
 
-    // Add console metadata
-    if (this.consoleLogCount > 0) {
+    // Add console metadata (only if browser recording enabled)
+    if (this.options.browser_record && this.consoleLogCount > 0) {
       this.sessionData.console = {
         file: 'session.console',
         count: this.consoleLogCount
@@ -288,10 +382,10 @@ export class SessionRecorder {
 
     // Save session.json with resource storage data
     const sessionJsonPath = path.join(this.sessionDir, 'session.json');
-    const sessionDataWithResources = {
+    const sessionDataWithResources = this.options.browser_record ? {
       ...this.sessionData,
       resourceStorage: this.resourceStorage.exportToJSON()
-    };
+    } : this.sessionData;
 
     fs.writeFileSync(
       sessionJsonPath,
@@ -299,18 +393,56 @@ export class SessionRecorder {
       'utf-8'
     );
 
-    // Log resource storage statistics
-    const stats = this.resourceStorage.getStats();
+    // Log session statistics
     console.log(`🛑 Recording stopped`);
     console.log(`📊 Total actions: ${this.sessionData.actions.length}`);
-    console.log(`📦 Total resources: ${this.allResources.size}`);
-    console.log(`   - Unique resources: ${stats.resourceCount}`);
-    console.log(`   - Total size: ${(stats.totalSize / 1024).toFixed(2)} KB`);
-    console.log(`   - Deduplication: ${stats.deduplicationRatio.toFixed(1)}% savings`);
-    console.log(`🌐 Network requests: ${this.networkRequestCount}`);
+
+    if (this.options.browser_record) {
+      const stats = this.resourceStorage.getStats();
+      console.log(`📦 Total resources: ${this.allResources.size}`);
+      console.log(`   - Unique resources: ${stats.resourceCount}`);
+      console.log(`   - Total size: ${(stats.totalSize / 1024).toFixed(2)} KB`);
+      console.log(`   - Deduplication: ${stats.deduplicationRatio.toFixed(1)}% savings`);
+      console.log(`🌐 Network requests: ${this.networkRequestCount}`);
+    }
+
+    if (this.options.voice_record && this.sessionData.voiceRecording) {
+      const voiceCount = this.sessionData.actions.filter(
+        (a): a is VoiceTranscriptAction => a.type === 'voice_transcript'
+      ).length;
+      console.log(`🎙️  Voice segments: ${voiceCount}`);
+      console.log(`   - Language: ${this.sessionData.voiceRecording.language || 'unknown'}`);
+      console.log(`   - Duration: ${this.sessionData.voiceRecording.duration?.toFixed(1) || 0}s`);
+      console.log(`   - Model: ${this.sessionData.voiceRecording.model}`);
+      console.log(`   - Device: ${this.sessionData.voiceRecording.device}`);
+    }
+
     console.log(`📄 Session data: ${sessionJsonPath}`);
 
     this.page = null;
+  }
+
+  /**
+   * Find the nearest snapshot action to a given timestamp
+   */
+  private _findNearestSnapshot(timestamp: string): string | undefined {
+    const targetTime = new Date(timestamp).getTime();
+    let nearest: RecordedAction | undefined;
+    let minDiff = Infinity;
+
+    for (const action of this.sessionData.actions) {
+      if (action.type === 'voice_transcript') continue;
+
+      const actionTime = new Date(action.timestamp).getTime();
+      const diff = Math.abs(targetTime - actionTime);
+
+      if (diff < minDiff) {
+        minDiff = diff;
+        nearest = action as RecordedAction;
+      }
+    }
+
+    return nearest?.id;
   }
 
   /**
@@ -376,12 +508,22 @@ export class SessionRecorder {
         : null,
       totalActions: this.sessionData.actions.length,
       totalResources: this.allResources.size,
-      actions: this.sessionData.actions.map(a => ({
-        id: a.id,
-        type: a.type,
-        timestamp: a.timestamp,
-        url: a.after.url
-      }))
+      actions: this.sessionData.actions.map(a => {
+        if (a.type === 'voice_transcript') {
+          return {
+            id: a.id,
+            type: a.type,
+            timestamp: a.timestamp,
+            text: a.transcript.text.slice(0, 100)
+          };
+        }
+        return {
+          id: a.id,
+          type: a.type,
+          timestamp: a.timestamp,
+          url: a.after.url
+        };
+      })
     };
   }
 

@@ -9,6 +9,7 @@
     "test": "node dist/test/simple-test.js",
     "test:spa": "node dist/test/spa-test.js",
     "test:console": "node dist/test/console-test.js",
+    "test:voice": "node dist/test/voice-test.js",
     "viewer-old": "node dist/src/viewer/server.js",
     "viewer": "cd viewer && npm run dev"
   },

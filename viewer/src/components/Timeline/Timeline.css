@@ -218,3 +218,36 @@
     display: none;
   }
 }
+
+/* Voice segment hover tooltip */
+.timeline-voice-tooltip {
+  position: fixed;
+  background-color: rgba(76, 175, 80, 0.95);
+  color: white;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  max-width: 300px;
+  z-index: 1000;
+  pointer-events: none;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  transform: translateX(-50%);
+}
+
+.timeline-voice-tooltip-time {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.timeline-voice-tooltip-text {
+  font-style: italic;
+  margin-bottom: 0.25rem;
+  line-height: 1.3;
+}
+
+.timeline-voice-tooltip-duration {
+  font-size: 0.7rem;
+  opacity: 0.9;
+  border-top: 1px solid rgba(255, 255, 255, 0.3);
+  padding-top: 0.25rem;
+}

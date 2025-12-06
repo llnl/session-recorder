@@ -7,6 +7,7 @@ import { create } from 'zustand';
 import type {
   SessionData,
   RecordedAction,
+  VoiceTranscriptAction,
   NetworkEntry,
   ConsoleEntry,
   TimelineSelection,
@@ -28,11 +29,12 @@ export interface SessionStore {
   consoleEntries: ConsoleEntry[];
   resources: Map<string, Blob>;
   resourceStorage: Map<string, StoredResource>; // SHA1 -> resource
+  audioBlob: Blob | null; // Audio file for voice recording
 
   // UI state
   selectedActionIndex: number | null;
   timelineSelection: TimelineSelection | null;
-  activeTab: 'information' | 'console' | 'network' | 'metadata';
+  activeTab: 'information' | 'console' | 'network' | 'metadata' | 'voice';
   loading: boolean;
   error: string | null;
 
@@ -40,7 +42,7 @@ export interface SessionStore {
   loadSession: (data: LoadedSessionData) => void;
   selectAction: (index: number) => void;
   setTimelineSelection: (selection: TimelineSelection | null) => void;
-  setActiveTab: (tab: 'information' | 'console' | 'network' | 'metadata') => void;
+  setActiveTab: (tab: 'information' | 'console' | 'network' | 'metadata' | 'voice') => void;
   clearSession: () => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
@@ -49,10 +51,10 @@ export interface SessionStore {
   getResourceBySha1: (sha1: string) => StoredResource | null;
 
   // Derived selectors (computed values)
-  getFilteredActions: () => RecordedAction[];
+  getFilteredActions: () => (RecordedAction | VoiceTranscriptAction)[];
   getFilteredConsole: () => ConsoleEntry[];
   getFilteredNetwork: () => NetworkEntry[];
-  getSelectedAction: () => RecordedAction | null;
+  getSelectedAction: () => RecordedAction | VoiceTranscriptAction | null;
 }
 
 export const useSessionStore = create<SessionStore>((set, get) => ({
@@ -62,6 +64,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
   consoleEntries: [],
   resources: new Map(),
   resourceStorage: new Map(),
+  audioBlob: null,
   selectedActionIndex: null,
   timelineSelection: null,
   activeTab: 'information',
@@ -84,6 +87,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       consoleEntries: data.consoleEntries,
       resources: data.resources,
       resourceStorage,
+      audioBlob: data.audioBlob || null,
       selectedActionIndex: null,
       timelineSelection: null,
       error: null,
@@ -102,7 +106,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
     set({ timelineSelection: selection });
   },
 
-  setActiveTab: (tab: 'information' | 'console' | 'network' | 'metadata') => {
+  setActiveTab: (tab: 'information' | 'console' | 'network' | 'metadata' | 'voice') => {
     set({ activeTab: tab });
   },
 
