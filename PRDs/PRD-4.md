@@ -744,7 +744,31 @@ session-1733097000000.zip
 
 ## 9. Implementation Roadmap
 
-### Phase 1: Desktop Application (20 hours)
+### Phase 1: Voice Recording Backend (16 hours)
+- Audio capture enhancements (4h)
+- Whisper API integration (4h)
+- Timestamp alignment algorithm (3h)
+- Transcript storage (2h)
+- Testing (3h)
+
+### Phase 2: Viewer Integration (14 hours)
+- Timeline voice indicators (4h)
+- Action list voice entries (3h)
+- VoiceTranscriptViewer component (4h)
+- Audio playback controls (3h)
+
+### Phase 3: Testing & Documentation for Phases 1-2 (4 hours)
+- Voice recording tests (2h)
+- Viewer voice integration tests (1h)
+- Documentation (1h)
+
+### Phase 4: MCP Server (12 hours)
+- MCP server setup (3h)
+- Tool implementations (5h)
+- SessionRecorder integration (2h)
+- Error handling and status (2h)
+
+### Phase 5: Desktop Application (20 hours)
 - Electron app structure (4h)
 - Recording controls UI (3h)
 - Voice capture integration (5h)
@@ -752,31 +776,12 @@ session-1733097000000.zip
 - Zip creation and viewer link (2h)
 - Testing and polish (3h)
 
-### Phase 2: MCP Server (12 hours)
-- MCP server setup (3h)
-- Tool implementations (5h)
-- SessionRecorder integration (2h)
-- Error handling and status (2h)
-
-### Phase 3: Voice Recording Backend (16 hours)
-- Audio capture (4h)
-- Whisper API integration (4h)
-- Timestamp alignment algorithm (3h)
-- Transcript storage (2h)
-- Testing (3h)
-
-### Phase 4: Viewer Integration (14 hours)
-- Timeline voice indicators (4h)
-- Action list voice entries (3h)
-- VoiceTranscriptViewer component (4h)
-- Audio playback controls (3h)
-
-### Phase 5: Testing & Documentation (8 hours)
+### Phase 6: Final Testing & Documentation (12 hours)
 - End-to-end testing (4h)
-- User documentation (2h)
-- Deployment guides (2h)
+- User documentation (4h)
+- Deployment guides (4h)
 
-**Total Estimated Effort:** 70 hours
+**Total Estimated Effort:** 78 hours
 
 ---
 

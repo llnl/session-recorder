@@ -107,7 +107,7 @@ useEffect(() => {
   if (!snapshot || isLoading) return;
 
   setIsLoading(true);
-  
+
   // Defer loading slightly to prevent blocking main thread
   setTimeout(() => {
     setSnapshotHtml(snapshot.html);
@@ -194,7 +194,7 @@ const handleTimelineScrub = useCallback((clientX: number) => {
     const x = clientX - rect.left;
     const percentage = x / rect.width;
     const time = startTime + (duration * percentage);
-    
+
     onTimeChange(time);
   });
 }, [startTime, duration, onTimeChange]);
@@ -204,7 +204,7 @@ const redrawCanvas = useMemo(
   () => debounce(() => {
     const ctx = canvasRef.current?.getContext('2d');
     if (!ctx) return;
-    
+
     // Draw timeline...
   }, 16), // ~60fps
   [actions, viewport]
@@ -245,19 +245,19 @@ export default function SessionMetadata({ session }: Props) {
   return (
     <div className="session-metadata">
       <h2>Session Information</h2>
-      
+
       <section className="metadata-section">
         <h3>Overview</h3>
         <dl>
           <dt>Session ID:</dt>
           <dd>{session.sessionId}</dd>
-          
+
           <dt>Start Time:</dt>
           <dd>{formatDateTime(session.startTime)}</dd>
-          
+
           <dt>End Time:</dt>
           <dd>{formatDateTime(session.endTime)}</dd>
-          
+
           <dt>Duration:</dt>
           <dd>{formatDuration(stats.duration)}</dd>
         </dl>
@@ -268,7 +268,7 @@ export default function SessionMetadata({ session }: Props) {
         <dl>
           <dt>Total Actions:</dt>
           <dd>{stats.totalActions}</dd>
-          
+
           <dt>Actions by Type:</dt>
           <dd>
             <ul>
@@ -277,16 +277,16 @@ export default function SessionMetadata({ session }: Props) {
               ))}
             </ul>
           </dd>
-          
+
           <dt>Snapshots:</dt>
           <dd>{stats.totalSnapshots}</dd>
-          
+
           <dt>Screenshots:</dt>
           <dd>{stats.totalScreenshots}</dd>
-          
+
           <dt>Network Requests:</dt>
           <dd>{stats.totalNetworkRequests}</dd>
-          
+
           <dt>Console Logs:</dt>
           <dd>{stats.totalConsoleLogs}</dd>
 
@@ -304,13 +304,13 @@ export default function SessionMetadata({ session }: Props) {
         <dl>
           <dt>Average Snapshot Size:</dt>
           <dd>{formatBytes(performance.avgSnapshotSize)}</dd>
-          
+
           <dt>Average Screenshot Size:</dt>
           <dd>{formatBytes(performance.avgScreenshotSize)}</dd>
-          
+
           <dt>Total Zip Size:</dt>
           <dd>{formatBytes(performance.totalZipSize)}</dd>
-          
+
           <dt>Capture Rate:</dt>
           <dd>{performance.captureRate.toFixed(1)} actions/min</dd>
         </dl>
@@ -321,10 +321,10 @@ export default function SessionMetadata({ session }: Props) {
         <dl>
           <dt>Type:</dt>
           <dd>{session.browser?.type || 'Unknown'}</dd>
-          
+
           <dt>Version:</dt>
           <dd>{session.browser?.version || 'Unknown'}</dd>
-          
+
           <dt>User Agent:</dt>
           <dd className="user-agent">{session.browser?.userAgent || 'Unknown'}</dd>
         </dl>
@@ -335,7 +335,7 @@ export default function SessionMetadata({ session }: Props) {
 
 function calculateStatistics(session: SessionData) {
   const duration = (new Date(session.endTime).getTime() - new Date(session.startTime).getTime()) / 1000;
-  
+
   const actionsByType: Record<string, number> = {};
   session.actions.forEach(action => {
     actionsByType[action.type] = (actionsByType[action.type] || 0) + 1;
@@ -576,7 +576,7 @@ export function reconstructHTML(snapshot: FrameSnapshot): string {
     if (node.nodeType === Node.ELEMENT_NODE) {
       const attrs = node.attributes?.map(([k, v]) => `${k}="${escapeHtml(v)}"`).join(' ') || '';
       const children = node.childNodes?.map(buildElement).join('') || '';
-      
+
       return `<${node.nodeName}${attrs ? ' ' + attrs : ''}>${children}</${node.nodeName}>`;
     }
 
@@ -595,22 +595,22 @@ describe('NodeSnapshot', () => {
   it('converts HTML to NodeSnapshot and back', () => {
     const originalHTML = '<html><body><h1>Test</h1></body></html>';
     const doc = new DOMParser().parseFromString(originalHTML, 'text/html');
-    
+
     const snapshot = captureNodeSnapshot(doc);
     const reconstructed = reconstructHTML(snapshot);
-    
+
     expect(normalizeHTML(reconstructed)).toBe(normalizeHTML(originalHTML));
   });
 
   it('reduces file size compared to HTML string', () => {
     const doc = createLargeTestDocument();
-    
+
     const htmlString = doc.documentElement.outerHTML;
     const snapshot = captureNodeSnapshot(doc);
-    
+
     const htmlSize = new Blob([htmlString]).size;
     const snapshotSize = new Blob([JSON.stringify(snapshot)]).size;
-    
+
     // NodeSnapshot should be smaller or comparable
     expect(snapshotSize).toBeLessThanOrEqual(htmlSize * 1.2); // Allow 20% overhead
   });
@@ -642,7 +642,7 @@ export function generateIncrementalSnapshot(
   current: FrameSnapshot
 ): IncrementalSnapshot {
   const changes: IncrementalSnapshot['changes'] = [];
-  
+
   const prevMap = new Map(previous.nodes.map(n => [n.nodeIndex, n]));
   const currMap = new Map(current.nodes.map(n => [n.nodeIndex, n]));
 
@@ -659,7 +659,7 @@ export function generateIncrementalSnapshot(
   // Detect added and updated nodes
   for (const [index, node] of currMap) {
     const prevNode = prevMap.get(index);
-    
+
     if (!prevNode) {
       // New node
       changes.push({
@@ -691,17 +691,17 @@ function hasNodeChanged(prev: NodeSnapshot, curr: NodeSnapshot): boolean {
   if (prev.nodeType !== curr.nodeType) return true;
   if (prev.nodeName !== curr.nodeName) return true;
   if (prev.textContent !== curr.textContent) return true;
-  
+
   // Compare attributes
   const prevAttrs = JSON.stringify(prev.attributes || []);
   const currAttrs = JSON.stringify(curr.attributes || []);
   if (prevAttrs !== currAttrs) return true;
-  
+
   // Compare children
   const prevChildren = JSON.stringify(prev.childNodes || []);
   const currChildren = JSON.stringify(curr.childNodes || []);
   if (prevChildren !== currChildren) return true;
-  
+
   return false;
 }
 ```
@@ -715,7 +715,7 @@ export function applyIncrementalSnapshot(
   incremental: IncrementalSnapshot
 ): FrameSnapshot {
   const nodes = [...base.nodes];
-  
+
   for (const change of incremental.changes) {
     switch (change.type) {
       case 'add':
@@ -723,14 +723,14 @@ export function applyIncrementalSnapshot(
           nodes.push(change.node);
         }
         break;
-        
+
       case 'remove':
         const removeIdx = nodes.findIndex(n => n.nodeIndex === change.nodeIndex);
         if (removeIdx >= 0) {
           nodes.splice(removeIdx, 1);
         }
         break;
-        
+
       case 'update':
         const updateIdx = nodes.findIndex(n => n.nodeIndex === change.nodeIndex);
         if (updateIdx >= 0) {
@@ -759,19 +759,19 @@ export function applyIncrementalSnapshot(
 describe('Incremental Snapshots', () => {
   it('reduces file size by 40-60%', () => {
     const snapshots = generateSequentialSnapshots(10);
-    
+
     // Full snapshots
     const fullSize = snapshots.reduce((sum, s) => sum + JSON.stringify(s).length, 0);
-    
+
     // Incremental: 1 full + 9 incremental
     const incrementalSnapshots = [
       snapshots[0],
       ...snapshots.slice(1).map((s, i) => generateIncrementalSnapshot(snapshots[i], s))
     ];
     const incrementalSize = incrementalSnapshots.reduce((sum, s) => sum + JSON.stringify(s).length, 0);
-    
+
     const reduction = ((fullSize - incrementalSize) / fullSize) * 100;
-    
+
     console.log(`File size reduction: ${reduction.toFixed(1)}%`);
     expect(reduction).toBeGreaterThanOrEqual(40);
     expect(reduction).toBeLessThanOrEqual(60);

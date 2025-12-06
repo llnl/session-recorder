@@ -2,7 +2,7 @@
 
 **Related PRD:** [PRD-4.md](./PRD-4.md)
 **Status:** 🎯 PLANNED
-**Total Estimated Time:** 70 hours (across 5 phases)
+**Total Estimated Time:** 78 hours (across 6 phases)
 **Dependencies:** PRD-3 (Snapshot Architecture) should be complete first
 
 ---
@@ -376,6 +376,71 @@ export default function VoiceTranscriptViewer({ voiceAction, audioUrl, associate
 ### Task 2.4: Audio Playback Controls (3 hours)
 
 Covered in Task 2.3 above.
+
+---
+
+## Phase 3: Testing & Documentation for Phases 1-2 (4 hours)
+
+**Goal:** Ensure voice recording and viewer integration are production-ready
+**Deliverable:** Test suite and documentation for voice features
+
+### Task 3.1: Voice Recording Tests (2 hours)
+
+**Priority:** 🔴 HIGH
+
+#### Test Scenarios
+
+1. **Unit Tests** (1 hour)
+   - Audio capture initialization
+   - Whisper API integration
+   - Timestamp alignment accuracy
+   - Transcript storage format
+
+2. **Integration Tests** (1 hour)
+   - End-to-end voice recording flow
+   - Audio file creation and storage
+   - Transcript generation and alignment
+   - Error handling (no microphone, API failure)
+
+---
+
+### Task 3.2: Viewer Voice Integration Tests (1 hour)
+
+**Priority:** 🔴 HIGH
+
+#### Test Scenarios
+
+1. **Timeline Tests** (30 minutes)
+   - Voice segments render correctly
+   - Duration proportional to actual speech
+   - Click navigation to voice entries
+   - Hover tooltips display properly
+
+2. **Action List Tests** (30 minutes)
+   - Voice transcripts intermixed with browser actions
+   - Correct timestamp ordering
+   - Voice entry styling and icons
+   - Selection and playback controls
+
+---
+
+### Task 3.3: Documentation (1 hour)
+
+**Priority:** 🟡 MEDIUM
+
+#### Documents to Create
+
+1. **Voice Recording Guide** (30 minutes)
+   - How to enable voice recording
+   - Microphone setup and permissions
+   - Transcription quality tips
+   - Troubleshooting audio issues
+
+2. **Viewer Voice Features Guide** (30 minutes)
+   - Timeline voice indicators
+   - Audio playback controls
+   - Word-level navigation
+   - Transcript export options
 
 ---
 
@@ -1645,27 +1710,28 @@ new Notification({
 
 ## Summary
 
-### Total Estimated Effort: 70 hours
+### Total Estimated Effort: 78 hours
 
 | Phase | Hours | Priority |
 |-------|-------|----------|
-| Phase 1: Desktop Application | 20 | 🚨 HIGH |
-| Phase 2: MCP Server | 12 | 🔴 HIGH |
-| Phase 3: Voice Recording Backend | 16 | 🔴 HIGH |
-| Phase 4: Viewer Integration | 14 | 🔴 HIGH |
-| Phase 5: Testing & Documentation | 8 | 🟡 MEDIUM |
+| Phase 1: Voice Recording Backend | 16 | 🔴 HIGH |
+| Phase 2: Viewer Integration | 14 | 🔴 HIGH |
+| Phase 3: Testing & Documentation (Phases 1-2) | 4 | 🔴 HIGH |
+| Phase 4: MCP Server | 12 | 🔴 HIGH |
+| Phase 5: Desktop Application | 20 | 🚨 HIGH |
+| Phase 6: Final Testing & Documentation | 12 | 🟡 MEDIUM |
 
 ### Implementation Priority
 
-**Must Have (MVP - 50 hours):**
-1. Desktop Application (20h)
-2. MCP Server (12h)
-3. Voice Recording Backend (16h)
-4. Basic Viewer Integration (2h)
+**Must Have (Core Voice & Viewer - 34 hours):**
+1. Voice Recording Backend (16h)
+2. Viewer Integration (14h)
+3. Testing & Documentation for Phases 1-2 (4h)
 
-**Should Have (Full Production - 70 hours):**
-5. Complete Viewer Integration (14h)
-6. Testing & Documentation (8h)
+**Should Have (Full Production - 78 hours):**
+4. MCP Server (12h)
+5. Desktop Application (20h)
+6. Final Testing & Documentation (12h)
 
 ### Success Metrics
 

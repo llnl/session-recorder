@@ -89,7 +89,7 @@ interface SessionMetadata {
   startTime: string;
   endTime: string;
   duration: number; // seconds
-  
+
   // Statistics
   stats: {
     totalActions: number;
@@ -100,7 +100,7 @@ interface SessionMetadata {
     totalConsoleLogs: number;
     totalVoiceSegments?: number;
   };
-  
+
   // Performance metrics
   performance: {
     avgSnapshotSize: number; // bytes
@@ -108,7 +108,7 @@ interface SessionMetadata {
     totalZipSize: number; // bytes
     captureRate: number; // actions per minute
   };
-  
+
   // Browser info
   browser: {
     type: string; // "chromium" | "firefox" | "webkit"
