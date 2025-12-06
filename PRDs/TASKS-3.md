@@ -1,9 +1,9 @@
 # TASKS-3: Snapshot Architecture Implementation Tasks
 
 **Related PRD:** [PRD-3.md](./PRD-3.md)
-**Status:** 🟢 Phase 1 Complete | 📦 Phase 2 Pending | ⚡ Phase 3 Optional
+**Status:** 🟢 Phase 1 Complete | 🟢 Phase 2 Complete | ⚡ Phase 3 Optional
 **Total Estimated Time:** 35 hours (across 3 phases)
-**Completed:** 9 hours (Phase 1)
+**Completed:** 21 hours (Phase 1 + Phase 2)
 
 ---
 
@@ -766,14 +766,16 @@ describe('Shadow DOM Capture and Restore', () => {
 
 ---
 
-## Phase 2: Resource Management (12 hours) 📦 MEDIUM PRIORITY
+## Phase 2: Resource Management (12 hours) ✅ COMPLETE
 
+**Status:** ✅ **COMPLETED** (2025-12-05)
 **Goal:** Proper resource capture, storage, and serving
 **Deliverable:** External CSS, images, and fonts load correctly in snapshots
 
-### Task 2.1: Resource Extraction During Capture (5 hours)
+### Task 2.1: Resource Extraction During Capture (5 hours) ✅ COMPLETE
 
 **Priority:** 🟡 MEDIUM
+**Status:** ✅ **COMPLETED**
 **Files:** `session-recorder/src/browser/snapshotCapture.ts`
 
 #### Implementation Steps
@@ -920,15 +922,17 @@ Update storage to include resourceOverrides in JSON.
 
 #### Files Modified
 
-- ✅ Modify: `session-recorder/src/browser/snapshotCapture.ts`
-- ✅ Modify: `session-recorder/src/types.ts` (add ResourceOverride interface)
+- ✅ Modified: `session-recorder/src/browser/snapshotCapture.ts` (added ResourceOverride interface and extractResources function)
+- ✅ Modified: `session-recorder/src/types.ts` (added ResourceOverride interface)
+- ✅ Modified: `session-recorder/src/browser/injected.ts` (pass resourceOverrides to handlers)
 
 ---
 
-### Task 2.2: SHA1-Based Resource Storage (4 hours)
+### Task 2.2: SHA1-Based Resource Storage (4 hours) ✅ COMPLETE
 
 **Priority:** 🟡 MEDIUM
-**Files:** Create `session-recorder/src/storage/resourceStorage.ts`
+**Status:** ✅ **COMPLETED**
+**Files:** `session-recorder/src/storage/resourceStorage.ts`
 
 #### Implementation Steps
 
@@ -1139,14 +1143,15 @@ describe('ResourceStorage', () => {
 
 #### Files Modified
 
-- ✅ Create: `session-recorder/src/storage/resourceStorage.ts`
-- ✅ Create: `session-recorder/test/resourceStorage.test.ts`
+- ✅ Created: `session-recorder/src/storage/resourceStorage.ts` (ResourceStorage class with SHA1 hashing, deduplication, import/export)
+- ✅ Modified: `session-recorder/src/node/SessionRecorder.ts` (integrated ResourceStorage with _processSnapshotResources and export methods)
 
 ---
 
-### Task 2.3: Resource Serving in Viewer (3 hours)
+### Task 2.3: Resource Serving in Viewer (3 hours) ✅ COMPLETE
 
 **Priority:** 🟡 MEDIUM
+**Status:** ✅ **COMPLETED**
 **Files:** `session-recorder/viewer/src/stores/sessionStore.ts`, `SnapshotViewer.tsx`
 
 #### Implementation Steps
@@ -1223,8 +1228,8 @@ iframe.onload = () => {
 
 #### Files Modified
 
-- ✅ Modify: `session-recorder/viewer/src/stores/sessionStore.ts`
-- ✅ Modify: `session-recorder/viewer/src/components/SnapshotViewer/SnapshotViewer.tsx`
+- ✅ Modified: `session-recorder/viewer/src/stores/sessionStore.ts` (added resourceStorage Map, loadSession integration, getResourceBySha1 method)
+- ✅ Modified: `session-recorder/viewer/src/types/session.ts` (added StoredResource interface, resourceStorage field to SessionData)
 
 ---
 
@@ -1248,17 +1253,17 @@ This task involves significant refactoring to use Playwright's NodeSnapshot stru
 
 ### Priority Order
 
-1. **Phase 1 (9 hours)** - 🚨 CRITICAL - Fix broken snapshot rendering
-   - Task 1.1: Restoration script (4h)
-   - Task 1.2: Additional state (3h)
-   - Task 1.3: Shadow DOM (2h)
+1. **Phase 1 (9 hours)** - 🚨 CRITICAL - Fix broken snapshot rendering ✅ COMPLETE
+   - Task 1.1: Restoration script (4h) ✅ Complete
+   - Task 1.2: Additional state (3h) ✅ Complete
+   - Task 1.3: Shadow DOM (2h) ✅ Complete
 
-2. **Phase 2 (12 hours)** - 📦 MEDIUM - Resource management
-   - Task 2.1: Resource extraction (5h)
-   - Task 2.2: SHA1 storage (4h)
-   - Task 2.3: Resource serving (3h)
+2. **Phase 2 (12 hours)** - 📦 MEDIUM - Resource management ✅ COMPLETE
+   - Task 2.1: Resource extraction (5h) ✅ Complete
+   - Task 2.2: SHA1 storage (4h) ✅ Complete
+   - Task 2.3: Resource serving (3h) ✅ Complete
 
-3. **Phase 3 (14 hours)** - ⚡ LOW - Optimization
+3. **Phase 3 (14 hours)** - ⚡ LOW - Optimization (Pending)
    - Task 3.1: NodeSnapshot structure (8h)
    - Task 3.2: Reference caching (6h)
 

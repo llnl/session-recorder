@@ -50,7 +50,8 @@
         beforeHtml: beforeSnapshot.html,
         beforeTimestamp: beforeSnapshot.timestamp,
         beforeUrl: beforeSnapshot.url,
-        beforeViewport: beforeSnapshot.viewport
+        beforeViewport: beforeSnapshot.viewport,
+        beforeResourceOverrides: beforeSnapshot.resourceOverrides || []
       });
 
       // 4. Small delay for action to execute and DOM to update
@@ -64,7 +65,8 @@
         afterHtml: afterSnapshot.html,
         afterTimestamp: afterSnapshot.timestamp,
         afterUrl: afterSnapshot.url,
-        afterViewport: afterSnapshot.viewport
+        afterViewport: afterSnapshot.viewport,
+        afterResourceOverrides: afterSnapshot.resourceOverrides || []
       });
 
       // 7. Remove marker attribute

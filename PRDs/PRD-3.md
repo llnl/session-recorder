@@ -1,8 +1,8 @@
 # PRD-3: Session Recorder Snapshot Architecture Improvements
 
-**Version:** 3.1
+**Version:** 3.2
 **Date:** 2025-12-05
-**Status:** 🟢 Phase 1 Complete | 📦 Phase 2 Pending | ⚡ Phase 3 Optional
+**Status:** 🟢 Phase 1 Complete | 🟢 Phase 2 Complete | ⚡ Phase 3 Optional
 **Based On:** Playwright's Production-Grade Snapshot System Analysis
 
 ---
@@ -429,26 +429,38 @@ snapshot2 = {
 
 ---
 
-### Phase 2: Resource Management (Sprint 6 - Medium Priority) 📦
+### Phase 2: Resource Management (Sprint 5c) 📦 ✅ COMPLETE
 
 **Goal:** Proper resource loading and deduplication
 
-**Task 2.1: Resource Capture (5 hours)**
-- Extract external stylesheets during capture
-- Capture images as data URLs or references
-- Store in `resourceOverrides` array
+**Status:** ✅ **COMPLETED** (2025-12-05)
 
-**Task 2.2: SHA1 Storage (4 hours)**
-- Implement `ResourceStorage` class with SHA1 hashing
-- Store blobs in session JSON
-- Deduplicate identical resources
+**Task 2.1: Resource Capture (5 hours)** ✅
+- ✅ Extract external stylesheets during capture
+- ✅ Capture images as data URLs or references
+- ✅ Store in `resourceOverrides` array
 
-**Task 2.3: Resource Serving (3 hours)**
-- Implement resource lookup in viewer
-- Serve resources from blob storage
-- Handle CORS and security policies
+**Task 2.2: SHA1 Storage (4 hours)** ✅
+- ✅ Implement `ResourceStorage` class with SHA1 hashing
+- ✅ Store blobs in session JSON
+- ✅ Deduplicate identical resources
 
-**Total:** 12 hours
+**Task 2.3: Resource Serving (3 hours)** ✅
+- ✅ Implement resource lookup in viewer
+- ✅ Serve resources from blob storage
+- ✅ Handle CORS and security policies
+
+**Total:** 12 hours ✅ COMPLETE
+
+**Files Created:**
+- `session-recorder/src/storage/resourceStorage.ts`
+
+**Files Modified:**
+- `session-recorder/src/browser/snapshotCapture.ts`
+- `session-recorder/src/browser/injected.ts`
+- `session-recorder/src/node/SessionRecorder.ts`
+- `session-recorder/viewer/src/stores/sessionStore.ts`
+- `session-recorder/viewer/src/types/session.ts`
 
 ---
 

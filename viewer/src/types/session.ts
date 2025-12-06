@@ -3,12 +3,21 @@
  * Imported from session-recorder types
  */
 
+export interface StoredResource {
+  sha1: string;
+  content: string; // base64 for binary, raw for text
+  contentType: string;
+  size: number;
+  timestamp: number;
+}
+
 export interface SessionData {
   sessionId: string;
   startTime: string;  // ISO 8601 UTC
   endTime?: string;   // ISO 8601 UTC
   actions: RecordedAction[];
   resources?: string[];  // List of captured resource SHA1s
+  resourceStorage?: Record<string, StoredResource>; // SHA1-based resource deduplication
   network?: {
     file: string;  // Relative path to network log file: session.network
     count: number; // Number of network requests logged

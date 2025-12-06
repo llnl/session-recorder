@@ -3,12 +3,20 @@
  * Captures interactive HTML snapshots with form state, Shadow DOM, and scroll positions
  */
 
+export interface ResourceOverride {
+  url: string;
+  content: string; // CSS text or data URL
+  contentType: string;
+  size: number;
+}
+
 export interface SnapshotData {
   doctype?: string;
   html: string;
   viewport: { width: number; height: number };
   url: string;
   timestamp: string; // ISO 8601 UTC
+  resourceOverrides: ResourceOverride[];
 }
 
 export function createSnapshotCapture() {
@@ -44,6 +52,9 @@ export function createSnapshotCapture() {
       );
     }
 
+    // Extract external resources for offline viewing
+    const resourceOverrides = extractResources();
+
     return {
       doctype,
       html,
@@ -52,8 +63,98 @@ export function createSnapshotCapture() {
         height: window.innerHeight
       },
       url: location.href,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      resourceOverrides
     };
+  }
+
+  /**
+   * Extract external resources (stylesheets, images) for offline viewing
+   * Based on Playwright's resource extraction approach
+   */
+  function extractResources(): ResourceOverride[] {
+    const resources: ResourceOverride[] = [];
+    const processedUrls = new Set<string>();
+
+    // 1. Extract external stylesheets
+    try {
+      for (const sheet of Array.from(document.styleSheets)) {
+        // Only process external stylesheets (with href)
+        if (sheet.href && sheet.href.startsWith('http')) {
+          const url = new URL(sheet.href, document.baseURI).href;
+
+          // Skip if already processed
+          if (processedUrls.has(url)) continue;
+          processedUrls.add(url);
+
+          try {
+            // Extract CSS rules
+            const cssRules = Array.from(sheet.cssRules || []);
+            const content = cssRules.map(rule => rule.cssText).join('\n');
+
+            if (content) {
+              resources.push({
+                url,
+                content,
+                contentType: 'text/css',
+                size: content.length
+              });
+            }
+          } catch (e) {
+            // CORS or access issues - stylesheet will fall back to network
+            console.warn(`[Snapshot] Could not capture stylesheet: ${url}`, e);
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('[Snapshot] Error extracting stylesheets:', e);
+    }
+
+    // 2. Extract small images (<100KB) as data URLs
+    try {
+      const images = document.querySelectorAll('img[src^="http"]');
+      for (const img of Array.from(images)) {
+        const imgEl = img as HTMLImageElement;
+        const url = imgEl.src;
+
+        // Skip if already processed
+        if (processedUrls.has(url)) continue;
+
+        // Only process loaded images
+        if (imgEl.complete && imgEl.naturalWidth > 0) {
+          try {
+            // Convert to data URL using canvas
+            const canvas = document.createElement('canvas');
+            canvas.width = imgEl.naturalWidth;
+            canvas.height = imgEl.naturalHeight;
+            const ctx = canvas.getContext('2d');
+
+            if (ctx) {
+              ctx.drawImage(imgEl, 0, 0);
+              const dataURL = canvas.toDataURL('image/png');
+
+              // Only include images smaller than 100KB
+              if (dataURL && dataURL.length < 1024 * 100) {
+                processedUrls.add(url);
+                resources.push({
+                  url,
+                  content: dataURL,
+                  contentType: 'image/png',
+                  size: dataURL.length
+                });
+              }
+            }
+          } catch (e) {
+            // CORS, tainted canvas, or other issues - image will fall back to network
+            console.warn(`[Snapshot] Could not capture image: ${url}`, e);
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('[Snapshot] Error extracting images:', e);
+    }
+
+    return resources;
   }
 
   function visitNode(node: Node, definedCustomElements?: Set<string>): string {

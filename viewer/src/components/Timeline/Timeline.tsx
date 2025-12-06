@@ -212,7 +212,7 @@ export const Timeline = () => {
     setHoveredActionIndex(index);
     setHoverPosition({
       x: rect.left + rect.width / 2,
-      y: rect.top,
+      y: rect.bottom,
     });
   };
 

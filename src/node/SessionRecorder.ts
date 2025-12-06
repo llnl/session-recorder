@@ -8,6 +8,7 @@ import * as path from 'path';
 import * as crypto from 'crypto';
 import archiver from 'archiver';
 import { SessionData, RecordedAction, HarEntry, SnapshotterBlob, NetworkEntry, ConsoleEntry } from './types';
+import { ResourceStorage } from '../storage/resourceStorage';
 
 export class SessionRecorder {
   private page: Page | null = null;
@@ -23,6 +24,7 @@ export class SessionRecorder {
   private consoleLogPath: string;
   private consoleLogCount = 0;
   private sessionStartTime: number = 0;
+  private resourceStorage: ResourceStorage; // SHA1-based resource deduplication
 
   constructor(sessionId?: string) {
     this.sessionData = {
@@ -37,6 +39,9 @@ export class SessionRecorder {
     this.resourcesDir = path.join(this.sessionDir, 'resources');
     this.networkLogPath = path.join(this.sessionDir, 'session.network');
     this.consoleLogPath = path.join(this.sessionDir, 'session.console');
+
+    // Initialize resource storage with SHA1 deduplication
+    this.resourceStorage = new ResourceStorage(this.sessionData.sessionId);
   }
 
   async start(page: Page): Promise<void> {
@@ -151,6 +156,11 @@ export class SessionRecorder {
 
     const actionId = `action-${this.sessionData.actions.length + 1}`;
 
+    // Process snapshot resources (CSS, images from extractResources())
+    if (data.beforeResourceOverrides && data.beforeResourceOverrides.length > 0) {
+      await this._processSnapshotResources(data.beforeResourceOverrides);
+    }
+
     // Rewrite HTML to reference local resources
     const rewrittenHtml = this._rewriteHTML(data.beforeHtml, data.beforeUrl);
 
@@ -203,6 +213,11 @@ export class SessionRecorder {
     if (!this.page || !this.currentActionData) return;
 
     const actionId = this.currentActionData.id;
+
+    // Process snapshot resources (CSS, images from extractResources())
+    if (data.afterResourceOverrides && data.afterResourceOverrides.length > 0) {
+      await this._processSnapshotResources(data.afterResourceOverrides);
+    }
 
     // Rewrite HTML to reference local resources
     const rewrittenHtml = this._rewriteHTML(data.afterHtml, data.afterUrl);
@@ -271,17 +286,27 @@ export class SessionRecorder {
       };
     }
 
-    // Save session.json
+    // Save session.json with resource storage data
     const sessionJsonPath = path.join(this.sessionDir, 'session.json');
+    const sessionDataWithResources = {
+      ...this.sessionData,
+      resourceStorage: this.resourceStorage.exportToJSON()
+    };
+
     fs.writeFileSync(
       sessionJsonPath,
-      JSON.stringify(this.sessionData, null, 2),
+      JSON.stringify(sessionDataWithResources, null, 2),
       'utf-8'
     );
 
+    // Log resource storage statistics
+    const stats = this.resourceStorage.getStats();
     console.log(`🛑 Recording stopped`);
     console.log(`📊 Total actions: ${this.sessionData.actions.length}`);
     console.log(`📦 Total resources: ${this.allResources.size}`);
+    console.log(`   - Unique resources: ${stats.resourceCount}`);
+    console.log(`   - Total size: ${(stats.totalSize / 1024).toFixed(2)} KB`);
+    console.log(`   - Deduplication: ${stats.deduplicationRatio.toFixed(1)}% savings`);
     console.log(`🌐 Network requests: ${this.networkRequestCount}`);
     console.log(`📄 Session data: ${sessionJsonPath}`);
 
@@ -363,6 +388,46 @@ export class SessionRecorder {
   // ============================================================================
   // Resource Capture Methods (HarTracer-style)
   // ============================================================================
+
+  /**
+   * Process resources extracted from snapshot capture (CSS, images)
+   * Stores them using ResourceStorage with SHA1 deduplication
+   */
+  private async _processSnapshotResources(resourceOverrides: any[]): Promise<void> {
+    for (const resource of resourceOverrides) {
+      try {
+        // Store resource using ResourceStorage (with SHA1 deduplication)
+        const sha1 = await this.resourceStorage.storeResource(
+          resource.url,
+          resource.content,
+          resource.contentType
+        );
+
+        // Map URL to SHA1 for HTML rewriting
+        const filename = sha1; // SHA1 already includes extension
+        this.urlToResourceMap.set(resource.url, filename);
+        this.allResources.add(sha1);
+
+        // Write resource to disk
+        const resourcePath = path.join(this.resourcesDir, filename);
+        const storedResource = this.resourceStorage.getResource(sha1);
+        if (storedResource) {
+          // Decode content based on type
+          const buffer = storedResource.contentType.startsWith('text/') ||
+                        storedResource.contentType === 'application/javascript' ||
+                        storedResource.contentType === 'application/json' ||
+                        storedResource.contentType === 'image/svg+xml'
+            ? Buffer.from(storedResource.content, 'utf8')
+            : Buffer.from(storedResource.content, 'base64');
+
+          fs.writeFileSync(resourcePath, buffer);
+          console.log(`📦 Stored snapshot resource: ${filename} (${resource.size} bytes) - ${resource.contentType}`);
+        }
+      } catch (error) {
+        console.warn(`[SessionRecorder] Failed to process snapshot resource ${resource.url}:`, error);
+      }
+    }
+  }
 
   /**
    * Handle network responses - captures resources like HarTracer does

@@ -13,12 +13,21 @@ import type {
   LoadedSessionData,
 } from '@/types/session';
 
+export interface StoredResource {
+  sha1: string;
+  content: string; // base64 for binary, raw for text
+  contentType: string;
+  size: number;
+  timestamp: number;
+}
+
 export interface SessionStore {
   // Session data
   sessionData: SessionData | null;
   networkEntries: NetworkEntry[];
   consoleEntries: ConsoleEntry[];
   resources: Map<string, Blob>;
+  resourceStorage: Map<string, StoredResource>; // SHA1 -> resource
 
   // UI state
   selectedActionIndex: number | null;
@@ -36,6 +45,9 @@ export interface SessionStore {
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
 
+  // Resource accessors
+  getResourceBySha1: (sha1: string) => StoredResource | null;
+
   // Derived selectors (computed values)
   getFilteredActions: () => RecordedAction[];
   getFilteredConsole: () => ConsoleEntry[];
@@ -49,6 +61,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
   networkEntries: [],
   consoleEntries: [],
   resources: new Map(),
+  resourceStorage: new Map(),
   selectedActionIndex: null,
   timelineSelection: null,
   activeTab: 'information',
@@ -57,11 +70,20 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
 
   // Actions
   loadSession: (data: LoadedSessionData) => {
+    // Load resourceStorage from session data
+    const resourceStorage = new Map<string, StoredResource>();
+    if (data.sessionData.resourceStorage) {
+      for (const [sha1, resource] of Object.entries(data.sessionData.resourceStorage)) {
+        resourceStorage.set(sha1, resource as StoredResource);
+      }
+    }
+
     set({
       sessionData: data.sessionData,
       networkEntries: data.networkEntries,
       consoleEntries: data.consoleEntries,
       resources: data.resources,
+      resourceStorage,
       selectedActionIndex: null,
       timelineSelection: null,
       error: null,
@@ -90,6 +112,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       networkEntries: [],
       consoleEntries: [],
       resources: new Map(),
+      resourceStorage: new Map(),
       selectedActionIndex: null,
       timelineSelection: null,
       error: null,
@@ -103,6 +126,12 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
 
   setError: (error: string | null) => {
     set({ error, loading: false });
+  },
+
+  // Resource accessors
+  getResourceBySha1: (sha1: string) => {
+    const state = get();
+    return state.resourceStorage.get(sha1) || null;
   },
 
   // Derived selectors
