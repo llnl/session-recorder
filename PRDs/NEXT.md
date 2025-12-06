@@ -229,40 +229,7 @@
 
 **Build Status:** ✅ All changes compile successfully
 
-### Sprint 5d: Performance & Polish (7 hours)
-
-**Note:** Zip export/import removed - session recorder already creates recordings
-
-1. Phase 10: Performance optimization (4h) → [TASKS-2.md Phase 10](TASKS-2.md#phase-10-performance-optimization-4-hours) | [PRD-2.md](PRD-2.md#performance-requirements)
-2. Phase 8.3: Metadata view (2h) → [TASKS-2.md Phase 8.3](TASKS-2.md#task-83-create-metadata-view) | [PRD-2.md](PRD-2.md#custom-trace-viewer-requirements)
-3. Test: Large session handling (1h)
-
-### Sprint 6: Polish & Ship (6 hours)
-
-1. Phase 11: Remaining styling, keyboard shortcuts, accessibility (3h) → [TASKS-2.md Phase 11](TASKS-2.md#phase-11-styling--polish-3-hours) | [PRD-2.md](PRD-2.md#5-success-criteria)
-2. Phase 12: Testing + documentation (3h) → [TASKS-2.md Phase 12](TASKS-2.md#phase-12-testing--documentation-3-hours) | [PRD-2.md](PRD-2.md#5-success-criteria)
-
-### Sprint 7: Advanced Optimization (14 hours) - ⚡ LOW PRIORITY (Future Enhancement)
-
-**Based on:** [PRD-3.md](PRD-3.md) | [TASKS-3.md Phase 3](TASKS-3.md#phase-3-nodesnapshot-optimization-14-hours--low-priority)
-
-**Goal:** Reduce file sizes through structured snapshots and reference caching (40-60% reduction)
-
-**Note:** Only implement this AFTER Sprints 5a-6 are stable. This is a complex refactoring.
-
-1. **Task 3.1: NodeSnapshot Structure** (8h) → [TASKS-3.md Task 3.1](TASKS-3.md#task-31-implement-nodesnapshot-structure-8-hours)
-   - Refactor from string-based HTML to structured NodeSnapshot tree
-   - Implement reference-based caching for unchanged nodes
-   - Post-order indexing for efficient lookups
-   - **Impact:** Foundation for file size optimization
-
-2. **Task 3.2: Incremental Snapshots** (6h)
-   - Track unchanged DOM subtrees
-   - Reference previous snapshots for unchanged nodes
-   - Measure and validate file size reduction
-   - **Impact:** 40-60% file size reduction for subsequent snapshots
-
-### Sprint 8: Production Deployment (70 hours) - 🚀 FINAL POLISH
+### Sprint 6: Production Deployment (78 hours) - 🚀 PRODUCTION READY
 
 **Based on:** [PRD-4.md](PRD-4.md) | [TASKS-4.md](TASKS-4.md)
 
@@ -280,35 +247,77 @@
 - Audio playback with word-level highlighting
 
 **Phases:**
-1. **Phase 1: Desktop Application** (20h) → [TASKS-4.md Phase 1](TASKS-4.md#phase-1-desktop-application-20-hours)
+1. **Phase 1: Voice Recording Backend** (16h) → [TASKS-4.md Phase 1](TASKS-4.md#phase-1-voice-recording-backend-16-hours)
+   - Audio capture enhancements
+   - Whisper API integration
+   - UTC timestamp alignment
+   - Transcript storage
+   - Testing
+
+2. **Phase 2: Viewer Integration** (14h) → [TASKS-4.md Phase 2](TASKS-4.md#phase-2-viewer-integration-14-hours)
+   - Timeline voice indicators
+   - Action list voice entries
+   - VoiceTranscriptViewer component
+   - Audio playback controls
+
+3. **Phase 3: Testing & Documentation (Phases 1-2)** (4h) → [TASKS-4.md Phase 3](TASKS-4.md#phase-3-testing--documentation-phases-1-2-4-hours)
+   - Voice recording tests
+   - Viewer integration tests
+
+4. **Phase 4: MCP Server** (12h) → [TASKS-4.md Phase 4](TASKS-4.md#phase-4-mcp-server-12-hours)
+   - MCP server setup
+   - 5 recording tools (start/stop browser/voice/combined, get status)
+   - SessionRecorder integration
+   - Error handling
+
+5. **Phase 5: Desktop Application** (20h) → [TASKS-4.md Phase 5](TASKS-4.md#phase-5-desktop-application-20-hours)
    - Electron app structure
    - Recording controls UI
    - Voice capture integration
    - Browser automation
    - Zip creation and viewer links
 
-2. **Phase 2: MCP Server** (12h) → [TASKS-4.md Phase 2](TASKS-4.md#phase-2-mcp-server-12-hours)
-   - MCP server setup
-   - 5 recording tools (start/stop browser/voice/combined, get status)
-   - SessionRecorder integration
-   - Error handling
-
-3. **Phase 3: Voice Recording Backend** (16h) → [TASKS-4.md Phase 3](TASKS-4.md#phase-3-voice-recording-backend-16-hours)
-   - Audio capture
-   - Whisper API transcription
-   - UTC timestamp alignment
-   - Transcript storage
-
-4. **Phase 4: Viewer Integration** (14h) → [TASKS-4.md Phase 4](TASKS-4.md#phase-4-viewer-integration-14-hours)
-   - Timeline voice indicators
-   - Action list voice entries
-   - VoiceTranscriptViewer component
-   - Audio playback controls
-
-5. **Phase 5: Testing & Documentation** (8h) → [TASKS-4.md Phase 5](TASKS-4.md#phase-5-testing--documentation-8-hours)
+6. **Phase 6: Final Testing & Documentation** (12h) → [TASKS-4.md Phase 6](TASKS-4.md#phase-6-final-testing--documentation-12-hours)
    - End-to-end testing
    - User documentation
    - Deployment guides
+
+### Sprint 7: Performance & Polish (7 hours) - ⚠️ POST-MVP
+
+**Note:** These optimizations should only be implemented AFTER Sprint 6 (Production Deployment) is complete and you have 1-2 hour recording sessions working in production.
+
+**Based on:** [PRD-performance.md](PRD-performance.md) | [TASKS-performance.md Sprint 5d](TASKS-performance.md#sprint-5d-performance--polish-7-hours)
+
+1. Performance optimization (4h) → [TASKS-performance.md Task 5d.2](TASKS-performance.md#task-5d2-performance-optimization-4-hours)
+2. Metadata view (2h) → [TASKS-performance.md Task 5d.3](TASKS-performance.md#task-5d3-metadata-view-2-hours)
+3. Test: Large session handling (1h)
+
+### Sprint 8: Polish & Ship (6 hours) - ⚠️ POST-MVP
+
+**Based on:** Original POC 2 tasks
+
+1. Phase 11: Remaining styling, keyboard shortcuts, accessibility (3h) → [TASKS-2.md Phase 11](TASKS-2.md#phase-11-styling--polish-3-hours) | [PRD-2.md](PRD-2.md#5-success-criteria)
+2. Phase 12: Testing + documentation (3h) → [TASKS-2.md Phase 12](TASKS-2.md#phase-12-testing--documentation-3-hours) | [PRD-2.md](PRD-2.md#5-success-criteria)
+
+### Sprint 9: Advanced Optimization (14 hours) - ⚡ LOW PRIORITY (Future Enhancement)
+
+**Based on:** [PRD-performance.md](PRD-performance.md) | [TASKS-performance.md Sprint 7](TASKS-performance.md#sprint-7-advanced-optimization-14-hours----optional)
+
+**Goal:** Reduce file sizes through structured snapshots and reference caching (40-60% reduction)
+
+**Note:** Only implement this AFTER Sprint 6-8 are stable AND you have real-world data showing file size is a problem for 4+ hour recording sessions. This is a complex refactoring.
+
+1. **Task: NodeSnapshot Structure** (8h) → [TASKS-performance.md Task 7.1](TASKS-performance.md#task-71-nodesnapshot-structure-8-hours)
+   - Refactor from string-based HTML to structured NodeSnapshot tree
+   - Implement reference-based caching for unchanged nodes
+   - Post-order indexing for efficient lookups
+   - **Impact:** Foundation for file size optimization
+
+2. **Task: Incremental Snapshots** (6h) → [TASKS-performance.md Task 7.2](TASKS-performance.md#task-72-incremental-snapshots-6-hours)
+   - Track unchanged DOM subtrees
+   - Reference previous snapshots for unchanged nodes
+   - Measure and validate file size reduction
+   - **Impact:** 40-60% file size reduction for subsequent snapshots
 
 ## 📊 Total Effort
 
@@ -327,27 +336,29 @@
 
 ### Remaining Work
 
-**Snapshot Architecture (PRD-3.md):**
-
-- Sprint 5d Performance & Polish: 7 hours (Performance: 4h, Metadata: 2h, Testing: 1h)
-- Sprint 6 Polish & Ship: 6 hours (Phase 11: 3h, Phase 12: 3h)
-- Sprint 7 Advanced Optimization (Phase 3): 14 hours ⚡ **OPTIONAL** (NodeSnapshot: 8h, Incremental: 6h)
-- **Subtotal: 27 hours** (13 hours core + 14 hours optional)
-
 **Production Deployment (PRD-4.md):**
-- Sprint 8 Phase 1: Desktop Application: 20 hours 🚀 **PRODUCTION**
-- Sprint 8 Phase 2: MCP Server: 12 hours 🚀 **PRODUCTION**
-- Sprint 8 Phase 3: Voice Recording Backend: 16 hours 🚀 **PRODUCTION**
-- Sprint 8 Phase 4: Viewer Integration: 14 hours 🚀 **PRODUCTION**
-- Sprint 8 Phase 5: Testing & Documentation: 8 hours 🚀 **PRODUCTION**
-- **Subtotal: 70 hours**
+
+- Sprint 6 Phase 1: Voice Recording Backend: 16 hours 🚀 **PRODUCTION**
+- Sprint 6 Phase 2: Viewer Integration: 14 hours 🚀 **PRODUCTION**
+- Sprint 6 Phase 3: Testing & Documentation (Phases 1-2): 4 hours 🚀 **PRODUCTION**
+- Sprint 6 Phase 4: MCP Server: 12 hours 🚀 **PRODUCTION**
+- Sprint 6 Phase 5: Desktop Application: 20 hours 🚀 **PRODUCTION**
+- Sprint 6 Phase 6: Final Testing & Documentation: 12 hours 🚀 **PRODUCTION**
+- **Subtotal: 78 hours**
+
+**Performance & Polish (PRD-performance.md) - POST-MVP:**
+
+- Sprint 7 Performance & Polish: 7 hours ⚠️ **POST-MVP** (Performance: 4h, Metadata: 2h, Testing: 1h)
+- Sprint 8 Polish & Ship: 6 hours ⚠️ **POST-MVP** (Phase 11: 3h, Phase 12: 3h)
+- Sprint 9 Advanced Optimization: 14 hours ⚡ **OPTIONAL** (NodeSnapshot: 8h, Incremental: 6h)
+- **Subtotal: 27 hours** (13 hours core + 14 hours optional)
 
 ### Grand Total
 
-- **Core Features (POC 1-3): 107 hours** (94 completed ✅ + 13 remaining)
-- **With Advanced Optimization: 121 hours** (94 completed ✅ + 27 remaining)
-- **Production Ready (POC 1-4): 177 hours** (94 completed ✅ + 13 core + 70 production)
-- **Complete with Optimization: 191 hours** (94 completed ✅ + 27 + 70 production)
+- **Core Features (POC 1-3): 107 hours** (94 completed ✅ + 13 remaining post-MVP)
+- **Production Ready (POC 1-4): 172 hours** (94 completed ✅ + 78 production)
+- **With Performance Polish: 185 hours** (94 completed ✅ + 78 production + 13 post-MVP)
+- **Complete with Optimization: 199 hours** (94 completed ✅ + 78 production + 27 total)
 
 ## 🚀 Recommended Path
 
@@ -406,63 +417,64 @@
 
 ---
 
-### Path 3: Full Production Core (107 hours) - 🎯 IN PROGRESS (94/107 hours complete)
-
-**Goal:** Fully polished, production-ready viewer
-
-**What to do:**
-
-- ✅ Path 2 (Sprints 5a + 5b + 5c) - 26 hours - **COMPLETE**
-- Sprint 5d (Performance & Polish) - 7 hours - **PENDING**
-- Sprint 6 (Polish & Ship) - 6 hours - **PENDING**
-
-**Progress:**
-
-- ✅ Everything from Path 2
-- ⏳ Performance optimizations (pending)
-- ⏳ Metadata view (pending)
-- ⏳ Keyboard shortcuts & accessibility (pending)
-- ⏳ Comprehensive documentation (pending)
-
-**Result:** Enterprise-grade session recorder ready for internal use (13 hours remaining)
-
----
-
-### Path 4: Company-Wide Production (177 hours) - 🚀 IN PROGRESS (94/177 hours complete)
+### Path 3: Company-Wide Production (172 hours) - 🚀 RECOMMENDED (94/172 hours complete)
 
 **Goal:** Make recorder accessible to ALL employees (developers + non-developers)
 
 **What to do:**
 
-- ⏳ Path 3 (Sprints 1-6) - 107 hours (94 complete, 13 remaining)
-- Sprint 8 (Production Deployment) - 70 hours
-  - Desktop Application for non-developers (20h)
+- ✅ Path 2 (Sprints 5a + 5b + 5c) - 26 hours - **COMPLETE**
+- Sprint 6 (Production Deployment) - 78 hours
+  - Voice Recording Backend (16h)
+  - Viewer Integration (14h)
+  - Testing & Documentation for Phases 1-2 (4h)
   - MCP Server for AI assistants (12h)
-  - Voice recording with transcription (16h)
-  - Viewer voice integration (14h)
-  - Testing & documentation (8h)
+  - Desktop Application for non-developers (20h)
+  - Final Testing & Documentation (12h)
 
 **Progress:**
 
 - ✅ Core snapshot system complete (Path 2)
-- ⏳ Performance & Polish (Path 3 remaining - 13h)
+- ⏳ Voice recording infrastructure
+- ⏳ Viewer voice integration
+- ⏳ MCP Server for Claude Code / Cline / Continue.dev
 - ⏳ One-click recording for QA/PM/Support staff
-- ⏳ Claude Code / Cline / Continue.dev integration
-- ⏳ Voice narration with browser actions
 - ⏳ Audio playback with synchronized transcripts
 
-**Result:** Production-ready tool accessible to all company employees (83 hours remaining)
+**Result:** Production-ready tool accessible to all company employees (78 hours remaining)
 
 ---
 
-### Path 5: With Advanced Optimization (191 hours) - ⚡ COMPLETE SYSTEM
+### Path 4: With Performance Polish (185 hours) - ⚠️ POST-MVP (94/185 hours complete)
+
+**Goal:** Fully polished, production-ready viewer with performance optimizations
+
+**What to do:**
+
+- Path 3 (Production Deployment) - 172 hours (94 complete, 78 remaining)
+- Sprint 7 (Performance & Polish) - 7 hours
+- Sprint 8 (Polish & Ship) - 6 hours
+
+**Progress:**
+
+- ✅ Everything from Path 3
+- ⏳ Performance optimizations for large sessions
+- ⏳ Metadata view
+- ⏳ Keyboard shortcuts & accessibility
+- ⏳ Comprehensive documentation
+
+**Result:** Enterprise-grade session recorder with performance optimization (91 hours remaining)
+
+---
+
+### Path 5: With Advanced Optimization (199 hours) - ⚡ COMPLETE SYSTEM
 
 **Goal:** Maximum performance and file size optimization
 
 **What to do:**
 
-- Path 4 (Sprints 1-8) - 177 hours
-- Sprint 7 (Advanced Optimization) - 14 hours
+- Path 4 (Production + Polish) - 185 hours
+- Sprint 9 (Advanced Optimization) - 14 hours
   - NodeSnapshot structure refactoring (8h)
   - Incremental snapshots with references (6h)
 

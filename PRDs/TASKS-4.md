@@ -13,12 +13,655 @@ This document breaks down PRD-4 objectives into actionable tasks for making Sess
 
 ---
 
-## Phase 1: Desktop Application (20 hours)
+## Phase 1: Voice Recording Backend (16 hours)
+
+Already covered in Phase 1 Tasks 1.3 and 1.4. Additional work:
+
+### Task 1.1: Audio Capture Enhancements (4 hours)
+- Level meter visualization
+- Noise gate/detection
+- Audio quality validation
+
+### Task 1.2: Whisper API Integration (4 hours)
+- Already implemented in Task 5.3
+
+### Task 1.3: Timestamp Alignment Algorithm (3 hours)
+- Already implemented in Task 5.4
+
+### Task 1.4: Transcript Storage (2 hours)
+- Already implemented in Task 5.4
+
+### Task 1.5: Testing (3 hours)
+- Unit tests for transcription
+- Integration tests for alignment
+- End-to-end voice recording tests
+
+---
+
+## Phase 2: Viewer Integration (14 hours)
+
+**Goal:** Update viewer to display voice transcripts alongside browser actions
+**Deliverable:** Enhanced timeline and action list with voice support
+
+### Task 2.1: Timeline Voice Indicators (4 hours)
+
+**Priority:** 🔴 HIGH
+
+#### Implementation Steps
+
+1. **Update Timeline component** (3 hours)
+
+```tsx
+// viewer/src/components/Timeline/Timeline.tsx
+const renderVoiceSegments = () => {
+  if (!sessionData?.voiceRecording?.enabled) return null;
+
+  const voiceActions = sessionData.actions.filter(a => a.type === 'voice_transcript');
+
+  return voiceActions.map(action => {
+    const startTime = new Date(action.timestamp).getTime();
+    const endTime = new Date(action.transcript.endTime).getTime();
+    const duration = (endTime - startTime) / 1000;
+
+    const x = timeToPixel(startTime);
+    const width = (duration / totalDuration) * canvasWidth;
+
+    return (
+      <rect
+        key={action.id}
+        x={x}
+        y={timelineHeight - 20}
+        width={width}
+        height={15}
+        fill="rgba(76, 175, 80, 0.6)"
+        stroke="#4CAF50"
+        strokeWidth={1}
+        rx={3}
+        onClick={() => selectAction(action)}
+        style={{ cursor: 'pointer' }}
+      />
+    );
+  });
+};
+```
+
+2. **Add hover tooltip** (1 hour)
+
+```tsx
+const [hoveredVoice, setHoveredVoice] = useState<VoiceTranscript | null>(null);
+
+// In voice segment render
+onMouseEnter={() => setHoveredVoice(action)}
+onMouseLeave={() => setHoveredVoice(null)}
+
+// Tooltip
+{hoveredVoice && (
+  <div className="voice-tooltip" style={{ left: x, top: y }}>
+    <div className="tooltip-time">{formatTime(hoveredVoice.timestamp)}</div>
+    <div className="tooltip-text">{hoveredVoice.transcript.text.slice(0, 100)}...</div>
+    <div className="tooltip-duration">{formatDuration(duration)}s</div>
+  </div>
+)}
+```
+
+#### Acceptance Criteria
+
+- ✅ Voice segments shown as green bars on timeline
+- ✅ Duration proportional to actual speech duration
+- ✅ Hover shows transcript preview
+- ✅ Click navigates to voice entry in action list
+
+---
+
+### Task 2.2: Action List Voice Entries (3 hours)
+
+**Priority:** 🔴 HIGH
+
+#### Implementation Steps
+
+1. **Update ActionList component** (2 hours)
+
+```tsx
+// viewer/src/components/ActionList/ActionList.tsx
+const renderActionItem = (action: RecordedAction | VoiceTranscript) => {
+  if (action.type === 'voice_transcript') {
+    return (
+      <div className="action-item voice-item" onClick={() => onSelectAction(action)}>
+        <div className="action-icon">🎙️</div>
+        <div className="action-details">
+          <div className="action-type">Voice Transcript</div>
+          <div className="action-text">{action.transcript.text.slice(0, 80)}...</div>
+          <div className="action-meta">
+            <span className="timestamp">{formatTime(action.timestamp)}</span>
+            <span className="duration">{formatDuration(getDuration(action))}s</span>
+            <span className="confidence">
+              {(action.transcript.confidence * 100).toFixed(0)}%
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Existing browser action rendering...
+};
+
+const getDuration = (action: VoiceTranscript) => {
+  const start = new Date(action.transcript.startTime).getTime();
+  const end = new Date(action.transcript.endTime).getTime();
+  return (end - start) / 1000;
+};
+```
+
+2. **Add styling** (1 hour)
+
+```css
+.voice-item {
+  border-left: 4px solid #4CAF50;
+  background: #f1f8e9;
+}
+
+.voice-item .action-icon {
+  font-size: 1.5rem;
+}
+
+.voice-item .action-text {
+  font-style: italic;
+  color: #555;
+}
+
+.voice-item .confidence {
+  background: #4CAF50;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 0.75rem;
+}
+```
+
+#### Acceptance Criteria
+
+- ✅ Voice transcripts shown in action list
+- ✅ Intermixed with browser actions by timestamp
+- ✅ Microphone icon and distinct styling
+- ✅ Shows transcript preview, timestamp, duration, confidence
+- ✅ Clicking selects voice entry
+
+---
+
+### Task 2.3: VoiceTranscriptViewer Component (4 hours)
+
+**Priority:** 🔴 HIGH
+
+#### Implementation Steps
+
+1. **Create VoiceTranscriptViewer** (3 hours)
+
+```tsx
+// viewer/src/components/VoiceTranscriptViewer/VoiceTranscriptViewer.tsx
+import React, { useRef, useState, useEffect } from 'react';
+import { VoiceTranscript } from '@/types/session';
+
+interface Props {
+  voiceAction: VoiceTranscript;
+  audioUrl: string;
+  associatedSnapshot?: SnapshotData;
+}
+
+export default function VoiceTranscriptViewer({ voiceAction, audioUrl, associatedSnapshot }: Props) {
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [currentWord, setCurrentWord] = useState<number | null>(null);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const handleTimeUpdate = () => {
+      setCurrentTime(audio.currentTime);
+
+      // Highlight current word
+      const words = voiceAction.transcript.words;
+      if (!words) return;
+
+      const segmentStart = new Date(voiceAction.transcript.startTime).getTime();
+      const currentAbsTime = segmentStart + audio.currentTime * 1000;
+
+      const idx = words.findIndex(w => {
+        const wordStart = new Date(w.startTime).getTime();
+        const wordEnd = new Date(w.endTime).getTime();
+        return currentAbsTime >= wordStart && currentAbsTime <= wordEnd;
+      });
+
+      setCurrentWord(idx >= 0 ? idx : null);
+    };
+
+    audio.addEventListener('timeupdate', handleTimeUpdate);
+    audio.addEventListener('play', () => setIsPlaying(true));
+    audio.addEventListener('pause', () => setIsPlaying(false));
+
+    return () => {
+      audio.removeEventListener('timeupdate', handleTimeUpdate);
+      audio.removeEventListener('play', () => setIsPlaying(true));
+      audio.removeEventListener('pause', () => setIsPlaying(false));
+    };
+  }, [voiceAction]);
+
+  const handleWordClick = (wordIndex: number) => {
+    const audio = audioRef.current;
+    if (!audio || !voiceAction.transcript.words) return;
+
+    const word = voiceAction.transcript.words[wordIndex];
+    const segmentStart = new Date(voiceAction.transcript.startTime).getTime();
+    const wordStart = new Date(word.startTime).getTime();
+    const relativeTime = (wordStart - segmentStart) / 1000;
+
+    audio.currentTime = relativeTime;
+    audio.play();
+  };
+
+  return (
+    <div className="voice-transcript-viewer">
+      <div className="voice-header">
+        <div className="voice-meta">
+          <span className="timestamp">{formatTime(voiceAction.transcript.startTime)}</span>
+          <span className="duration">{getDuration(voiceAction)}s</span>
+          <span className="confidence">
+            Confidence: {(voiceAction.transcript.confidence * 100).toFixed(0)}%
+          </span>
+        </div>
+        <button onClick={() => copyTranscript(voiceAction.transcript.text)}>
+          Copy Transcript
+        </button>
+      </div>
+
+      <div className="transcript-text">
+        {voiceAction.transcript.words ? (
+          voiceAction.transcript.words.map((word, idx) => (
+            <span
+              key={idx}
+              className={`word ${idx === currentWord ? 'active' : ''}`}
+              onClick={() => handleWordClick(idx)}
+            >
+              {word.word}{' '}
+            </span>
+          ))
+        ) : (
+          <p>{voiceAction.transcript.text}</p>
+        )}
+      </div>
+
+      <div className="audio-player">
+        <audio ref={audioRef} src={audioUrl} controls>
+          Your browser does not support the audio element.
+        </audio>
+        <div className="playback-controls">
+          <button onClick={() => audioRef.current?.play()}>Play</button>
+          <button onClick={() => audioRef.current?.pause()}>Pause</button>
+          <select
+            onChange={(e) => {
+              if (audioRef.current) {
+                audioRef.current.playbackRate = parseFloat(e.target.value);
+              }
+            }}
+          >
+            <option value="0.5">0.5x</option>
+            <option value="1" selected>1x</option>
+            <option value="1.5">1.5x</option>
+            <option value="2">2x</option>
+          </select>
+        </div>
+      </div>
+
+      {associatedSnapshot && (
+        <div className="associated-snapshot">
+          <h4>Associated Snapshot</h4>
+          <button onClick={() => jumpToSnapshot(associatedSnapshot)}>
+            View Snapshot
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+2. **Add styling** (1 hour)
+
+```css
+.voice-transcript-viewer {
+  padding: 1rem;
+  background: #f9f9f9;
+  border-radius: 8px;
+}
+
+.transcript-text .word {
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 3px;
+  transition: background 0.2s;
+}
+
+.transcript-text .word:hover {
+  background: #e0e0e0;
+}
+
+.transcript-text .word.active {
+  background: #4CAF50;
+  color: white;
+}
+
+.audio-player {
+  margin-top: 1rem;
+}
+
+.audio-player audio {
+  width: 100%;
+}
+```
+
+#### Acceptance Criteria
+
+- ✅ Full transcript displayed
+- ✅ Audio playback controls
+- ✅ Word-level highlighting during playback
+- ✅ Click word to seek audio
+- ✅ Speed control (0.5x - 2x)
+- ✅ Copy transcript button
+- ✅ Link to associated snapshot
+
+---
+
+### Task 2.4: Audio Playback Controls (3 hours)
+
+Covered in Task 2.3 above.
+
+---
+
+## Phase 4: MCP Server (12 hours)
+
+**Goal:** Enable developers to use session recorder via AI coding assistants
+**Deliverable:** MCP Server with 5 tools for recording control
+
+### Task 4.1: MCP Server Setup (3 hours)
+
+**Priority:** 🔴 HIGH
+
+#### Implementation Steps
+
+1. **Initialize MCP server project** (1 hour)
+
+```bash
+mkdir session-recorder-mcp
+cd session-recorder-mcp
+npm init -y
+npm install @anthropic-ai/sdk playwright
+npm install --save-dev typescript @types/node
+```
+
+```typescript
+// src/index.ts
+import { McpServer } from '@anthropic-ai/sdk/mcp';
+import { startBrowserRecording } from './tools/browserRecording';
+import { startVoiceRecording } from './tools/voiceRecording';
+import { startCombinedRecording } from './tools/combinedRecording';
+import { stopRecording } from './tools/stopRecording';
+import { getRecordingStatus } from './tools/getStatus';
+
+const server = new McpServer({
+  name: 'session-recorder',
+  version: '1.0.0',
+  description: 'Session recorder MCP server for browser and voice recording'
+});
+
+// Register tools
+server.addTool({
+  name: 'start_browser_recording',
+  description: 'Start recording browser session with user actions, snapshots, and screenshots',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      title: {
+        type: 'string',
+        description: 'Recording title (optional, defaults to timestamp)'
+      },
+      url: {
+        type: 'string',
+        description: 'Initial URL to navigate to (optional)'
+      },
+      browserType: {
+        type: 'string',
+        enum: ['chromium', 'firefox', 'webkit'],
+        description: 'Browser to use (default: chromium)'
+      }
+    }
+  },
+  handler: startBrowserRecording
+});
+
+server.addTool({
+  name: 'start_voice_recording',
+  description: 'Start recording voice narration with real-time transcription',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      title: {
+        type: 'string',
+        description: 'Recording title (optional)'
+      },
+      transcriptionModel: {
+        type: 'string',
+        enum: ['whisper-1', 'whisper-large-v3'],
+        description: 'Speech-to-text model (default: whisper-1)'
+      }
+    }
+  },
+  handler: startVoiceRecording
+});
+
+server.addTool({
+  name: 'start_combined_recording',
+  description: 'Start recording both browser actions and voice narration simultaneously',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      title: { type: 'string' },
+      url: { type: 'string' },
+      browserType: { type: 'string', enum: ['chromium', 'firefox', 'webkit'] },
+      transcriptionModel: { type: 'string' }
+    }
+  },
+  handler: startCombinedRecording
+});
+
+server.addTool({
+  name: 'stop_recording',
+  description: 'Stop active recording and create session zip file',
+  inputSchema: {
+    type: 'object',
+    properties: {}
+  },
+  handler: stopRecording
+});
+
+server.addTool({
+  name: 'get_recording_status',
+  description: 'Get current recording status (active/inactive, duration, action count)',
+  inputSchema: {
+    type: 'object',
+    properties: {}
+  },
+  handler: getRecordingStatus
+});
+
+// Start server
+server.listen();
+console.log('Session Recorder MCP Server started');
+```
+
+2. **Create mcp-config.json** (1 hour)
+
+```json
+{
+  "name": "session-recorder",
+  "version": "1.0.0",
+  "mcpServers": {
+    "session-recorder": {
+      "command": "node",
+      "args": ["dist/index.js"],
+      "env": {
+        "OPENAI_API_KEY": "${OPENAI_API_KEY}"
+      }
+    }
+  }
+}
+```
+
+3. **Test MCP server** (1 hour)
+
+```bash
+npm run build
+npm start
+
+# Test with Claude Desktop
+```
+
+#### Acceptance Criteria
+
+- ✅ MCP server starts without errors
+- ✅ All 5 tools registered
+- ✅ Claude Desktop can discover and use tools
+- ✅ Tool schemas validate correctly
+
+#### Files Created
+
+- `session-recorder-mcp/src/index.ts`
+- `session-recorder-mcp/mcp-config.json`
+- `session-recorder-mcp/package.json`
+
+---
+
+### Task 4.2: Tool Implementations (5 hours)
+
+**Priority:** 🔴 HIGH
+
+#### Implementation Steps
+
+1. **Implement recording tools** (3 hours)
+
+```typescript
+// src/tools/browserRecording.ts
+import { RecordingManager } from '../recording/manager';
+
+let manager: RecordingManager | null = null;
+
+export async function startBrowserRecording(input: {
+  title?: string;
+  url?: string;
+  browserType?: 'chromium' | 'firefox' | 'webkit';
+}) {
+  if (!manager) {
+    manager = new RecordingManager();
+  }
+
+  const result = await manager.startRecording({
+    title: input.title || `Recording ${new Date().toLocaleString()}`,
+    mode: 'browser',
+    browserType: input.browserType || 'chromium',
+    url: input.url
+  });
+
+  return {
+    content: [
+      {
+        type: 'text',
+        text: JSON.stringify({
+          success: result.success,
+          sessionId: result.sessionId,
+          message: result.message
+        }, null, 2)
+      }
+    ]
+  };
+}
+
+// Similar implementations for other tools...
+```
+
+2. **Implement status tool** (1 hour)
+
+```typescript
+// src/tools/getStatus.ts
+export async function getRecordingStatus() {
+  if (!manager) {
+    return {
+      content: [{
+        type: 'text',
+        text: JSON.stringify({ isRecording: false }, null, 2)
+      }]
+    };
+  }
+
+  const status = manager.getStatus();
+  return {
+    content: [{
+      type: 'text',
+      text: JSON.stringify(status, null, 2)
+    }]
+  };
+}
+```
+
+3. **Write integration tests** (1 hour)
+
+```typescript
+// test/integration.test.ts
+describe('MCP Server Integration', () => {
+  it('starts browser recording', async () => {
+    const result = await startBrowserRecording({
+      title: 'Test Recording',
+      browserType: 'chromium'
+    });
+
+    expect(result.content[0].text).toContain('success');
+  });
+
+  // More tests...
+});
+```
+
+#### Acceptance Criteria
+
+- ✅ All 5 tools implemented
+- ✅ Tools wrap RecordingManager correctly
+- ✅ Proper error handling
+- ✅ Integration tests pass
+
+---
+
+### Task 4.3: SessionRecorder Integration (2 hours)
+
+This reuses the RecordingManager from Desktop app with minor adjustments for MCP context.
+
+---
+
+### Task 4.4: Error Handling and Status (2 hours)
+
+**Priority:** 🟡 MEDIUM
+
+#### Implementation Steps
+
+1. **Add error handling** (1 hour)
+2. **Add status reporting** (1 hour)
+
+---
+## Phase 5: Desktop Application (20 hours)
 
 **Goal:** Create user-friendly Desktop Application for non-developers
 **Deliverable:** Cross-platform Electron app with one-click recording
 
-### Task 1.1: Electron Application Structure (4 hours)
+### Task 5.1: Electron Application Structure (4 hours)
 
 **Priority:** 🚨 HIGH
 
@@ -171,7 +814,7 @@ npm run dist
 
 ---
 
-### Task 1.2: Recording Controls UI (3 hours)
+### Task 5.2: Recording Controls UI (3 hours)
 
 **Priority:** 🚨 HIGH
 
@@ -399,7 +1042,7 @@ header {
 
 ---
 
-### Task 1.3: Voice Capture Integration (5 hours)
+### Task 5.3: Voice Capture Integration (5 hours)
 
 **Priority:** 🔴 HIGH
 
@@ -602,7 +1245,7 @@ export class TranscriptionService {
 
 ---
 
-### Task 1.4: Browser Automation Integration (3 hours)
+### Task 5.4: Browser Automation Integration (3 hours)
 
 **Priority:** 🔴 HIGH
 
@@ -876,7 +1519,7 @@ export class RecordingManager {
 
 ---
 
-### Task 1.5: Zip Creation and Viewer Link (2 hours)
+### Task 5.5: Zip Creation and Viewer Link (2 hours)
 
 **Priority:** 🔴 HIGH
 
@@ -920,7 +1563,7 @@ new Notification({
 
 ---
 
-### Task 1.6: Testing and Polish (3 hours)
+### Task 5.6: Testing and Polish (3 hours)
 
 **Priority:** 🟡 MEDIUM
 
@@ -935,656 +1578,12 @@ new Notification({
 
 ---
 
-## Phase 2: MCP Server (12 hours)
-
-**Goal:** Enable developers to use session recorder via AI coding assistants
-**Deliverable:** MCP Server with 5 tools for recording control
-
-### Task 2.1: MCP Server Setup (3 hours)
-
-**Priority:** 🔴 HIGH
-
-#### Implementation Steps
-
-1. **Initialize MCP server project** (1 hour)
-
-```bash
-mkdir session-recorder-mcp
-cd session-recorder-mcp
-npm init -y
-npm install @anthropic-ai/sdk playwright
-npm install --save-dev typescript @types/node
-```
-
-```typescript
-// src/index.ts
-import { McpServer } from '@anthropic-ai/sdk/mcp';
-import { startBrowserRecording } from './tools/browserRecording';
-import { startVoiceRecording } from './tools/voiceRecording';
-import { startCombinedRecording } from './tools/combinedRecording';
-import { stopRecording } from './tools/stopRecording';
-import { getRecordingStatus } from './tools/getStatus';
-
-const server = new McpServer({
-  name: 'session-recorder',
-  version: '1.0.0',
-  description: 'Session recorder MCP server for browser and voice recording'
-});
-
-// Register tools
-server.addTool({
-  name: 'start_browser_recording',
-  description: 'Start recording browser session with user actions, snapshots, and screenshots',
-  inputSchema: {
-    type: 'object',
-    properties: {
-      title: {
-        type: 'string',
-        description: 'Recording title (optional, defaults to timestamp)'
-      },
-      url: {
-        type: 'string',
-        description: 'Initial URL to navigate to (optional)'
-      },
-      browserType: {
-        type: 'string',
-        enum: ['chromium', 'firefox', 'webkit'],
-        description: 'Browser to use (default: chromium)'
-      }
-    }
-  },
-  handler: startBrowserRecording
-});
-
-server.addTool({
-  name: 'start_voice_recording',
-  description: 'Start recording voice narration with real-time transcription',
-  inputSchema: {
-    type: 'object',
-    properties: {
-      title: {
-        type: 'string',
-        description: 'Recording title (optional)'
-      },
-      transcriptionModel: {
-        type: 'string',
-        enum: ['whisper-1', 'whisper-large-v3'],
-        description: 'Speech-to-text model (default: whisper-1)'
-      }
-    }
-  },
-  handler: startVoiceRecording
-});
-
-server.addTool({
-  name: 'start_combined_recording',
-  description: 'Start recording both browser actions and voice narration simultaneously',
-  inputSchema: {
-    type: 'object',
-    properties: {
-      title: { type: 'string' },
-      url: { type: 'string' },
-      browserType: { type: 'string', enum: ['chromium', 'firefox', 'webkit'] },
-      transcriptionModel: { type: 'string' }
-    }
-  },
-  handler: startCombinedRecording
-});
-
-server.addTool({
-  name: 'stop_recording',
-  description: 'Stop active recording and create session zip file',
-  inputSchema: {
-    type: 'object',
-    properties: {}
-  },
-  handler: stopRecording
-});
-
-server.addTool({
-  name: 'get_recording_status',
-  description: 'Get current recording status (active/inactive, duration, action count)',
-  inputSchema: {
-    type: 'object',
-    properties: {}
-  },
-  handler: getRecordingStatus
-});
-
-// Start server
-server.listen();
-console.log('Session Recorder MCP Server started');
-```
-
-2. **Create mcp-config.json** (1 hour)
-
-```json
-{
-  "name": "session-recorder",
-  "version": "1.0.0",
-  "mcpServers": {
-    "session-recorder": {
-      "command": "node",
-      "args": ["dist/index.js"],
-      "env": {
-        "OPENAI_API_KEY": "${OPENAI_API_KEY}"
-      }
-    }
-  }
-}
-```
-
-3. **Test MCP server** (1 hour)
-
-```bash
-npm run build
-npm start
-
-# Test with Claude Desktop
-```
-
-#### Acceptance Criteria
-
-- ✅ MCP server starts without errors
-- ✅ All 5 tools registered
-- ✅ Claude Desktop can discover and use tools
-- ✅ Tool schemas validate correctly
-
-#### Files Created
-
-- `session-recorder-mcp/src/index.ts`
-- `session-recorder-mcp/mcp-config.json`
-- `session-recorder-mcp/package.json`
-
----
-
-### Task 2.2: Tool Implementations (5 hours)
-
-**Priority:** 🔴 HIGH
-
-#### Implementation Steps
-
-1. **Implement recording tools** (3 hours)
-
-```typescript
-// src/tools/browserRecording.ts
-import { RecordingManager } from '../recording/manager';
-
-let manager: RecordingManager | null = null;
-
-export async function startBrowserRecording(input: {
-  title?: string;
-  url?: string;
-  browserType?: 'chromium' | 'firefox' | 'webkit';
-}) {
-  if (!manager) {
-    manager = new RecordingManager();
-  }
-
-  const result = await manager.startRecording({
-    title: input.title || `Recording ${new Date().toLocaleString()}`,
-    mode: 'browser',
-    browserType: input.browserType || 'chromium',
-    url: input.url
-  });
-
-  return {
-    content: [
-      {
-        type: 'text',
-        text: JSON.stringify({
-          success: result.success,
-          sessionId: result.sessionId,
-          message: result.message
-        }, null, 2)
-      }
-    ]
-  };
-}
-
-// Similar implementations for other tools...
-```
-
-2. **Implement status tool** (1 hour)
-
-```typescript
-// src/tools/getStatus.ts
-export async function getRecordingStatus() {
-  if (!manager) {
-    return {
-      content: [{
-        type: 'text',
-        text: JSON.stringify({ isRecording: false }, null, 2)
-      }]
-    };
-  }
-
-  const status = manager.getStatus();
-  return {
-    content: [{
-      type: 'text',
-      text: JSON.stringify(status, null, 2)
-    }]
-  };
-}
-```
-
-3. **Write integration tests** (1 hour)
-
-```typescript
-// test/integration.test.ts
-describe('MCP Server Integration', () => {
-  it('starts browser recording', async () => {
-    const result = await startBrowserRecording({
-      title: 'Test Recording',
-      browserType: 'chromium'
-    });
-
-    expect(result.content[0].text).toContain('success');
-  });
-
-  // More tests...
-});
-```
-
-#### Acceptance Criteria
-
-- ✅ All 5 tools implemented
-- ✅ Tools wrap RecordingManager correctly
-- ✅ Proper error handling
-- ✅ Integration tests pass
-
----
-
-### Task 2.3: SessionRecorder Integration (2 hours)
-
-This reuses the RecordingManager from Desktop app with minor adjustments for MCP context.
-
----
-
-### Task 2.4: Error Handling and Status (2 hours)
-
-**Priority:** 🟡 MEDIUM
-
-#### Implementation Steps
-
-1. **Add error handling** (1 hour)
-2. **Add status reporting** (1 hour)
-
----
-
-## Phase 3: Voice Recording Backend (16 hours)
-
-Already covered in Phase 1 Tasks 1.3 and 1.4. Additional work:
-
-### Task 3.1: Audio Capture Enhancements (4 hours)
-- Level meter visualization
-- Noise gate/detection
-- Audio quality validation
-
-### Task 3.2: Whisper API Integration (4 hours)
-- Already implemented in Task 1.3
-
-### Task 3.3: Timestamp Alignment Algorithm (3 hours)
-- Already implemented in Task 1.4
-
-### Task 3.4: Transcript Storage (2 hours)
-- Already implemented in Task 1.4
-
-### Task 3.5: Testing (3 hours)
-- Unit tests for transcription
-- Integration tests for alignment
-- End-to-end voice recording tests
-
----
-
-## Phase 4: Viewer Integration (14 hours)
-
-**Goal:** Update viewer to display voice transcripts alongside browser actions
-**Deliverable:** Enhanced timeline and action list with voice support
-
-### Task 4.1: Timeline Voice Indicators (4 hours)
-
-**Priority:** 🔴 HIGH
-
-#### Implementation Steps
-
-1. **Update Timeline component** (3 hours)
-
-```tsx
-// viewer/src/components/Timeline/Timeline.tsx
-const renderVoiceSegments = () => {
-  if (!sessionData?.voiceRecording?.enabled) return null;
-
-  const voiceActions = sessionData.actions.filter(a => a.type === 'voice_transcript');
-
-  return voiceActions.map(action => {
-    const startTime = new Date(action.timestamp).getTime();
-    const endTime = new Date(action.transcript.endTime).getTime();
-    const duration = (endTime - startTime) / 1000;
-
-    const x = timeToPixel(startTime);
-    const width = (duration / totalDuration) * canvasWidth;
-
-    return (
-      <rect
-        key={action.id}
-        x={x}
-        y={timelineHeight - 20}
-        width={width}
-        height={15}
-        fill="rgba(76, 175, 80, 0.6)"
-        stroke="#4CAF50"
-        strokeWidth={1}
-        rx={3}
-        onClick={() => selectAction(action)}
-        style={{ cursor: 'pointer' }}
-      />
-    );
-  });
-};
-```
-
-2. **Add hover tooltip** (1 hour)
-
-```tsx
-const [hoveredVoice, setHoveredVoice] = useState<VoiceTranscript | null>(null);
-
-// In voice segment render
-onMouseEnter={() => setHoveredVoice(action)}
-onMouseLeave={() => setHoveredVoice(null)}
-
-// Tooltip
-{hoveredVoice && (
-  <div className="voice-tooltip" style={{ left: x, top: y }}>
-    <div className="tooltip-time">{formatTime(hoveredVoice.timestamp)}</div>
-    <div className="tooltip-text">{hoveredVoice.transcript.text.slice(0, 100)}...</div>
-    <div className="tooltip-duration">{formatDuration(duration)}s</div>
-  </div>
-)}
-```
-
-#### Acceptance Criteria
-
-- ✅ Voice segments shown as green bars on timeline
-- ✅ Duration proportional to actual speech duration
-- ✅ Hover shows transcript preview
-- ✅ Click navigates to voice entry in action list
-
----
-
-### Task 4.2: Action List Voice Entries (3 hours)
-
-**Priority:** 🔴 HIGH
-
-#### Implementation Steps
-
-1. **Update ActionList component** (2 hours)
-
-```tsx
-// viewer/src/components/ActionList/ActionList.tsx
-const renderActionItem = (action: RecordedAction | VoiceTranscript) => {
-  if (action.type === 'voice_transcript') {
-    return (
-      <div className="action-item voice-item" onClick={() => onSelectAction(action)}>
-        <div className="action-icon">🎙️</div>
-        <div className="action-details">
-          <div className="action-type">Voice Transcript</div>
-          <div className="action-text">{action.transcript.text.slice(0, 80)}...</div>
-          <div className="action-meta">
-            <span className="timestamp">{formatTime(action.timestamp)}</span>
-            <span className="duration">{formatDuration(getDuration(action))}s</span>
-            <span className="confidence">
-              {(action.transcript.confidence * 100).toFixed(0)}%
-            </span>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Existing browser action rendering...
-};
-
-const getDuration = (action: VoiceTranscript) => {
-  const start = new Date(action.transcript.startTime).getTime();
-  const end = new Date(action.transcript.endTime).getTime();
-  return (end - start) / 1000;
-};
-```
-
-2. **Add styling** (1 hour)
-
-```css
-.voice-item {
-  border-left: 4px solid #4CAF50;
-  background: #f1f8e9;
-}
-
-.voice-item .action-icon {
-  font-size: 1.5rem;
-}
-
-.voice-item .action-text {
-  font-style: italic;
-  color: #555;
-}
-
-.voice-item .confidence {
-  background: #4CAF50;
-  color: white;
-  padding: 2px 6px;
-  border-radius: 3px;
-  font-size: 0.75rem;
-}
-```
-
-#### Acceptance Criteria
-
-- ✅ Voice transcripts shown in action list
-- ✅ Intermixed with browser actions by timestamp
-- ✅ Microphone icon and distinct styling
-- ✅ Shows transcript preview, timestamp, duration, confidence
-- ✅ Clicking selects voice entry
-
----
-
-### Task 4.3: VoiceTranscriptViewer Component (4 hours)
-
-**Priority:** 🔴 HIGH
-
-#### Implementation Steps
-
-1. **Create VoiceTranscriptViewer** (3 hours)
-
-```tsx
-// viewer/src/components/VoiceTranscriptViewer/VoiceTranscriptViewer.tsx
-import React, { useRef, useState, useEffect } from 'react';
-import { VoiceTranscript } from '@/types/session';
-
-interface Props {
-  voiceAction: VoiceTranscript;
-  audioUrl: string;
-  associatedSnapshot?: SnapshotData;
-}
-
-export default function VoiceTranscriptViewer({ voiceAction, audioUrl, associatedSnapshot }: Props) {
-  const audioRef = useRef<HTMLAudioElement>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [currentWord, setCurrentWord] = useState<number | null>(null);
-
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    const handleTimeUpdate = () => {
-      setCurrentTime(audio.currentTime);
-
-      // Highlight current word
-      const words = voiceAction.transcript.words;
-      if (!words) return;
-
-      const segmentStart = new Date(voiceAction.transcript.startTime).getTime();
-      const currentAbsTime = segmentStart + audio.currentTime * 1000;
-
-      const idx = words.findIndex(w => {
-        const wordStart = new Date(w.startTime).getTime();
-        const wordEnd = new Date(w.endTime).getTime();
-        return currentAbsTime >= wordStart && currentAbsTime <= wordEnd;
-      });
-
-      setCurrentWord(idx >= 0 ? idx : null);
-    };
-
-    audio.addEventListener('timeupdate', handleTimeUpdate);
-    audio.addEventListener('play', () => setIsPlaying(true));
-    audio.addEventListener('pause', () => setIsPlaying(false));
-
-    return () => {
-      audio.removeEventListener('timeupdate', handleTimeUpdate);
-      audio.removeEventListener('play', () => setIsPlaying(true));
-      audio.removeEventListener('pause', () => setIsPlaying(false));
-    };
-  }, [voiceAction]);
-
-  const handleWordClick = (wordIndex: number) => {
-    const audio = audioRef.current;
-    if (!audio || !voiceAction.transcript.words) return;
-
-    const word = voiceAction.transcript.words[wordIndex];
-    const segmentStart = new Date(voiceAction.transcript.startTime).getTime();
-    const wordStart = new Date(word.startTime).getTime();
-    const relativeTime = (wordStart - segmentStart) / 1000;
-
-    audio.currentTime = relativeTime;
-    audio.play();
-  };
-
-  return (
-    <div className="voice-transcript-viewer">
-      <div className="voice-header">
-        <div className="voice-meta">
-          <span className="timestamp">{formatTime(voiceAction.transcript.startTime)}</span>
-          <span className="duration">{getDuration(voiceAction)}s</span>
-          <span className="confidence">
-            Confidence: {(voiceAction.transcript.confidence * 100).toFixed(0)}%
-          </span>
-        </div>
-        <button onClick={() => copyTranscript(voiceAction.transcript.text)}>
-          Copy Transcript
-        </button>
-      </div>
-
-      <div className="transcript-text">
-        {voiceAction.transcript.words ? (
-          voiceAction.transcript.words.map((word, idx) => (
-            <span
-              key={idx}
-              className={`word ${idx === currentWord ? 'active' : ''}`}
-              onClick={() => handleWordClick(idx)}
-            >
-              {word.word}{' '}
-            </span>
-          ))
-        ) : (
-          <p>{voiceAction.transcript.text}</p>
-        )}
-      </div>
-
-      <div className="audio-player">
-        <audio ref={audioRef} src={audioUrl} controls>
-          Your browser does not support the audio element.
-        </audio>
-        <div className="playback-controls">
-          <button onClick={() => audioRef.current?.play()}>Play</button>
-          <button onClick={() => audioRef.current?.pause()}>Pause</button>
-          <select
-            onChange={(e) => {
-              if (audioRef.current) {
-                audioRef.current.playbackRate = parseFloat(e.target.value);
-              }
-            }}
-          >
-            <option value="0.5">0.5x</option>
-            <option value="1" selected>1x</option>
-            <option value="1.5">1.5x</option>
-            <option value="2">2x</option>
-          </select>
-        </div>
-      </div>
-
-      {associatedSnapshot && (
-        <div className="associated-snapshot">
-          <h4>Associated Snapshot</h4>
-          <button onClick={() => jumpToSnapshot(associatedSnapshot)}>
-            View Snapshot
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
-```
-
-2. **Add styling** (1 hour)
-
-```css
-.voice-transcript-viewer {
-  padding: 1rem;
-  background: #f9f9f9;
-  border-radius: 8px;
-}
-
-.transcript-text .word {
-  cursor: pointer;
-  padding: 2px 4px;
-  border-radius: 3px;
-  transition: background 0.2s;
-}
-
-.transcript-text .word:hover {
-  background: #e0e0e0;
-}
-
-.transcript-text .word.active {
-  background: #4CAF50;
-  color: white;
-}
-
-.audio-player {
-  margin-top: 1rem;
-}
-
-.audio-player audio {
-  width: 100%;
-}
-```
-
-#### Acceptance Criteria
-
-- ✅ Full transcript displayed
-- ✅ Audio playback controls
-- ✅ Word-level highlighting during playback
-- ✅ Click word to seek audio
-- ✅ Speed control (0.5x - 2x)
-- ✅ Copy transcript button
-- ✅ Link to associated snapshot
-
----
-
-### Task 4.4: Audio Playback Controls (3 hours)
-
-Covered in Task 4.3 above.
-
----
-
-## Phase 5: Testing & Documentation (8 hours)
+## Phase 6: Final Testing & Documentation (12 hours)
 
 **Goal:** Comprehensive testing and user documentation
 **Deliverable:** Test suite and user guides
 
-### Task 5.1: End-to-End Testing (4 hours)
+### Task 6.1: End-to-End Testing (4 hours)
 
 **Priority:** 🟡 MEDIUM
 
