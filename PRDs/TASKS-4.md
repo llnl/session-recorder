@@ -15,25 +15,121 @@ This document breaks down PRD-4 objectives into actionable tasks for making Sess
 
 ## Phase 1: Voice Recording Backend (16 hours)
 
-Already covered in Phase 1 Tasks 1.3 and 1.4. Additional work:
+### Task 1.1: Audio Capture Implementation (4 hours)
 
-### Task 1.1: Audio Capture Enhancements (4 hours)
+**Priority:** 🔴 HIGH
 
-- Level meter visualization
-- Noise gate/detection
-- Audio quality validation
+#### Implementation Steps
+
+1. **Setup audio recording library** (1 hour)
+   - Install node-record-lpcm16 or similar
+   - Configure microphone access permissions
+   - Test audio input detection
+
+2. **Implement audio capture** (2 hours)
+   - Record audio stream to WebM/MP3
+   - Add level meter visualization
+   - Implement noise gate/detection
+   - Audio quality validation
+
+3. **Error handling** (1 hour)
+   - No microphone detected
+   - Permission denied
+   - Audio quality issues
+
+#### Acceptance Criteria
+- ✅ Audio captured from system microphone
+- ✅ Level meter shows real-time audio levels
+- ✅ Noise gate filters background noise
+- ✅ Error handling for common issues
+
+---
 
 ### Task 1.2: Whisper API Integration (4 hours)
 
-- Already implemented in Task 5.3
+**Priority:** 🔴 HIGH
+
+#### Implementation Steps
+
+1. **Setup OpenAI client** (1 hour)
+   - Install OpenAI SDK
+   - Configure API key
+   - Test connection
+
+2. **Implement transcription service** (2 hours)
+   - Send audio file to Whisper API
+   - Parse response with timestamps
+   - Extract word-level timing data
+   - Handle API errors and retries
+
+3. **Testing** (1 hour)
+   - Test with various audio files
+   - Verify timestamp accuracy
+   - Test error scenarios
+
+#### Acceptance Criteria
+
+- ✅ Audio successfully sent to Whisper API
+- ✅ Transcription returned with segment timestamps
+- ✅ Word-level timestamps extracted
+- ✅ Confidence scores captured
+
+---
 
 ### Task 1.3: Timestamp Alignment Algorithm (3 hours)
 
-- Already implemented in Task 5.4
+**Priority:** 🔴 HIGH
+
+#### Implementation Steps
+
+1. **Design alignment algorithm** (1 hour)
+   - Map audio timestamps to session timeline
+   - Convert relative times to absolute UTC
+   - Handle timezone conversions
+
+2. **Implement alignment** (1.5 hours)
+   - Sync transcript timestamps with session start time
+   - Align voice segments with browser actions
+   - Find nearest snapshot for each voice segment
+
+3. **Testing** (0.5 hours)
+   - Verify timestamp accuracy
+   - Test edge cases (long pauses, overlapping actions)
+
+#### Acceptance Criteria
+- ✅ Transcript timestamps in UTC
+- ✅ Voice segments aligned with browser timeline
+- ✅ Each voice segment linked to nearest snapshot
+
+---
 
 ### Task 1.4: Transcript Storage (2 hours)
 
-- Already implemented in Task 5.4
+**Priority:** 🔴 HIGH
+
+#### Implementation Steps
+
+1. **Define transcript schema** (0.5 hours)
+   - Design JSON structure for transcript data
+   - Include segments, words, confidence scores
+   - Add metadata (language, duration)
+
+2. **Implement storage** (1 hour)
+   - Save transcript.json to session directory
+   - Merge transcript into session.json as actions
+   - Store audio file in audio/ subdirectory
+
+3. **Testing** (0.5 hours)
+   - Verify JSON schema
+   - Test file saving
+   - Validate merged session data
+
+#### Acceptance Criteria
+- ✅ Transcript saved as transcript.json
+- ✅ Voice actions merged into session.json
+- ✅ Audio file stored in session directory
+
+---
 
 ### Task 1.5: Testing (3 hours)
 
