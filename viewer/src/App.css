@@ -117,29 +117,30 @@
 
 .layout-timeline {
   flex-shrink: 0;
+  /* Height is now controlled by ResizablePanel */
 }
 
 .layout-main {
   display: flex;
   flex: 1;
   overflow: hidden;
+  min-height: 0;
 }
 
 .layout-sidebar {
-  width: 300px;
+  /* Width is now controlled by ResizablePanel */
   flex-shrink: 0;
-  overflow-y: auto;
 }
 
 .layout-content {
   flex: 1;
   overflow: hidden;
+  min-width: 0;
 }
 
 .layout-tabs {
-  height: 300px;
+  /* Height is now controlled by ResizablePanel */
   flex-shrink: 0;
-  overflow: hidden;
 }
 
 /* Loading state */

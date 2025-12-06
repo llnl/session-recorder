@@ -23,6 +23,7 @@ export const Timeline = () => {
   const [dragStart, setDragStart] = useState<number | null>(null);
   const [dragEnd, setDragEnd] = useState<number | null>(null);
   const [hoveredActionIndex, setHoveredActionIndex] = useState<number | null>(null);
+  const [hoverPosition, setHoverPosition] = useState<{ x: number; y: number } | null>(null);
 
   // Calculate timeline duration
   const getDuration = useCallback(() => {
@@ -202,6 +203,22 @@ export const Timeline = () => {
 
   const handleMouseLeave = () => {
     setHoveredActionIndex(null);
+    setHoverPosition(null);
+  };
+
+  const handleThumbnailMouseEnter = (e: React.MouseEvent, index: number) => {
+    if (isDragging) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    setHoveredActionIndex(index);
+    setHoverPosition({
+      x: rect.left + rect.width / 2,
+      y: rect.top,
+    });
+  };
+
+  const handleThumbnailMouseLeave = () => {
+    setHoveredActionIndex(null);
+    setHoverPosition(null);
   };
 
   const clearSelection = () => {
@@ -253,7 +270,8 @@ export const Timeline = () => {
                 className={`timeline-thumbnail ${index === selectedActionIndex ? 'selected' : ''} ${index === hoveredActionIndex ? 'hovered' : ''}`}
                 style={{ left: x - 40 }}
                 onClick={() => selectAction(index)}
-                title={`${action.type} at ${((new Date(action.timestamp).getTime() - new Date(sessionData.startTime).getTime()) / 1000).toFixed(2)}s`}
+                onMouseEnter={(e) => handleThumbnailMouseEnter(e, index)}
+                onMouseLeave={handleThumbnailMouseLeave}
               >
                 {screenshotUrl ? (
                   <img src={screenshotUrl} alt={`Action ${index + 1}`} />
@@ -264,6 +282,45 @@ export const Timeline = () => {
             );
           })}
         </div>
+
+        {/* Hover Zoom Preview */}
+        {hoveredActionIndex !== null && hoverPosition && sessionData && (
+          <div
+            className="timeline-hover-zoom"
+            style={{
+              left: `${hoverPosition.x}px`,
+              top: `${hoverPosition.y}px`,
+            }}
+          >
+            <div className="timeline-hover-zoom-preview">
+              {(() => {
+                const action = sessionData.actions[hoveredActionIndex];
+                const screenshotPath = action.before.screenshot;
+                const screenshotBlob = resources.get(screenshotPath);
+                const screenshotUrl = screenshotBlob ? URL.createObjectURL(screenshotBlob) : null;
+                return screenshotUrl ? (
+                  <img src={screenshotUrl} alt={`Action ${hoveredActionIndex + 1}`} />
+                ) : (
+                  <div className="timeline-hover-zoom-placeholder">No preview</div>
+                );
+              })()}
+            </div>
+            <div className="timeline-hover-zoom-tooltip">
+              <div className="timeline-hover-zoom-tooltip-type">
+                {sessionData.actions[hoveredActionIndex].type}
+              </div>
+              <div className="timeline-hover-zoom-tooltip-time">
+                {((new Date(sessionData.actions[hoveredActionIndex].timestamp).getTime() -
+                   new Date(sessionData.startTime).getTime()) / 1000).toFixed(2)}s
+              </div>
+              {sessionData.actions[hoveredActionIndex].before.url && (
+                <div className="timeline-hover-zoom-tooltip-target">
+                  {sessionData.actions[hoveredActionIndex].before.url}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

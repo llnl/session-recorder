@@ -419,17 +419,19 @@ Table of Contents:
 
 **Task 11.2**: Add UI polish and resizable panels (PRIORITY)
 
-- [ ] **Resizable Panels**: Add drag handles between sections (HIGH PRIORITY)
-  - Resize handle between Timeline and Action List/Snapshot area
-  - Resize handle between Action List and Snapshot Viewer (vertical)
-  - Resize handle between Snapshot Viewer and Tab Panel (horizontal)
-  - Save panel sizes to localStorage
-  - Minimum/maximum size constraints
-- [ ] **Timeline Screenshot Hover Zoom**: Show enlarged preview on hover (HIGH PRIORITY)
-  - Absolute positioned tooltip with larger screenshot
-  - Position tooltip to avoid edge clipping
-  - Smooth fade-in/out transitions
-  - Show action details in tooltip (type, timestamp)
+- [x] **Resizable Panels**: Add drag handles between sections (HIGH PRIORITY) ✅ **COMPLETED**
+  - ✅ Resize handle between Timeline and Main content area (horizontal)
+  - ✅ Resize handle between Action List and Snapshot Viewer (vertical)
+  - ✅ Resize handle between Main content and Tab Panel (horizontal)
+  - ✅ Save panel sizes to localStorage
+  - ✅ Minimum/maximum size constraints
+  - ✅ Smooth resize animations with visual feedback
+- [x] **Timeline Screenshot Hover Zoom**: Show enlarged preview on hover (HIGH PRIORITY) ✅ **COMPLETED**
+  - ✅ Enlarged 400x300px preview with screenshot
+  - ✅ Tooltip with action details (type, timestamp, URL)
+  - ✅ Smart positioning to avoid edge clipping
+  - ✅ Smooth fade-in/out transitions (0.2s)
+  - ✅ Responsive sizing on smaller viewports
 - [ ] Loading states with spinners/skeletons
 - [ ] Empty states with helpful messages
 - [ ] Error states with actionable guidance

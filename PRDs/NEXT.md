@@ -147,18 +147,42 @@
 
 **Build Status:** ✅ All changes compile successfully
 
-### Sprint 5b: UI Enhancements (5 hours) - 🎯 HIGH PRIORITY
+### Sprint 5b: UI Enhancements (5 hours) - ✅ 100% COMPLETE
 
-1. **Resizable Panels** (3h) - HIGH → [TASKS-2.md Task 11.2](TASKS-2.md#phase-11-styling--polish-3-hours) | [PRD-2.md](PRD-2.md#enhancement-requests)
-   - Add drag handles between sections (Timeline/Content, ActionList/Snapshot, Snapshot/TabPanel)
-   - Save panel sizes to localStorage
-   - Implement min/max size constraints
-   - Smooth resize animations
-2. **Screenshot Hover Zoom** (2h) - HIGH → [TASKS-2.md Task 11.2](TASKS-2.md#phase-11-styling--polish-3-hours) | [PRD-2.md](PRD-2.md#enhancement-requests)
-   - Show enlarged preview on timeline thumbnail hover
-   - Tooltip with action details (type, timestamp, target)
-   - Position tooltip to avoid edge clipping
-   - Smooth fade-in/out transitions
+**Status:** ✅ **COMPLETED** (2025-12-05)
+
+**Implementation Summary:**
+
+1. ✅ **Resizable Panels** (3h) - COMPLETE → [TASKS-2.md Task 11.2](TASKS-2.md#phase-11-styling--polish-3-hours) | [PRD-2.md](PRD-2.md#enhancement-requests)
+   - ✅ Created ResizablePanel component with drag handles
+   - ✅ Implemented horizontal resizing for Timeline and TabPanel
+   - ✅ Implemented vertical resizing for ActionList sidebar
+   - ✅ Added localStorage persistence with storageKey prop
+   - ✅ Implemented min/max size constraints
+   - ✅ Added smooth resize animations with visual feedback
+   - **Result:** Professional resizable layout with persistent panel sizes
+
+2. ✅ **Screenshot Hover Zoom** (2h) - COMPLETE → [TASKS-2.md Task 11.2](TASKS-2.md#phase-11-styling--polish-3-hours) | [PRD-2.md](PRD-2.md#enhancement-requests)
+   - ✅ Enlarged 400x300px preview with screenshot on hover
+   - ✅ Tooltip displaying action type, timestamp, and URL
+   - ✅ Smart fixed positioning to prevent edge clipping
+   - ✅ Smooth 0.2s fade-in/out transitions
+   - ✅ Responsive sizing for smaller viewports
+   - **Result:** Enhanced timeline navigation with visual preview
+
+**Files Created:**
+
+- `session-recorder/viewer/src/components/ResizablePanel/ResizablePanel.tsx`
+- `session-recorder/viewer/src/components/ResizablePanel/ResizablePanel.css`
+
+**Files Modified:**
+
+- `session-recorder/viewer/src/App.tsx` (integrated ResizablePanel)
+- `session-recorder/viewer/src/App.css` (updated layout styles)
+- `session-recorder/viewer/src/components/Timeline/Timeline.tsx` (added hover zoom)
+- `session-recorder/viewer/src/components/Timeline/Timeline.css` (added hover zoom styles)
+
+**Build Status:** ✅ All changes compile successfully
 
 ### Sprint 5c: Resource Management - Playwright Architecture (12 hours) - 📦 MEDIUM PRIORITY
 
@@ -281,17 +305,18 @@
 - Sprint 3 Snapshot Display: 10 hours ✅ (Phase 6: 5h, Phase 7.2: 2h, Phase 8.2: 2h, Testing: 1h)
 - Sprint 4 Debugging Tools: 8 hours ✅ (Phase 7.1: 1h, Phase 7.3: 2h, Phase 7.4: 4h, Testing: 1h)
 - Sprint 5a Snapshot Fixes: 9 hours ✅ (Restoration: 4h, Additional state: 3h, Shadow DOM: 2h)
-- **Subtotal Completed: 77 hours** ✅
+- Sprint 5b UI Enhancements: 5 hours ✅ (Resizable panels: 3h, Hover zoom: 2h)
+- **Subtotal Completed: 82 hours** ✅
 
 ### Remaining Work
 
 **Snapshot Architecture (PRD-3.md):**
-- Sprint 5b UI Enhancements: 5 hours 🎯 **HIGH** (Resizable panels: 3h, Hover zoom: 2h)
+
 - Sprint 5c Resource Management (Phase 2): 12 hours 📦 **MEDIUM** (Extraction: 5h, SHA1 storage: 4h, Serving: 3h)
 - Sprint 5d Performance & Polish: 7 hours (Performance: 4h, Metadata: 2h, Testing: 1h)
 - Sprint 6 Polish & Ship: 6 hours (Phase 11: 3h, Phase 12: 3h)
 - Sprint 7 Advanced Optimization (Phase 3): 14 hours ⚡ **OPTIONAL** (NodeSnapshot: 8h, Incremental: 6h)
-- **Subtotal: 44 hours** (30 hours core + 14 hours optional)
+- **Subtotal: 39 hours** (25 hours core + 14 hours optional)
 
 **Production Deployment (PRD-4.md):**
 - Sprint 8 Phase 1: Desktop Application: 20 hours 🚀 **PRODUCTION**
@@ -303,10 +328,10 @@
 
 ### Grand Total
 
-- **Core Features (POC 1-3): 107 hours** (77 completed ✅ + 30 remaining)
-- **With Advanced Optimization: 121 hours** (77 completed ✅ + 44 remaining)
-- **Production Ready (POC 1-4): 177 hours** (77 completed ✅ + 30 core + 70 production)
-- **Complete with Optimization: 191 hours** (77 completed ✅ + 44 + 70 production)
+- **Core Features (POC 1-3): 107 hours** (82 completed ✅ + 25 remaining)
+- **With Advanced Optimization: 121 hours** (82 completed ✅ + 39 remaining)
+- **Production Ready (POC 1-4): 177 hours** (82 completed ✅ + 25 core + 70 production)
+- **Complete with Optimization: 191 hours** (82 completed ✅ + 39 + 70 production)
 
 ## 🚀 Recommended Path
 

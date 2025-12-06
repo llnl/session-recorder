@@ -8,6 +8,7 @@ import { ActionList } from '@/components/ActionList/ActionList';
 import { SnapshotViewer } from '@/components/SnapshotViewer/SnapshotViewer';
 import { TabPanel } from '@/components/TabPanel/TabPanel';
 import { SessionLoader } from '@/components/SessionLoader/SessionLoader';
+import { ResizablePanel } from '@/components/ResizablePanel/ResizablePanel';
 import { useSessionStore } from '@/stores/sessionStore';
 import { exportSessionToZip, downloadZipFile, getExportFilename } from '@/utils/zipHandler';
 import './App.css';
@@ -107,17 +108,31 @@ function App() {
           </header>
 
           <div className="app-layout">
-            {/* Top: Timeline */}
-            <div className="layout-timeline">
+            {/* Top: Timeline (Resizable) */}
+            <ResizablePanel
+              direction="horizontal"
+              initialSize={150}
+              minSize={100}
+              maxSize={400}
+              storageKey="timeline-height"
+              className="layout-timeline"
+            >
               <Timeline />
-            </div>
+            </ResizablePanel>
 
             {/* Main content area */}
             <div className="layout-main">
-              {/* Left: Action List */}
-              <aside className="layout-sidebar">
+              {/* Left: Action List (Resizable) */}
+              <ResizablePanel
+                direction="vertical"
+                initialSize={300}
+                minSize={200}
+                maxSize={600}
+                storageKey="sidebar-width"
+                className="layout-sidebar"
+              >
                 <ActionList />
-              </aside>
+              </ResizablePanel>
 
               {/* Center: Snapshot Viewer */}
               <main className="layout-content">
@@ -125,10 +140,17 @@ function App() {
               </main>
             </div>
 
-            {/* Bottom: Tab Panel */}
-            <div className="layout-tabs">
+            {/* Bottom: Tab Panel (Resizable) */}
+            <ResizablePanel
+              direction="horizontal"
+              initialSize={300}
+              minSize={150}
+              maxSize={600}
+              storageKey="tabs-height"
+              className="layout-tabs"
+            >
               <TabPanel />
-            </div>
+            </ResizablePanel>
           </div>
         </>
       )}

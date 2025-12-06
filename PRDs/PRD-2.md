@@ -307,16 +307,21 @@
 
 ### Enhancement Requests
 
-**Resizable Panels** (HIGH PRIORITY):
-- Add drag handles between viewer sections
-- Persist panel sizes to localStorage
-- Minimum/maximum size constraints
-- **Estimated Time**: 3 hours
+**Resizable Panels** ✅ **COMPLETED** (2025-12-05):
 
-**Screenshot Hover Zoom** (HIGH PRIORITY):
-- Show enlarged screenshot preview on timeline thumbnail hover
-- Tooltip with action details
-- **Estimated Time**: 2 hours
+- ✅ Add drag handles between viewer sections
+- ✅ Persist panel sizes to localStorage
+- ✅ Minimum/maximum size constraints
+- ✅ Smooth resize animations with visual feedback
+- **Actual Time**: 3 hours
+
+**Screenshot Hover Zoom** ✅ **COMPLETED** (2025-12-05):
+
+- ✅ Show enlarged screenshot preview on timeline thumbnail hover
+- ✅ Tooltip with action details (type, timestamp, URL)
+- ✅ Smart positioning to avoid edge clipping
+- ✅ Smooth fade-in/out transitions
+- **Actual Time**: 2 hours
 
 ## 7. Non-Goals (Out of Scope for POC 2)
 

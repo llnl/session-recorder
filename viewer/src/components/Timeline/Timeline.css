@@ -118,3 +118,103 @@
   color: #9ca3af;
   font-size: 0.875rem;
 }
+
+/* Hover Zoom Preview */
+.timeline-hover-zoom {
+  position: fixed;
+  z-index: 1000;
+  pointer-events: none;
+  transform: translate(-50%, calc(-100% - 20px));
+  animation: timeline-hover-zoom-fade-in 0.2s ease-out;
+}
+
+@keyframes timeline-hover-zoom-fade-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-100% - 10px));
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, calc(-100% - 20px));
+  }
+}
+
+.timeline-hover-zoom-preview {
+  width: 400px;
+  height: 300px;
+  background-color: #1a1d23;
+  border: 2px solid #667eea;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1);
+  margin-bottom: 8px;
+}
+
+.timeline-hover-zoom-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  background-color: #252830;
+}
+
+.timeline-hover-zoom-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9ca3af;
+  font-size: 0.875rem;
+  background-color: #252830;
+}
+
+.timeline-hover-zoom-tooltip {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 0.75rem;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  min-width: 200px;
+  max-width: 400px;
+}
+
+.timeline-hover-zoom-tooltip-type {
+  font-weight: 600;
+  font-size: 0.875rem;
+  margin-bottom: 0.25rem;
+  text-transform: capitalize;
+}
+
+.timeline-hover-zoom-tooltip-time {
+  font-size: 0.75rem;
+  opacity: 0.9;
+  margin-bottom: 0.25rem;
+}
+
+.timeline-hover-zoom-tooltip-target {
+  font-size: 0.75rem;
+  font-family: 'Courier New', monospace;
+  opacity: 0.85;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-top: 0.25rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  margin-top: 0.25rem;
+}
+
+/* Edge clipping prevention - adjust position based on viewport */
+@media (max-width: 768px) {
+  .timeline-hover-zoom-preview {
+    width: 300px;
+    height: 225px;
+  }
+}
+
+/* Prevent hover zoom on small screens */
+@media (max-height: 600px) {
+  .timeline-hover-zoom {
+    display: none;
+  }
+}
