@@ -139,9 +139,11 @@
    - **Result:** Shadow DOM components render correctly
 
 **Files Created:**
+
 - `session-recorder/src/browser/snapshotRestoration.ts`
 
 **Files Modified:**
+
 - `session-recorder/src/browser/snapshotCapture.ts`
 - `session-recorder/viewer/src/components/SnapshotViewer/SnapshotViewer.tsx`
 
@@ -236,51 +238,61 @@
 **Goal:** Make session recorder production-ready for all company employees
 
 **User Flows:**
-1. **Non-Developer Flow:** Desktop app with one-click recording
-2. **Developer Flow:** MCP server for AI coding assistants
+
+1. **Voice recording integrated with session recorder:** See voice transcription alongside recorded actions
+2. **Non-Developer Flow:** Desktop app with one-click recording
+3. **Developer Flow:** MCP server for AI coding assistants
 
 **Key Features:**
-- Desktop Application (Electron-based)
-- MCP Server for Claude Code/Cline/Continue.dev
+
 - Voice recording with transcription
 - Timeline integration with voice segments
 - Audio playback with word-level highlighting
+- Desktop Application (Electron-based)
+- MCP Server for Claude Code/Cline/Continue.dev
 
-**Phases:**
-1. **Phase 1: Voice Recording Backend** (16h) → [TASKS-4.md Phase 1](TASKS-4.md#phase-1-voice-recording-backend-16-hours)
-   - Audio capture enhancements
-   - Whisper API integration
-   - UTC timestamp alignment
-   - Transcript storage
-   - Testing
+Sprint 6 is broken into 6 phases.
 
-2. **Phase 2: Viewer Integration** (14h) → [TASKS-4.md Phase 2](TASKS-4.md#phase-2-viewer-integration-14-hours)
-   - Timeline voice indicators
-   - Action list voice entries
-   - VoiceTranscriptViewer component
-   - Audio playback controls
+#### Phase 6.1: Voice Recording Backend (16h) → [TASKS-4.md Phase 1](TASKS-4.md#phase-1-voice-recording-backend-16-hours)
 
-3. **Phase 3: Testing & Documentation (Phases 1-2)** (4h) → [TASKS-4.md Phase 3](TASKS-4.md#phase-3-testing--documentation-phases-1-2-4-hours)
-   - Voice recording tests
-   - Viewer integration tests
+- Audio capture enhancements
+- Whisper API integration
+- UTC timestamp alignment
+- Transcript storage
+- Testing
 
-4. **Phase 4: MCP Server** (12h) → [TASKS-4.md Phase 4](TASKS-4.md#phase-4-mcp-server-12-hours)
-   - MCP server setup
-   - 5 recording tools (start/stop browser/voice/combined, get status)
-   - SessionRecorder integration
-   - Error handling
+#### Phase 6.2: Viewer Integration (14h) → [TASKS-4.md Phase 2](TASKS-4.md#phase-2-viewer-integration-14-hours)
 
-5. **Phase 5: Desktop Application** (20h) → [TASKS-4.md Phase 5](TASKS-4.md#phase-5-desktop-application-20-hours)
-   - Electron app structure
-   - Recording controls UI
-   - Voice capture integration
-   - Browser automation
-   - Zip creation and viewer links
+- Timeline voice indicators
+- Action list voice entries
+- VoiceTranscriptViewer component
+- Audio playback controls
 
-6. **Phase 6: Final Testing & Documentation** (12h) → [TASKS-4.md Phase 6](TASKS-4.md#phase-6-final-testing--documentation-12-hours)
-   - End-to-end testing
-   - User documentation
-   - Deployment guides
+#### Phase 6.3: Testing & Documentation (Phases 1-2) (4h) → [TASKS-4.md Phase 3](TASKS-4.md#phase-3-testing--documentation-phases-1-2-4-hours)
+
+- Voice recording tests
+- Viewer integration tests
+
+#### Phase 6.4: MCP Server (12h) → [TASKS-4.md Phase 4](TASKS-4.md#phase-4-mcp-server-12-hours)
+
+- MCP server setup
+- 5 recording tools (start/stop browser/voice/combined, get status)
+- SessionRecorder integration
+- Error handling
+
+#### Phase 6.5: Desktop Application (20h) → [TASKS-4.md Phase 5](TASKS-4.md#phase-5-desktop-application-20-hours)
+
+- Electron app structure
+- Recording controls UI
+- Voice capture integration
+- Browser automation
+- Zip creation and viewer links
+
+#### Phase 6.6: Final Testing & Documentation (12h) → [TASKS-4.md Phase 6](TASKS-4.md#phase-6-final-testing--documentation-12-hours)
+
+- End-to-end testing
+- User documentation
+- Deployment guides
 
 ### Sprint 7: Performance & Polish (7 hours) - ⚠️ POST-MVP
 
@@ -513,4 +525,3 @@
 
 The Playwright architecture in PRD-3.md is battle-tested and Path 2 is now complete!
 The production deployment in PRD-4.md makes the tool usable by non-technical staff.
-
