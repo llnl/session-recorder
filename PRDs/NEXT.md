@@ -2,20 +2,34 @@
 
 ## 🆕 Latest Updates (2025-12-05)
 
-**New Production Readiness Documentation:**
+**New Production Readiness & Voice Recording Documentation:**
 
 - 🚀 [PRD-4.md](PRD-4.md) - Production Polish & Voice Recording Integration
-  - **Desktop Application** for non-developers (one-click recording)
-  - **MCP Server** for AI coding assistants (Claude Code, Cline, Continue.dev)
-  - **Voice Recording** with transcription and timeline integration
-  - Full production deployment strategy
+  - **Initiative 1 (Core):** SessionRecorder voice integration with Python child process (38h)
+    - `browser_record` + `voice_record` boolean flags
+    - Word-level timestamps with millisecond precision
+    - **Python Whisper (official OpenAI) for maximum accuracy**
+    - Auto-detects GPU (CUDA/MPS) with CPU fallback - works on any computer
+    - Optional: 10x speedup with GPU, ~1-2 min CPU for 10-min audio
+    - Python child process spawned from TypeScript SessionRecorder
+  - **Initiative 2 (Core):** Viewer voice integration (included in 38h)
+    - Timeline green voice bars with hover tooltips
+    - Action list intermixing voice + browser chronologically
+    - VoiceTranscriptViewer with word highlighting + audio playback
+  - **Initiative 3 (Future):** Desktop Application for non-developers (20h)
+    - Electron-based one-click recording
+    - Auto zip creation + viewer link
+  - **Initiative 4 (Future):** MCP Server for AI assistants (12h)
+    - Claude Code, Cline, Continue.dev integration
+    - 5 MCP tools for recording control
 - 📋 [TASKS-4.md](TASKS-4.md) - Production Implementation Tasks
-  - Phase 1: Desktop Application (20 hours)
-  - Phase 2: MCP Server (12 hours)
-  - Phase 3: Voice Recording Backend (16 hours)
-  - Phase 4: Viewer Integration (14 hours)
-  - Phase 5: Testing & Documentation (8 hours)
-  - **Total: 70 hours**
+  - Phase 1: Voice Recording Backend (16 hours)
+  - Phase 2: Viewer Integration (14 hours)
+  - Phase 3: Testing & Documentation for Phases 1-2 (4 hours)
+  - Phase 4: MCP Server (12 hours) - Optional Future
+  - Phase 5: Desktop Application (20 hours) - Optional Future
+  - Phase 6: Final Testing & Documentation (12 hours) - Optional Future
+  - **Total: 78 hours (38h core + 40h optional future)**
 
 **Previous Architecture Updates:**
 
@@ -268,7 +282,7 @@ Sprint 6 is broken into 6 phases.
 - VoiceTranscriptViewer component
 - Audio playback controls
 
-#### Phase 6.3: Testing & Documentation (Phases 1-2) (4h) → [TASKS-4.md Phase 3](TASKS-4.md#phase-3-testing--documentation-phases-1-2-4-hours)
+#### Phase 6.3: Testing & Documentation (Phases 1-2) (4h) → [TASKS-4.md Phase 3](TASKS-4.md#phase-3-testing--documentation-for-phases-1-2-4-hours)
 
 - Voice recording tests
 - Viewer integration tests

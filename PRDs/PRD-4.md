@@ -9,813 +9,720 @@
 
 ## Executive Summary
 
-Session Recorder is now functional with comprehensive browser action recording and an advanced viewer. PRD-4 focuses on making this tool **production-ready** for company-wide adoption through two key initiatives:
+Session Recorder is now functional with comprehensive browser action recording and an advanced viewer. PRD-4 focuses on making this tool **production-ready** for company-wide adoption through four key initiatives:
 
-1. **Production Deployment:** Enable non-developers and developers to easily record sessions
-2. **Voice Recording Integration:** Capture voice narration alongside browser actions for richer context
+1. **Voice Recording in SessionRecorder:** Direct integration with Python child process for millisecond-precise transcription
+2. **Viewer Voice Integration:** Timeline, action list, and transcript viewer enhancements
+3. **Desktop Application:** Enable non-developers to easily record sessions
+4. **MCP Server:** Enable developers with AI coding assistants to record sessions
 
 **Target Users:**
+
+- **Developers:** Engineers creating QA sessions, bug reports, tutorials (SessionRecorder)
 - **Non-Developers:** QA testers, product managers, support staff (Desktop App)
-- **Developers:** Engineers with AI coding assistants (MCP Server)
+- **AI-Assisted Developers:** Engineers using Claude Code, Cline, Continue.dev (MCP Server)
 
 ---
 
 ## 1. Problem Statement
 
-**Current State:** Session recorder works well but requires technical knowledge:
-- Must run `npm run test:spa` manually
-- Requires Node.js and project setup
-- No simple "record button" for non-technical users
-- No voice narration capability
+**Current State:** Session recorder captures browser actions but lacks voice context and easy access:
+
+- ❌ No way to capture verbal explanations during testing
+- ❌ Cannot correlate spoken instructions with browser actions
+- ❌ No precise timestamp alignment between speech and actions
+- ❌ Non-developers cannot easily use the tool
+- ❌ No integration for AI coding assistants
 
 **Remaining Gaps:**
-- ❌ Non-developers cannot easily use the tool
-- ❌ No MCP integration for AI coding assistants
+
 - ❌ Cannot capture voice explanations during recording
+- ❌ No word-level timestamp synchronization
 - ❌ Timeline doesn't show voice annotations
+- ❌ Requires technical knowledge to use
+- ❌ No MCP integration for AI assistants
 
 ---
 
-## 2. Goals
+## 2. Goals & Four Key Initiatives
 
 ### Primary Goal
-Make session recording accessible to **all company employees** regardless of technical skill level.
 
-### POC 4 Objectives
+Make session recording accessible and feature-rich for all users with **millisecond-precise voice integration**.
 
-#### 2.1 User Flow 1: Non-Developer Desktop Application
+### Initiative 1: Voice Recording in SessionRecorder (Core - Phase 1)
+
+**Target Users:** Developers, QA Testers, Technical Writers
+
+**Requirements:**
+
+```typescript
+new SessionRecorder(sessionId, {
+  browser_record: boolean,  // Capture DOM + actions
+  voice_record: boolean,    // Capture audio + transcript
+  whisper_model?: 'tiny' | 'base' | 'small' | 'medium'
+})
+```
+
+- At least one must be `true` (both can be `true`)
+- Python child process for audio capture and Whisper transcription
+- Word-level timestamps with millisecond precision
+- Automatic alignment of voice segments to browser timeline
+
+**Example Usage:**
+
+```typescript
+const recorder = new SessionRecorder('test-123', {
+  browser_record: true,
+  voice_record: true,
+  whisper_model: 'base'
+});
+
+await recorder.start(page);
+// User interacts and speaks
+await recorder.stop();
+
+const zipPath = await recorder.createZip();
+// Zip contains: session.json, snapshots/, audio/, transcript
+```
+
+### Initiative 2: Viewer Voice Integration (Core - Phase 1)
+
+**Requirements:**
+
+- **Timeline:** Green bars showing voice segments with hover tooltips
+- **Action List:** Intermix voice transcripts with browser actions chronologically
+- **VoiceTranscriptViewer:** Interactive component with:
+  - Full transcript display
+  - Word-level highlighting during audio playback
+  - Click word to seek audio
+  - Speed control (0.5x - 2x)
+
+**UI Preview:**
+
+```
+Timeline: 0s    5s    10s    15s
+         │     │     │      │
+         🖱️    ⌨️    🖱️     ⌨️   ← Browser actions
+         ▓▓▓░░░░░░░▓▓▓▓░░   ← Voice (green bars)
+
+Action List:
+  🖱️ 2.45s click
+  🎙️ 3.12s "Click on the button..." (2.3s) 97%
+  ⌨️ 5.60s input
+  🎙️ 6.80s "Now let me..." (1.8s) 94%
+```
+
+### Initiative 3: Desktop Application (Optional - Future Phase)
+
 **Target Users:** QA, PM, Support, Designers
 
-**Requirements:**
-- Simple Desktop Application (Electron-based)
+**Features:**
+
 - One-click "Record" button
-- Optional recording title input
-- Choice of recording mode:
-  - Browser only
-  - Voice only
-  - Browser + Voice
-- Automatic zip creation after recording
-- Automatic viewer link generation
-- Cross-platform support (Windows, macOS, Linux)
+- Recording mode selector (Browser / Voice / Both)
+- Auto zip creation + viewer link
+- Cross-platform (Windows, macOS, Linux)
 
 **User Flow:**
+
 1. Launch Desktop App
-2. Click "New Recording" button
-3. Enter recording title (optional)
-4. Select recording mode (Browser / Voice / Both)
-5. Click "Start Recording"
-6. Desktop app opens browser window
-7. User performs actions and/or speaks
-8. User closes browser to finish
-9. App automatically creates zip file
-10. App shows success notification with:
-    - Zip file location
-    - Clickable link to open in viewer: `localhost:3001?zip=file:///path/to/session.zip`
+2. Click "New Recording"
+3. Select mode (Browser + Voice)
+4. Start Recording → Browser opens
+5. Perform actions & speak
+6. Close browser → Auto-creates zip
+7. Success notification with viewer URL
 
-#### 2.2 User Flow 2: Developer MCP Server
-**Target Users:** Developers using Claude Code, Cline, Continue.dev, etc.
+### Initiative 4: MCP Server (Optional - Future Phase)
 
-**Requirements:**
-- MCP Server wrapping recording functionality
-- Exposed MCP tools:
-  - `start_browser_recording`: Start browser session recording
-  - `start_voice_recording`: Start voice recording
-  - `start_combined_recording`: Start both browser and voice
-  - `stop_recording`: Stop active recording
-  - `get_recording_status`: Check if recording is active
-- Returns zip file path on completion
-- Compatible with Claude Desktop, VS Code extensions
+**Target Users:** Developers using Claude Code, Cline, Continue.dev
+
+**MCP Tools:**
+
+- `start_combined_recording`: Browser + voice
+- `start_browser_recording`: Browser only
+- `start_voice_recording`: Voice only
+- `stop_recording`: Stop and create zip
+- `get_recording_status`: Check status
 
 **User Flow:**
-1. Developer asks AI assistant: "Record my browser session"
-2. AI calls MCP tool `start_browser_recording`
-3. Browser opens, developer performs actions
-4. Developer asks AI: "Stop recording"
-5. AI calls MCP tool `stop_recording`
-6. AI provides zip file path and viewer link
 
-#### 2.3 Voice Recording Integration
+1. Developer: "Record my browser session with voice"
+2. AI calls `start_combined_recording`
+3. Browser opens, developer acts & speaks
+4. Developer: "Stop recording"
+5. AI calls `stop_recording`
+6. AI provides zip path + viewer link
 
-**Requirements:**
-- **Capture:** Record system microphone audio
-- **Transcription:** Real-time or post-recording speech-to-text
-- **Timestamps:** UTC timestamps matching browser recording precision
-- **Storage:** Audio file (WebM/MP3) + transcript JSON
-- **Timeline:** Visual representation in viewer timeline
-- **Playback:** Audio playback synchronized with browser actions
+---
 
-**Data Format:**
+## 3. Technical Architecture
+
+### 3.1 Voice Recording - TypeScript + Python Integration
+
+**SessionRecorder (TypeScript):**
+
+```typescript
+// src/node/SessionRecorder.ts
+export class SessionRecorder {
+  private voiceRecorder: VoiceRecorder | null = null;
+  private browserStartTime: number = 0;
+
+  constructor(sessionId: string, options: SessionRecorderOptions) {
+    if (!options.browser_record && !options.voice_record) {
+      throw new Error('At least one must be true');
+    }
+
+    if (options.voice_record) {
+      this.voiceRecorder = new VoiceRecorder({
+        model: options.whisper_model || 'base',
+        sessionId
+      });
+    }
+  }
+
+  async start(page: Page) {
+    this.browserStartTime = Date.now();
+
+    await Promise.all([
+      this.options.browser_record ? this.startBrowserRecording() : null,
+      this.options.voice_record ? this.voiceRecorder.start(this.browserStartTime) : null
+    ]);
+  }
+
+  async stop() {
+    const [, transcript] = await Promise.all([
+      this.options.browser_record ? this.stopBrowserRecording() : null,
+      this.options.voice_record ? this.voiceRecorder.stopAndTranscribe() : null
+    ]);
+
+    this.voiceTranscript = transcript;
+  }
+}
+```
+
+**VoiceRecorder (TypeScript - Child Process Wrapper):**
+
+```typescript
+// src/node/VoiceRecorder.ts
+import { spawn, ChildProcess } from 'child_process';
+
+export class VoiceRecorder {
+  private pythonProcess: ChildProcess | null = null;
+
+  async start(browserStartTime: number) {
+    this.pythonProcess = spawn('python', [
+      'python/record_audio.py',
+      '--session-id', this.sessionId,
+      '--model', this.model,
+      '--browser-start-time', browserStartTime.toString()
+    ]);
+
+    // Parse: RECORDING_STARTED filepath:...
+    this.pythonProcess.stdout?.on('data', (data) => {
+      const output = data.toString();
+      if (output.includes('RECORDING_STARTED')) {
+        const match = output.match(/filepath:(.+)$/);
+        if (match) this.audioFilePath = match[1].trim();
+      }
+    });
+  }
+
+  async stopAndTranscribe(): Promise<TranscriptResult> {
+    this.pythonProcess!.stdin?.write('STOP\n');
+
+    // Wait for: TRANSCRIPT_JSON:{...}
+    return new Promise((resolve, reject) => {
+      let buffer = '';
+      this.pythonProcess!.stdout?.on('data', (data) => {
+        buffer += data.toString();
+        if (buffer.includes('TRANSCRIPT_JSON:')) {
+          const match = buffer.match(/TRANSCRIPT_JSON:(.+)$/s);
+          if (match) resolve(JSON.parse(match[1]));
+        }
+      });
+      setTimeout(() => reject(new Error('Timeout')), 60000);
+    });
+  }
+}
+```
+
+**Python Audio Recorder:**
+
+```python
+# python/record_audio.py
+import sounddevice as sd
+import whisper
+import sys
+import json
+
+class AudioRecorder:
+    def __init__(self, session_id, model_name='base'):
+        self.model = whisper.load_model(model_name)
+        self.sample_rate = 16000
+
+    def start_recording(self):
+        self.filepath = f'audio/recording_{timestamp}.wav'
+        # Start audio stream...
+        print(f'RECORDING_STARTED filepath:{self.filepath}')
+        sys.stdout.flush()
+
+    def stop_and_transcribe(self):
+        # Stop stream, save WAV
+
+        result = self.model.transcribe(
+            audio_float,
+            word_timestamps=True  # ← CRITICAL
+        )
+
+        segments = []
+        for seg in result['segments']:
+            words = []
+            for word in seg['words']:
+                words.append({
+                    'word': word['word'],
+                    'start': word['start'],
+                    'end': word['end'],
+                    'absolute_start_ms': browser_start_ms + int(word['start'] * 1000),
+                    'absolute_end_ms': browser_start_ms + int(word['end'] * 1000),
+                    'probability': word.get('probability', 0.95)
+                })
+            segments.append({
+                'id': seg['id'],
+                'start': seg['start'],
+                'end': seg['end'],
+                'text': seg['text'],
+                'words': words
+            })
+
+        transcript = {
+            'text': result['text'],
+            'language': result.get('language', 'en'),
+            'segments': segments
+        }
+
+        print('TRANSCRIPTION_COMPLETE')
+        print(f'TRANSCRIPT_JSON:{json.dumps(transcript)}')
+        sys.stdout.flush()
+```
+
+### 3.2 Data Format
+
+**Session JSON with Voice:**
+
 ```json
 {
-  "sessionId": "session-1733097000000",
-  "startTime": "2024-12-01T18:30:00.000Z",
-  "endTime": "2024-12-01T18:35:45.123Z",
+  "sessionId": "session-1733400000000",
+  "startTime": "2025-12-05T10:23:45.000Z",
+  "endTime": "2025-12-05T10:28:30.123Z",
   "voiceRecording": {
-    "audioFile": "audio/recording.webm",
-    "transcript": "audio/transcript.json",
-    "enabled": true
+    "enabled": true,
+    "audioFile": "audio/recording_20251205_102345.wav",
+    "duration": 285.6,
+    "segmentCount": 12
+  },
+  "transcript": {
+    "text": "Click on the login button to test authentication",
+    "language": "en",
+    "segments": [
+      {
+        "id": 1,
+        "start": 0.0,
+        "end": 3.32,
+        "text": "Click on the login button",
+        "words": [
+          {
+            "word": "Click",
+            "start": 0.0,
+            "end": 0.22,
+            "absolute_start_ms": 1733400225000,
+            "absolute_end_ms": 1733400225220,
+            "probability": 0.98
+          }
+        ]
+      }
+    ]
   },
   "actions": [
     {
       "id": "action-1",
-      "timestamp": "2024-12-01T18:30:15.234Z",
-      "type": "click",
-      "before": { /* ... */ },
-      "after": { /* ... */ }
-    },
-    {
-      "id": "voice-1",
-      "timestamp": "2024-12-01T18:30:16.100Z",
-      "type": "voice_transcript",
-      "transcript": {
-        "text": "I'm clicking the login button to test authentication",
-        "startTime": "2024-12-01T18:30:16.100Z",
-        "endTime": "2024-12-01T18:30:19.450Z",
-        "confidence": 0.95
-      },
-      "nearestSnapshot": "action-1-after"
+      "timestamp": "2025-12-05T10:23:45.234Z",
+      "type": "click"
     }
   ]
 }
 ```
 
-**Transcript Entry Format:**
-```json
-{
-  "segments": [
-    {
-      "id": "segment-1",
-      "text": "I'm clicking the login button",
-      "startTime": "2024-12-01T18:30:16.100Z",
-      "endTime": "2024-12-01T18:30:19.450Z",
-      "confidence": 0.95,
-      "words": [
-        {
-          "word": "I'm",
-          "startTime": "2024-12-01T18:30:16.100Z",
-          "endTime": "2024-12-01T18:30:16.300Z",
-          "confidence": 0.98
-        }
-        // ... more words
-      ]
-    }
-  ]
-}
+**Zip Structure:**
+
+```
+session-1733400000000.zip
+├── session.json              ← Contains transcript with word-level timestamps
+├── audio/
+│   └── recording_20251205_102345.wav  ← Raw audio for playback
+├── snapshots/
+│   ├── action-1-before.html
+│   └── action-1-after.html
+└── screenshots/
+    └── action-1-before.png
 ```
 
----
+**Note:** The `session.json` file contains the complete transcript with word-level timestamps in the `transcript` field (see Data Format section above). The WAV file is only for audio playback in the viewer.
 
-## 3. Technical Requirements
+### 3.3 Viewer UI Components
 
-### 3.1 Desktop Application (Electron)
+**Timeline:**
 
-**Architecture:**
-- Electron main process: Handles recording orchestration
-- Renderer process: UI for recording controls
-- Playwright integration: Browser automation
-- Audio capture: Web Audio API or native node modules
+```tsx
+// viewer/src/components/Timeline/Timeline.tsx
+const renderVoiceSegments = () => {
+  return transcript.segments.map(segment => {
+    const startMs = segment.words[0].absolute_start_ms;
+    const endMs = segment.words[last].absolute_end_ms;
+    const x = timeToPixel(startMs);
+    const width = (endMs - startMs) / 1000 * PIXELS_PER_SECOND;
 
-**Core Features:**
-- Recording title input with default timestamp
-- Recording mode selector (Browser / Voice / Both)
-- Start/Stop recording buttons
-- Status indicator (recording, processing, complete)
-- Progress notifications
-- System tray integration for quick access
-- Auto-update mechanism
+    ctx.fillStyle = 'rgba(76, 175, 80, 0.6)';
+    ctx.fillRect(x, timelineHeight - 20, width, 15);
+  });
+};
+```
 
-**File Structure:**
+**Action List:**
+
+```tsx
+// Merge voice with actions
+const merged = [...actions];
+segments.forEach(seg => {
+  merged.push({
+    id: `voice-${seg.id}`,
+    type: 'voice_transcript',
+    timestamp: seg.words[0].absolute_start_ms,
+    segment: seg
+  });
+});
+
+merged.sort((a, b) => a.timestamp - b.timestamp);
+```
+
+**VoiceTranscriptViewer:**
+
+```tsx
+export const VoiceTranscriptViewer = ({ segment, audioUrl }) => {
+  const [currentWordIndex, setCurrentWordIndex] = useState(null);
+
+  const handleWordClick = (i) => {
+    const seekTime = (segment.words[i].absolute_start_ms -
+                      segment.words[0].absolute_start_ms) / 1000;
+    audioRef.current.currentTime = seekTime;
+    audioRef.current.play();
+  };
+
+  return (
+    <div className="transcript-text">
+      {segment.words.map((word, i) => (
+        <span
+          className={i === currentWordIndex ? 'word active' : 'word'}
+          onClick={() => handleWordClick(i)}
+        >
+          {word.word}{' '}
+        </span>
+      ))}
+      <audio ref={audioRef} src={audioUrl} controls />
+    </div>
+  );
+};
+```
+
+### 3.4 Desktop Application (Future)
+
+**Electron Structure:**
+
 ```
 session-recorder-desktop/
 ├── src/
 │   ├── main/
-│   │   ├── main.ts                 # Electron main process
-│   │   ├── recording.ts            # Recording orchestration
-│   │   ├── voiceCapture.ts         # Voice recording
-│   │   └── transcription.ts        # Speech-to-text
-│   ├── renderer/
-│   │   ├── App.tsx                 # Main UI
-│   │   ├── RecordingControls.tsx  # Record button, settings
-│   │   └── StatusDisplay.tsx       # Recording status
-│   └── shared/
-│       └── types.ts                # Shared interfaces
-├── package.json
-└── electron-builder.yml            # Build configuration
+│   │   ├── main.ts           # Electron entry
+│   │   └── recording.ts      # Wraps SessionRecorder
+│   └── renderer/
+│       ├── App.tsx
+│       └── RecordingControls.tsx
 ```
 
-**Dependencies:**
-```json
-{
-  "dependencies": {
-    "electron": "^28.0.0",
-    "playwright": "^1.40.0",
-    "@anthropic-ai/sdk": "^0.9.0",
-    "whisper-node": "^1.0.0",
-    "archiver": "^6.0.1"
+**Recording Manager:**
+
+```typescript
+// Wraps SessionRecorder for Electron
+export class RecordingManager {
+  private recorder: SessionRecorder | null = null;
+
+  async startRecording(config: {
+    title: string;
+    mode: 'browser' | 'voice' | 'both';
+    browserType: string;
+  }) {
+    this.recorder = new SessionRecorder(config.title, {
+      browser_record: config.mode !== 'voice',
+      voice_record: config.mode !== 'browser',
+      whisper_model: 'base'
+    });
+
+    await this.recorder.start(page);
   }
 }
 ```
 
-### 3.2 MCP Server
-
-**Architecture:**
-- Node.js MCP server
-- Exposes session recording tools to MCP clients
-- Wraps existing SessionRecorder class
-- Manages recording lifecycle
+### 3.5 MCP Server (Future)
 
 **MCP Tools:**
 
-**Tool 1: `start_browser_recording`**
 ```typescript
-{
-  name: "start_browser_recording",
-  description: "Start recording browser session with user actions, snapshots, and screenshots",
-  inputSchema: {
-    type: "object",
-    properties: {
-      title: {
-        type: "string",
-        description: "Recording title (optional, defaults to timestamp)"
-      },
-      url: {
-        type: "string",
-        description: "Initial URL to navigate to (optional)"
-      },
-      browserType: {
-        type: "string",
-        enum: ["chromium", "firefox", "webkit"],
-        description: "Browser to use (default: chromium)"
-      }
-    }
+// session-recorder-mcp/src/index.ts
+import { McpServer } from '@anthropic-ai/sdk/mcp';
+import { SessionRecorder } from '@session-recorder/core';
+
+server.addTool({
+  name: 'start_combined_recording',
+  handler: async (input) => {
+    const recorder = new SessionRecorder(input.title, {
+      browser_record: true,
+      voice_record: true,
+      whisper_model: input.whisperModel || 'base'
+    });
+
+    await recorder.start(page);
+
+    return {
+      success: true,
+      message: 'Recording started'
+    };
   }
-}
+});
 ```
-
-**Tool 2: `start_voice_recording`**
-```typescript
-{
-  name: "start_voice_recording",
-  description: "Start recording voice narration with real-time transcription",
-  inputSchema: {
-    type: "object",
-    properties: {
-      title: {
-        type: "string",
-        description: "Recording title (optional)"
-      },
-      transcriptionModel: {
-        type: "string",
-        enum: ["whisper-1", "whisper-large-v3"],
-        description: "Speech-to-text model (default: whisper-1)"
-      }
-    }
-  }
-}
-```
-
-**Tool 3: `start_combined_recording`**
-```typescript
-{
-  name: "start_combined_recording",
-  description: "Start recording both browser actions and voice narration simultaneously",
-  inputSchema: {
-    type: "object",
-    properties: {
-      title: { type: "string" },
-      url: { type: "string" },
-      browserType: { type: "string", enum: ["chromium", "firefox", "webkit"] },
-      transcriptionModel: { type: "string" }
-    }
-  }
-}
-```
-
-**Tool 4: `stop_recording`**
-```typescript
-{
-  name: "stop_recording",
-  description: "Stop active recording and create session zip file",
-  inputSchema: {
-    type: "object",
-    properties: {}
-  }
-}
-```
-
-**Tool 5: `get_recording_status`**
-```typescript
-{
-  name: "get_recording_status",
-  description: "Get current recording status (active/inactive, duration, action count)",
-  inputSchema: {
-    type: "object",
-    properties: {}
-  }
-}
-```
-
-**File Structure:**
-```
-session-recorder-mcp/
-├── src/
-│   ├── index.ts                # MCP server entry point
-│   ├── tools/
-│   │   ├── browserRecording.ts
-│   │   ├── voiceRecording.ts
-│   │   └── combinedRecording.ts
-│   └── types.ts
-├── package.json
-└── mcp-config.json             # MCP server configuration
-```
-
-### 3.3 Voice Recording Capture
-
-**Recording:**
-- Use Web Audio API or native node audio capture
-- Format: WebM Opus (best compatibility) or MP3
-- Sample rate: 16kHz or 44.1kHz
-- Mono audio (sufficient for speech)
-- Real-time level meter for user feedback
-
-**Transcription:**
-- **Option 1:** OpenAI Whisper API (cloud-based, high accuracy)
-- **Option 2:** Whisper.cpp (local, privacy-focused, lower accuracy)
-- **Option 3:** Web Speech API (browser-based, limited accuracy)
-
-**Recommended:** OpenAI Whisper API for production (best accuracy), Whisper.cpp for offline/privacy scenarios
-
-**Timestamp Alignment:**
-```typescript
-interface VoiceSegment {
-  id: string;
-  text: string;
-  startTime: string; // ISO 8601 UTC (e.g., "2024-12-01T18:30:16.100Z")
-  endTime: string;   // ISO 8601 UTC
-  confidence: number; // 0.0-1.0
-  nearestSnapshot?: string; // Reference to closest snapshot
-}
-
-// Timestamp alignment algorithm
-function alignVoiceToSnapshot(
-  voiceSegment: VoiceSegment,
-  actions: RecordedAction[]
-): string | null {
-  // Find action with timestamp closest to voice segment
-  let closestAction: RecordedAction | null = null;
-  let minDiff = Infinity;
-
-  for (const action of actions) {
-    const voiceTime = new Date(voiceSegment.startTime).getTime();
-    const actionTime = new Date(action.timestamp).getTime();
-    const diff = Math.abs(voiceTime - actionTime);
-
-    if (diff < minDiff) {
-      minDiff = diff;
-      closestAction = action;
-    }
-  }
-
-  return closestAction ? `${closestAction.id}-after` : null;
-}
-```
-
-### 3.4 Viewer Enhancements
-
-**Timeline Updates:**
-- Visual indicators for voice segments
-- Different styling for browser actions vs. voice transcripts
-- Color coding: Blue (browser actions), Green (voice segments)
-- Hover shows transcript preview
-- Click voice segment to view full transcript
-
-**Action List Updates:**
-- Intermixed browser actions and voice transcripts
-- Voice transcript entries:
-  - Icon: 🎙️ microphone
-  - Text preview (first 50 characters)
-  - Timestamp
-  - Duration badge
-- Clicking voice entry shows:
-  - Full transcript text
-  - Associated snapshot (closest in time)
-  - Audio playback controls
-
-**New Component: VoiceTranscriptViewer**
-```tsx
-interface VoiceTranscriptViewerProps {
-  segment: VoiceSegment;
-  audioUrl: string;
-  associatedSnapshot?: SnapshotData;
-}
-
-// Features:
-// - Full transcript text display
-// - Audio playback with waveform visualization
-// - Word-level highlighting during playback
-// - Jump to associated snapshot button
-// - Confidence indicator
-// - Copy transcript button
-```
-
-**Audio Playback:**
-- HTML5 audio player with custom controls
-- Waveform visualization (optional)
-- Speed control (0.5x, 1x, 1.5x, 2x)
-- Word-level highlighting synchronized with audio
-- Seek by clicking transcript text
 
 ---
 
-## 4. User Flows
+## 4. Implementation Roadmap
 
-### 4.1 Non-Developer Flow (Desktop App)
+### Phase 1: Voice Recording Backend (16 hours) - **CORE**
 
-**Recording:**
-1. User opens Session Recorder Desktop App
-2. UI shows:
-   - "New Recording" button
-   - List of recent recordings
-3. User clicks "New Recording"
-4. Modal appears:
-   - Title input: "QA Testing - Login Flow" (optional)
-   - Recording mode dropdown: "Browser + Voice" (default)
-   - Browser type: Chromium / Firefox / Safari
-   - "Start Recording" button
-5. User selects "Browser + Voice" and clicks "Start Recording"
-6. Desktop app:
-   - Starts microphone capture
-   - Opens browser window
-   - Shows recording indicator (red dot in system tray)
-7. User performs actions and speaks:
-   - "I'm testing the login functionality"
-   - Clicks username field, types "test@example.com"
-   - "Now entering the password"
-   - Clicks password field, types password
-   - "Clicking the login button"
-   - Clicks login button
-8. User closes browser window (signals end of recording)
-9. Desktop app:
-   - Stops microphone capture
-   - Processes audio transcription
-   - Creates session zip file
-   - Shows success notification:
-     - "Recording Complete!"
-     - Zip location: `/Users/username/SessionRecordings/qa-testing-login-flow-20241201.zip`
-     - Button: "Open in Viewer"
-10. User clicks "Open in Viewer"
-11. Browser opens to: `http://localhost:3001?zip=file:///Users/username/SessionRecordings/qa-testing-login-flow-20241201.zip`
+1. **Audio Capture Enhancements** (4h)
+   - Level meter visualization
+   - Noise gate/detection
+   - Audio quality validation
 
-**Viewing:**
-1. Viewer loads session from zip
-2. Timeline shows:
-   - Browser actions (blue dots)
-   - Voice segments (green bars)
-3. Action list shows:
-   - 🖱️ "Click on username field" - 18:30:15
-   - 🎙️ "I'm testing the login functionality" - 18:30:14 (3.2s)
-   - ⌨️ "Input text: test@example.com" - 18:30:16
-   - 🎙️ "Now entering the password" - 18:30:18 (1.8s)
-   - 🖱️ "Click on password field" - 18:30:19
-4. User clicks voice transcript entry
-5. Viewer shows:
-   - Full transcript with word-level timestamps
-   - Audio player with playback controls
-   - Associated snapshot (closest browser action)
+2. **Whisper Integration** (4h)
+   - Python child process wrapper
+   - Word-level timestamp extraction
+   - GPU/CPU auto-detection
 
-### 4.2 Developer Flow (MCP Server)
+3. **Timestamp Alignment** (3h)
+   - UTC reference point synchronization
+   - Millisecond precision conversion
+   - Browser action correlation
 
-**Setup:**
-1. Developer installs MCP server: `npm install -g @session-recorder/mcp-server`
-2. Configures Claude Desktop to use MCP server
-3. Restarts Claude Desktop
+4. **Transcript Storage** (2h)
+   - Session.json integration
+   - Word-level data format
 
-**Recording:**
-1. Developer opens Claude Code
-2. Developer: "I need to record my browser session while I test the new feature"
-3. Claude calls MCP tool:
-   ```json
-   {
-     "tool": "start_combined_recording",
-     "input": {
-       "title": "Feature Testing - User Dashboard",
-       "url": "http://localhost:3000",
-       "browserType": "chromium"
-     }
-   }
-   ```
-4. MCP server responds:
-   ```json
-   {
-     "success": true,
-     "sessionId": "session-1733097000000",
-     "message": "Recording started. Browser opened. Close browser or say 'stop recording' to finish."
-   }
-   ```
-5. Developer performs testing while narrating
-6. Developer: "Stop recording"
-7. Claude calls MCP tool:
-   ```json
-   {
-     "tool": "stop_recording",
-     "input": {}
-   }
-   ```
-8. MCP server processes and responds:
-   ```json
-   {
-     "success": true,
-     "sessionId": "session-1733097000000",
-     "zipPath": "/Users/dev/session-recordings/feature-testing-user-dashboard.zip",
-     "stats": {
-       "duration": "5m 45s",
-       "actions": 42,
-       "voiceSegments": 12
-     },
-     "viewerUrl": "http://localhost:3001?zip=file:///Users/dev/session-recordings/feature-testing-user-dashboard.zip"
-   }
-   ```
-9. Claude: "Recording complete! I've created a session zip with 42 browser actions and 12 voice segments. You can view it here: [link]"
+5. **Testing** (3h)
+   - Unit tests for transcription
+   - Integration tests for alignment
+   - End-to-end voice recording tests
+
+### Phase 2: Viewer Integration (14 hours) - **CORE**
+
+1. **Timeline Voice Indicators** (4h)
+   - Green voice segment bars
+   - Hover tooltips with preview
+   - Click navigation
+
+2. **Action List Voice Entries** (3h)
+   - Chronological intermixing
+   - Voice entry styling
+   - Confidence display
+
+3. **VoiceTranscriptViewer Component** (4h)
+   - Full transcript display
+   - Word-level highlighting
+   - Audio playback controls
+   - Click-to-seek functionality
+
+4. **Audio Playback Controls** (3h)
+   - Speed control (0.5x - 2x)
+   - Progress tracking
+   - Word synchronization
+
+### Phase 3: Testing & Documentation (Phases 1-2) (4 hours) - **CORE**
+
+1. **Voice Recording Tests** (2h)
+   - Unit and integration tests
+   - Error handling scenarios
+
+2. **Viewer Tests** (1h)
+   - Timeline rendering
+   - Action list ordering
+   - Audio playback
+
+3. **Documentation** (1h)
+   - Voice recording guide
+   - Viewer features guide
+
+**Subtotal Core Features:** 34 hours
+
+---
+
+### Phase 4: MCP Server (12 hours) - **OPTIONAL FUTURE**
+
+1. **MCP Server Setup** (3h)
+   - Project initialization
+   - Tool registration
+   - Claude Desktop configuration
+
+2. **Tool Implementations** (5h)
+   - start_browser_recording
+   - start_voice_recording
+   - start_combined_recording
+   - stop_recording
+   - get_recording_status
+
+3. **SessionRecorder Integration** (2h)
+   - RecordingManager wrapper
+   - Status tracking
+
+4. **Error Handling** (2h)
+   - Tool validation
+   - Error responses
+
+### Phase 5: Desktop Application (20 hours) - **OPTIONAL FUTURE**
+
+1. **Electron Structure** (4h)
+   - Main process setup
+   - Renderer UI
+   - IPC communication
+   - Build configuration
+
+2. **Recording Controls UI** (3h)
+   - React components
+   - Form inputs
+   - Status display
+
+3. **Voice Integration** (5h)
+   - Audio capture module
+   - Transcription service
+   - Timestamp alignment
+
+4. **Browser Automation** (3h)
+   - RecordingManager implementation
+   - Playwright integration
+   - Session merging
+
+5. **Zip + Viewer Link** (2h)
+   - Auto zip creation
+   - Viewer URL generation
+   - Notifications
+
+6. **Testing** (3h)
+   - End-to-end scenarios
+   - Error handling
+   - Cross-platform validation
+
+### Phase 6: Final Testing & Documentation (12 hours) - **OPTIONAL FUTURE**
+
+1. **End-to-End Testing** (4h)
+   - Desktop app tests
+   - MCP server tests
+   - Viewer integration tests
+
+2. **User Documentation** (4h)
+   - Desktop app user guide
+   - MCP server setup guide
+   - Troubleshooting guides
+
+3. **Deployment Guides** (4h)
+   - Desktop app distribution
+   - MCP server publishing
+   - Auto-update setup
+
+**Total:** 78 hours (34h core + 44h optional future)
 
 ---
 
 ## 5. Success Criteria
 
-### 5.1 Desktop Application
-- ✅ Installs on Windows, macOS, Linux
-- ✅ Simple one-click recording workflow
-- ✅ Supports browser-only, voice-only, and combined recording
-- ✅ Automatic zip creation and viewer link generation
-- ✅ Non-technical users can record sessions without help
-- ✅ System tray integration for quick access
-- ✅ Auto-update mechanism for new versions
+### Phases 1-3 (Core - 34 hours)
 
-### 5.2 MCP Server
-- ✅ Installable via npm
-- ✅ Compatible with Claude Desktop, VS Code extensions
-- ✅ All 5 MCP tools work correctly
-- ✅ Returns proper zip paths and viewer URLs
-- ✅ Handles concurrent recording requests gracefully
-- ✅ Proper error handling and status reporting
+- ✅ `browser_record` and `voice_record` options work
+- ✅ Word-level timestamps with ms precision (±50-200ms accuracy)
+- ✅ Transcription accuracy >93% (base model)
+- ✅ Timeline shows green voice bars with hover tooltips
+- ✅ Action list intermixes voice + browser chronologically
+- ✅ Audio playback syncs with word highlighting
+- ✅ Click word seeks audio to exact timestamp
+- ✅ Speed control (0.5x - 2x) works
+- ✅ Python Whisper auto-detects GPU with CPU fallback
+- ✅ 2-hour recordings transcribe in 1-12 minutes
 
-### 5.3 Voice Recording
-- ✅ Audio captured in high quality (clear speech)
-- ✅ Transcription accuracy >90% for clear speech
-- ✅ UTC timestamps match browser action timestamps
-- ✅ Voice segments aligned with nearest snapshots
-- ✅ Audio playback synchronized with transcript
-- ✅ Word-level highlighting during playback
+### Phase 4 (MCP Server)
 
-### 5.4 Viewer Integration
-- ✅ Timeline shows browser actions and voice segments
-- ✅ Action list intermixes browser and voice entries
-- ✅ Clicking voice entry shows transcript and snapshot
-- ✅ Audio playback with waveform visualization
-- ✅ Transcript search functionality
-- ✅ Export transcript as text/JSON
+- ✅ Claude Desktop compatible
+- ✅ All 5 tools functional (start/stop browser/voice/combined, status)
+- ✅ Returns zip paths and viewer URLs
+- ✅ Error handling for failed recordings
 
-### 5.5 Performance
-- ✅ Desktop app launches <2 seconds
-- ✅ Recording starts <3 seconds after button click
-- ✅ Transcription completes within 30 seconds after recording
-- ✅ Zip creation <10 seconds for typical session
-- ✅ MCP server responds to commands <500ms
+### Phase 5 (Desktop Application)
+
+- ✅ Cross-platform installation (Windows, macOS, Linux)
+- ✅ One-click recording with mode selection
+- ✅ Auto zip creation + viewer link
+- ✅ System tray integration
+- ✅ Notifications on completion
+
+### Phase 6 (Final Testing)
+
+- ✅ End-to-end tests pass for all user flows
+- ✅ User documentation complete
+- ✅ Deployment guides ready
 
 ---
 
-## 6. Non-Goals (Out of Scope for POC 4)
+## 6. Dependencies
 
-- ❌ Cloud storage for recordings
-- ❌ Team collaboration features
-- ❌ Video recording (only audio narration)
-- ❌ Multi-language transcription (English only)
-- ❌ Real-time collaboration/streaming
-- ❌ Mobile app version
-- ❌ Browser extension version
-- ❌ Advanced audio editing
-- ❌ Custom transcription models
-- ❌ Screen recording (only browser DOM capture)
+**Python:**
 
----
-
-## 7. Dependencies
-
-### Desktop Application
-- Electron 28+
-- Playwright (existing integration)
-- OpenAI Whisper API or Whisper.cpp
-- Archiver (zip creation)
-- Node Audio Recorder or similar
-
-### MCP Server
-- @anthropic-ai/sdk
-- Node.js 18+
-- Existing SessionRecorder class
-
-### Viewer Updates
-- React 18+
-- HTML5 Audio API
-- WaveSurfer.js (optional, for waveform visualization)
-
----
-
-## 8. Technical Specifications
-
-### 8.1 Voice Recording Format
-
-**Audio File:**
-```
-Format: WebM (Opus codec) or MP3
-Sample Rate: 16kHz (sufficient for speech recognition)
-Channels: Mono
-Bitrate: 32kbps (speech optimized)
-File naming: audio/recording.webm
+```text
+sounddevice>=0.4.6
+numpy>=1.24.0
+whisper>=1.0.0 (official OpenAI implementation for maximum accuracy)
+wave>=0.0.2
 ```
 
-**Transcript File:**
+**TypeScript:**
+
 ```json
 {
-  "version": "1.0",
-  "audioFile": "audio/recording.webm",
-  "duration": 345.6,
-  "language": "en-US",
-  "segments": [
-    {
-      "id": "segment-1",
-      "text": "I'm clicking the login button to test authentication",
-      "startTime": "2024-12-01T18:30:16.100Z",
-      "endTime": "2024-12-01T18:30:19.450Z",
-      "confidence": 0.95,
-      "words": [
-        {
-          "word": "I'm",
-          "startTime": "2024-12-01T18:30:16.100Z",
-          "endTime": "2024-12-01T18:30:16.300Z",
-          "confidence": 0.98
-        },
-        {
-          "word": "clicking",
-          "startTime": "2024-12-01T18:30:16.350Z",
-          "endTime": "2024-12-01T18:30:16.750Z",
-          "confidence": 0.97
-        }
-        // ... more words
-      ]
-    }
-  ]
+  "dependencies": {
+    "playwright": "^1.40.0",
+    "archiver": "^6.0.1"
+  }
 }
-```
-
-### 8.2 Session Data Structure Updates
-
-```typescript
-interface SessionData {
-  sessionId: string;
-  startTime: string;
-  endTime: string;
-
-  // NEW: Voice recording metadata
-  voiceRecording?: {
-    enabled: boolean;
-    audioFile: string;           // "audio/recording.webm"
-    transcriptFile: string;      // "audio/transcript.json"
-    duration: number;            // seconds
-    segmentCount: number;
-  };
-
-  // Updated: Actions now include voice transcripts
-  actions: Array<BrowserAction | VoiceTranscript>;
-}
-
-interface BrowserAction {
-  id: string;
-  type: 'click' | 'input' | 'change' | 'submit' | 'keydown';
-  timestamp: string;
-  before: SnapshotWithScreenshot;
-  after: SnapshotWithScreenshot;
-  action: ActionDetails;
-}
-
-interface VoiceTranscript {
-  id: string;
-  type: 'voice_transcript';
-  timestamp: string; // Start time of transcript segment
-  transcript: {
-    text: string;
-    startTime: string;
-    endTime: string;
-    confidence: number;
-    words?: Array<{
-      word: string;
-      startTime: string;
-      endTime: string;
-      confidence: number;
-    }>;
-  };
-  nearestSnapshot: string; // Reference to closest action snapshot (e.g., "action-5-after")
-}
-```
-
-### 8.3 Zip File Structure
-
-```
-session-1733097000000.zip
-├── session.json                     # Session metadata (includes voiceRecording)
-├── session.network                  # Network requests (JSON Lines)
-├── session.console                  # Console logs (JSON Lines)
-├── audio/
-│   ├── recording.webm              # Audio file
-│   └── transcript.json             # Full transcript with word-level timing
-├── snapshots/
-│   ├── action-1-before.html
-│   ├── action-1-after.html
-│   └── ...
-├── screenshots/
-│   ├── action-1-before.png
-│   ├── action-1-after.png
-│   └── ...
-└── resources/
-    ├── sha1-hash-1.css
-    ├── sha1-hash-2.png
-    └── ...
 ```
 
 ---
 
-## 9. Implementation Roadmap
+## 7. Out of Scope
 
-### Phase 1: Voice Recording Backend (16 hours)
-- Audio capture enhancements (4h)
-- Whisper API integration (4h)
-- Timestamp alignment algorithm (3h)
-- Transcript storage (2h)
-- Testing (3h)
-
-### Phase 2: Viewer Integration (14 hours)
-- Timeline voice indicators (4h)
-- Action list voice entries (3h)
-- VoiceTranscriptViewer component (4h)
-- Audio playback controls (3h)
-
-### Phase 3: Testing & Documentation for Phases 1-2 (4 hours)
-- Voice recording tests (2h)
-- Viewer voice integration tests (1h)
-- Documentation (1h)
-
-### Phase 4: MCP Server (12 hours)
-- MCP server setup (3h)
-- Tool implementations (5h)
-- SessionRecorder integration (2h)
-- Error handling and status (2h)
-
-### Phase 5: Desktop Application (20 hours)
-- Electron app structure (4h)
-- Recording controls UI (3h)
-- Voice capture integration (5h)
-- Browser automation integration (3h)
-- Zip creation and viewer link (2h)
-- Testing and polish (3h)
-
-### Phase 6: Final Testing & Documentation (12 hours)
-- End-to-end testing (4h)
-- User documentation (4h)
-- Deployment guides (4h)
-
-**Total Estimated Effort:** 78 hours
+- ❌ Cloud storage
+- ❌ Multi-language (English only)
+- ❌ Video recording
+- ❌ Real-time transcription
+- ❌ Speaker diarization
 
 ---
 
-## 10. Risks and Mitigations
+## Document Changelog
 
-| Risk | Impact | Mitigation |
-|------|--------|------------|
-| Transcription accuracy <90% | High | Use OpenAI Whisper API (proven accuracy), allow manual transcript editing |
-| Electron app size too large | Medium | Use electron-builder compression, exclude dev dependencies |
-| MCP server compatibility issues | Medium | Test with multiple MCP clients (Claude Desktop, Cline, Continue.dev) |
-| Audio sync drift over long recordings | Low | Use UTC timestamps with millisecond precision, periodic sync checks |
-| Desktop app auto-update failures | Medium | Implement fallback update mechanism, manual download option |
-| Voice recording privacy concerns | High | Add clear privacy notices, local-only option (Whisper.cpp), encrypted storage |
-
----
-
-## 11. Future Enhancements (Post-POC 4)
-
-- Multi-language transcription support
-- Speaker diarization (identify multiple speakers)
-- Real-time transcription preview during recording
-- Custom vocabulary for domain-specific terms
-- Transcript editing interface
-- Team sharing and collaboration
-- Cloud storage integration
-- Advanced audio processing (noise reduction, normalization)
-- Video recording integration
-- Mobile companion app
-- Browser extension alternative to Desktop app
-
----
-
-## Document Change Log
-
-| Version | Date | Changes | Author |
-|---------|------|---------|--------|
-| 4.0 | 2025-12-05 | Initial PRD for production polish and voice integration | Claude |
+| Version | Date | Changes |
+|---------|------|---------|
+| 4.0 | 2025-12-05 | All 4 initiatives: SessionRecorder voice, Viewer UI, Desktop App, MCP Server |

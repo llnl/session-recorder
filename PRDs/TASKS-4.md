@@ -18,20 +18,25 @@ This document breaks down PRD-4 objectives into actionable tasks for making Sess
 Already covered in Phase 1 Tasks 1.3 and 1.4. Additional work:
 
 ### Task 1.1: Audio Capture Enhancements (4 hours)
+
 - Level meter visualization
 - Noise gate/detection
 - Audio quality validation
 
 ### Task 1.2: Whisper API Integration (4 hours)
+
 - Already implemented in Task 5.3
 
 ### Task 1.3: Timestamp Alignment Algorithm (3 hours)
+
 - Already implemented in Task 5.4
 
 ### Task 1.4: Transcript Storage (2 hours)
+
 - Already implemented in Task 5.4
 
 ### Task 1.5: Testing (3 hours)
+
 - Unit tests for transcription
 - Integration tests for alignment
 - End-to-end voice recording tests
@@ -721,6 +726,7 @@ This reuses the RecordingManager from Desktop app with minor adjustments for MCP
 2. **Add status reporting** (1 hour)
 
 ---
+
 ## Phase 5: Desktop Application (20 hours)
 
 **Goal:** Create user-friendly Desktop Application for non-developers
@@ -1724,6 +1730,7 @@ new Notification({
 ### Implementation Priority
 
 **Must Have (Core Voice & Viewer - 34 hours):**
+
 1. Voice Recording Backend (16h)
 2. Viewer Integration (14h)
 3. Testing & Documentation for Phases 1-2 (4h)
