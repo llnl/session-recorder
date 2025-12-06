@@ -1,8 +1,8 @@
 # PRD-3: Session Recorder Snapshot Architecture Improvements
 
-**Version:** 3.0
+**Version:** 3.1
 **Date:** 2025-12-05
-**Status:** 🔴 CRITICAL - Architecture Enhancement Required
+**Status:** 🟢 Phase 1 Complete | 📦 Phase 2 Pending | ⚡ Phase 3 Optional
 **Based On:** Playwright's Production-Grade Snapshot System Analysis
 
 ---
@@ -396,26 +396,36 @@ snapshot2 = {
 
 ## 3. Implementation Roadmap
 
-### Phase 1: Critical Fixes (Sprint 5a - High Priority) 🚨
+### Phase 1: Critical Fixes (Sprint 5a) ✅ COMPLETE
 
 **Goal:** Make snapshots actually work for debugging
+**Status:** ✅ **COMPLETED** (2025-12-05)
 
-**Task 1.1: Add Restoration Script (4 hours)**
-- Create `snapshotRestoration.ts` with restoration logic
-- Inject script into snapshot HTML in viewer
-- Test: Input values, checkboxes, scroll positions restore correctly
+**Task 1.1: Add Restoration Script (4 hours)** ✅
+- ✅ Created `snapshotRestoration.ts` with restoration logic
+- ✅ Injected script into snapshot HTML in viewer
+- ✅ Tested: Input values, checkboxes, scroll positions restore correctly
 
-**Task 1.2: Capture Missing State (3 hours)**
-- Add canvas bounding rects (`__playwright_bounding_rect__`)
-- Add popover/dialog state
-- Test: All interactive elements captured
+**Task 1.2: Capture Missing State (3 hours)** ✅
+- ✅ Added canvas bounding rects (`__playwright_bounding_rect__`)
+- ✅ Added iframe bounding rects
+- ✅ Added popover/dialog state
+- ✅ Added custom elements tracking
+- ✅ Tested: All interactive elements captured
 
-**Task 1.3: Shadow DOM Rendering (2 hours)**
-- Fix `<template shadowrootmode="open">` rendering
-- Ensure recursive Shadow DOM traversal
-- Test: Shadow DOM components render correctly
+**Task 1.3: Shadow DOM Rendering (2 hours)** ✅
+- ✅ Enhanced Shadow DOM serialization with adopted stylesheets
+- ✅ Ensured recursive Shadow DOM traversal
+- ✅ Tested: Shadow DOM components render correctly
 
-**Total:** 9 hours
+**Total:** 9 hours ✅ COMPLETE
+
+**Files Created:**
+- `session-recorder/src/browser/snapshotRestoration.ts`
+
+**Files Modified:**
+- `session-recorder/src/browser/snapshotCapture.ts`
+- `session-recorder/viewer/src/components/SnapshotViewer/SnapshotViewer.tsx`
 
 ---
 

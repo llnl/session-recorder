@@ -19,13 +19,30 @@ export function createSnapshotCapture() {
   const kScrollTopAttribute = '__playwright_scroll_top_';
   const kScrollLeftAttribute = '__playwright_scroll_left_';
   const kCurrentSrcAttribute = '__playwright_current_src__';
+  const kBoundingRectAttribute = '__playwright_bounding_rect__';
+  const kPopoverOpenAttribute = '__playwright_popover_open_';
+  const kDialogOpenAttribute = '__playwright_dialog_open_';
+  const kStyleSheetAttribute = '__playwright_style_sheet__';
 
   function captureSnapshot(): SnapshotData {
     const doctype = document.doctype
       ? `<!DOCTYPE ${document.doctype.name}>`
       : '';
 
-    const html = visitNode(document.documentElement);
+    // Track defined custom elements
+    const definedCustomElements = new Set<string>();
+
+    let html = visitNode(document.documentElement, definedCustomElements);
+
+    // Inject custom elements list into body tag if any were found
+    if (definedCustomElements.size > 0) {
+      const elementsList = Array.from(definedCustomElements).join(',');
+      const attr = `__playwright_custom_elements__="${elementsList}"`;
+      html = html.replace(
+        /<body([^>]*)>/i,
+        `<body$1 ${attr}>`
+      );
+    }
 
     return {
       doctype,
@@ -39,7 +56,7 @@ export function createSnapshotCapture() {
     };
   }
 
-  function visitNode(node: Node): string {
+  function visitNode(node: Node, definedCustomElements?: Set<string>): string {
     const nodeType = node.nodeType;
 
     // Handle text nodes
@@ -56,6 +73,14 @@ export function createSnapshotCapture() {
     const tagName = nodeType === Node.DOCUMENT_FRAGMENT_NODE
       ? 'template'
       : element.tagName.toLowerCase();
+
+    // Track custom elements (elements with hyphens in name that are defined)
+    if (nodeType === Node.ELEMENT_NODE && definedCustomElements) {
+      const localName = element.localName;
+      if (localName.includes('-') && window.customElements?.get(localName)) {
+        definedCustomElements.add(localName);
+      }
+    }
 
     // Skip script tags
     if (tagName === 'script') return '';
@@ -111,6 +136,53 @@ export function createSnapshotCapture() {
       if (tagName === 'img' && (element as HTMLImageElement).currentSrc) {
         html += ` ${kCurrentSrcAttribute}="${escapeAttr((element as HTMLImageElement).currentSrc)}"`;
       }
+
+      // Canvas bounding rect (for future screenshot extraction)
+      if (tagName === 'canvas') {
+        const rect = (element as HTMLCanvasElement).getBoundingClientRect();
+        const boundingRect = {
+          left: rect.left,
+          top: rect.top,
+          right: rect.right,
+          bottom: rect.bottom,
+          width: rect.width,
+          height: rect.height
+        };
+        html += ` ${kBoundingRectAttribute}="${escapeAttr(JSON.stringify(boundingRect))}"`;
+      }
+
+      // Iframe bounding rect
+      if (tagName === 'iframe' || tagName === 'frame') {
+        const rect = (element as HTMLIFrameElement).getBoundingClientRect();
+        const boundingRect = {
+          left: rect.left,
+          top: rect.top,
+          right: rect.right,
+          bottom: rect.bottom,
+          width: rect.width,
+          height: rect.height
+        };
+        html += ` ${kBoundingRectAttribute}="${escapeAttr(JSON.stringify(boundingRect))}"`;
+      }
+
+      // Popover state (HTML Popover API)
+      if ((element as HTMLElement).popover) {
+        const isOpen = (element as HTMLElement).matches &&
+                       (element as HTMLElement).matches(':popover-open');
+        if (isOpen) {
+          html += ` ${kPopoverOpenAttribute}="true"`;
+        }
+      }
+
+      // Dialog state
+      if (tagName === 'dialog') {
+        const dialog = element as HTMLDialogElement;
+        if (dialog.open) {
+          const isModal = dialog.matches && dialog.matches(':modal');
+          const mode = isModal ? 'modal' : 'true';
+          html += ` ${kDialogOpenAttribute}="${mode}"`;
+        }
+      }
     }
 
     // Handle Shadow DOM (document fragment)
@@ -122,10 +194,26 @@ export function createSnapshotCapture() {
 
     // Handle Shadow DOM children
     if (nodeType === Node.ELEMENT_NODE && (element as HTMLElement).shadowRoot) {
+      const shadowRoot = (element as HTMLElement).shadowRoot!;
       html += '<template shadowrootmode="open">';
-      const shadowChildren = Array.from((element as HTMLElement).shadowRoot!.childNodes);
+
+      // Include adopted stylesheets if present
+      if ('adoptedStyleSheets' in shadowRoot && (shadowRoot as any).adoptedStyleSheets?.length > 0) {
+        const sheets = (shadowRoot as any).adoptedStyleSheets as CSSStyleSheet[];
+        for (const sheet of sheets) {
+          try {
+            const cssText = Array.from(sheet.cssRules).map(rule => rule.cssText).join('\n');
+            html += `<template ${kStyleSheetAttribute}="${escapeAttr(cssText)}"></template>`;
+          } catch (e) {
+            // CORS or other access issues
+            console.warn('Could not access adopted stylesheet:', e);
+          }
+        }
+      }
+
+      const shadowChildren = Array.from(shadowRoot.childNodes);
       for (const child of shadowChildren) {
-        html += visitNode(child);
+        html += visitNode(child, definedCustomElements);
       }
       html += '</template>';
     }
@@ -149,7 +237,7 @@ export function createSnapshotCapture() {
       // Handle regular children
       const children = Array.from(node.childNodes);
       for (const child of children) {
-        html += visitNode(child);
+        html += visitNode(child, definedCustomElements);
       }
     }
 

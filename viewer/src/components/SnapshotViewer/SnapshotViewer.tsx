@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useSessionStore } from '@/stores/sessionStore';
+import { generateRestorationScript } from '../../../../src/browser/snapshotRestoration';
 import './SnapshotViewer.css';
 
 type SnapshotView = 'before' | 'after';
@@ -19,6 +20,27 @@ export const SnapshotViewer = () => {
   const [error, setError] = useState<string | null>(null);
 
   const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  /**
+   * Injects the restoration script into snapshot HTML
+   * This script restores form values, checkboxes, scroll positions, and Shadow DOM
+   */
+  const injectRestorationScript = (html: string): string => {
+    const script = `<script type="text/javascript">${generateRestorationScript()}</script>`;
+
+    // Try to inject before closing </head>
+    if (html.includes('</head>')) {
+      return html.replace('</head>', `${script}\n</head>`);
+    }
+
+    // Fallback: inject at start of <body>
+    if (html.includes('<body')) {
+      return html.replace(/<body([^>]*)>/, `<body$1>\n${script}`);
+    }
+
+    // Last resort: prepend to HTML
+    return script + html;
+  };
 
   // Reset view when action changes
   useEffect(() => {
@@ -57,8 +79,11 @@ export const SnapshotViewer = () => {
         return;
       }
 
+      // ✅ NEW: Inject restoration script to restore form state, scroll positions, and Shadow DOM
+      const htmlWithRestoration = injectRestorationScript(htmlContent);
+
       iframeDoc.open();
-      iframeDoc.write(htmlContent);
+      iframeDoc.write(htmlWithRestoration);
       iframeDoc.close();
 
       // Wait for iframe to load
