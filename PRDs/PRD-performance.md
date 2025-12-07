@@ -38,6 +38,26 @@ Optimize Session Recorder for production use with very long recording sessions (
 
 ### Objectives
 
+#### 2.0 Recorder Performance Optimization (Sprint 5c) - 🔴 CRITICAL
+**Target Users:** All users experiencing slow recording performance
+
+**Requirements:**
+- Async non-blocking resource capture
+- Resource queue with concurrency limits
+- Network capture throttling
+- Multi-tab resource capture optimization
+
+**Performance Targets:**
+- Page navigation <500ms delay (currently 6-25 seconds)
+- Resource capture doesn't block user interaction
+- Concurrent resource downloads limited to 5 per tab
+- Background SHA1 hashing with queue
+
+**Impact:**
+- **Current:** 300-500 resources × 65-250ms = 6-25 second page load delays
+- **Target:** <500ms total overhead, all resource capture in background
+- **User Experience:** Instant page navigation, no perceptible slowdown
+
 #### 2.1 Performance Optimization (Sprint 5d)
 **Target Users:** All users with extended recording sessions
 
@@ -72,7 +92,105 @@ Optimize Session Recorder for production use with very long recording sessions (
 
 ## 3. Technical Requirements
 
-### 3.1 Performance Optimization (Sprint 5d)
+### 3.0 Recorder Performance Optimization (Sprint 5c)
+
+**Problem Analysis:**
+
+Current implementation in `SessionRecorder._handleNetworkResponse()` (lines 790-869):
+- **Synchronous blocking:** `await response.body()` waits for full download
+- **Multi-tab multiplication:** Every tab's network capture runs independently
+- **No throttling:** All resources captured simultaneously
+- **CPU-intensive hashing:** SHA1 calculation blocks Node.js event loop
+
+**Async Non-Blocking Architecture:**
+
+```typescript
+// Resource capture queue with concurrency limit
+interface ResourceCapture {
+  url: string;
+  response: Response;
+  priority: number; // 0=critical, 1=normal, 2=low
+}
+
+class ResourceCaptureQueue {
+  private queue: ResourceCapture[] = [];
+  private activeDownloads = 0;
+  private maxConcurrent = 5; // Per tab
+
+  async enqueue(capture: ResourceCapture): Promise<void> {
+    this.queue.push(capture);
+    this.processQueue(); // Non-blocking fire-and-forget
+  }
+
+  private async processQueue(): Promise<void> {
+    while (this.queue.length > 0 && this.activeDownloads < this.maxConcurrent) {
+      const capture = this.queue.shift()!;
+      this.activeDownloads++;
+
+      // Process in background without blocking
+      this.captureResource(capture)
+        .catch(err => console.warn(`Resource capture failed: ${err.message}`))
+        .finally(() => this.activeDownloads--);
+    }
+  }
+}
+```
+
+**Implementation Changes:**
+
+1. **Non-blocking response handler:**
+```typescript
+// In _attachToPage()
+page.on('response', (response) => {
+  // Fire and forget - don't await
+  this.resourceQueue.enqueue({
+    url: response.url(),
+    response,
+    priority: this._getResourcePriority(response)
+  });
+});
+```
+
+2. **Background SHA1 hashing:**
+```typescript
+// Move SHA1 to worker thread or defer with setImmediate
+private async _calculateSha1Async(buffer: Buffer): Promise<string> {
+  return new Promise((resolve) => {
+    setImmediate(() => {
+      const hash = crypto.createHash('sha1');
+      hash.update(buffer);
+      resolve(hash.digest('hex'));
+    });
+  });
+}
+```
+
+3. **Resource priority:**
+```typescript
+private _getResourcePriority(response: Response): number {
+  const contentType = response.headers()['content-type'] || '';
+  const resourceType = response.request().resourceType();
+
+  // Critical: CSS, fonts (affects rendering)
+  if (contentType.includes('text/css') || contentType.includes('font/')) return 0;
+
+  // Normal: JavaScript, images
+  if (contentType.includes('javascript') || contentType.includes('image/')) return 1;
+
+  // Low: Other resources
+  return 2;
+}
+```
+
+**Performance Benefits:**
+
+- Page navigation returns immediately (no blocking)
+- Resource capture happens in background
+- Concurrency limit prevents overwhelming system
+- Priority queue ensures critical resources captured first
+- SHA1 hashing deferred to prevent event loop blocking
+
+### 3.1 Viewer Performance Optimization (Sprint 5d)
 
 **Large Session Handling:**
 - Virtual scrolling for action lists (already implemented)
@@ -188,7 +306,15 @@ interface IncrementalSnapshot {
 
 ## 4. Success Criteria
 
-### 4.1 Performance Optimization (Sprint 5d)
+### 4.0 Recorder Performance Optimization (Sprint 5c)
+- ✅ Page navigation overhead reduced to <500ms (from 6-25 seconds)
+- ✅ Resource capture doesn't block user interaction
+- ✅ Concurrent resource downloads limited to 5 per tab
+- ✅ SHA1 hashing happens in background (setImmediate)
+- ✅ ResourceCaptureQueue class implemented with priority support
+- ✅ Recording session feels instant and responsive
+
+### 4.1 Viewer Performance Optimization (Sprint 5d)
 - ✅ Viewer loads 1000+ action sessions in <5 seconds
 - ✅ Timeline scrubbing maintains 60fps
 - ✅ Memory usage <500MB for typical sessions
@@ -208,15 +334,18 @@ interface IncrementalSnapshot {
 
 ## 5. Performance Targets
 
-| Metric | Current | Target (Sprint 5d) | Target (Sprint 7) |
-|--------|---------|-------------------|-------------------|
-| Viewer load time (100 actions) | ~2s | <2s | <1.5s |
-| Viewer load time (1000 actions) | Untested | <5s | <3s |
-| Memory usage (typical session) | Unknown | <500MB | <300MB |
-| Timeline rendering | 60fps | 60fps | 60fps |
-| Snapshot capture time | ~60ms | ~60ms | ~40ms |
-| File size (100 snapshots) | ~20MB | ~20MB | ~8MB |
-| File size reduction | N/A | N/A | 40-60% |
+| Metric | Current | Target (Sprint 5c) | Target (Sprint 5d) | Target (Sprint 7) |
+|--------|---------|-------------------|-------------------|-------------------|
+| **Recorder: Page navigation overhead** | 6-25s | <500ms | <500ms | <500ms |
+| **Recorder: Resource capture blocking** | Yes | No (async) | No | No |
+| **Recorder: Concurrent downloads** | Unlimited | 5 per tab | 5 per tab | 5 per tab |
+| **Viewer: Load time (100 actions)** | ~2s | ~2s | <2s | <1.5s |
+| **Viewer: Load time (1000 actions)** | Untested | Untested | <5s | <3s |
+| **Viewer: Memory usage (typical)** | Unknown | Unknown | <500MB | <300MB |
+| **Viewer: Timeline rendering** | 60fps | 60fps | 60fps | 60fps |
+| **Snapshot: Capture time** | ~60ms | ~60ms | ~60ms | ~40ms |
+| **Snapshot: File size (100 snapshots)** | ~20MB | ~20MB | ~20MB | ~8MB |
+| **Snapshot: File size reduction** | N/A | N/A | N/A | 40-60% |
 
 ---
 
@@ -233,7 +362,12 @@ interface IncrementalSnapshot {
 
 ## 7. Dependencies
 
-### Sprint 5d: Performance Optimization
+### Sprint 5c: Recorder Performance (CRITICAL)
+- Multi-tab recording implementation (complete)
+- Understanding of network resource capture flow
+- Node.js async patterns and concurrency control
+
+### Sprint 5d: Viewer Performance Optimization
 - Existing viewer (Sprints 1-5c complete)
 - Large session test generator
 - Performance profiling tools
@@ -247,7 +381,32 @@ interface IncrementalSnapshot {
 
 ## 8. Implementation Roadmap
 
-### Sprint 5d: Performance & Polish (7 hours)
+### Sprint 5c: Recorder Performance Fix (2 hours) - 🔴 CRITICAL
+
+**Priority:** IMMEDIATE - Recording is unusably slow (6-25 second page loads)
+
+1. **ResourceCaptureQueue implementation** (1h)
+   - Create queue class with priority support
+   - Implement concurrency limiting (5 concurrent per tab)
+   - Add resource priority calculation
+   - Background processing without blocking
+
+2. **Async resource capture** (0.5h)
+   - Convert `_handleNetworkResponse` to fire-and-forget
+   - Remove `await` from response body downloads
+   - Add error handling for background failures
+
+3. **Background SHA1 hashing** (0.25h)
+   - Wrap SHA1 calculation in `setImmediate`
+   - Prevent blocking Node.js event loop
+
+4. **Testing & verification** (0.25h)
+   - Test page navigation feels instant
+   - Verify resources still captured correctly
+   - Confirm no blocking during multi-tab browsing
+
+### Sprint 5d: Viewer Performance & Polish (7 hours)
+
 1. **Performance optimization** (4h)
    - Large session test generation
    - Memory profiling and optimization
@@ -265,6 +424,7 @@ interface IncrementalSnapshot {
    - Performance regression tests
 
 ### Sprint 7: Advanced Optimization (14 hours) - ⚡ OPTIONAL
+
 1. **NodeSnapshot structure** (8h)
    - Implement NodeSnapshot interfaces
    - Convert HTML to NodeSnapshot tree
@@ -277,7 +437,7 @@ interface IncrementalSnapshot {
    - Incremental snapshot storage
    - Viewer delta application
 
-**Total Estimated Effort:** 21 hours (7 hours core + 14 hours optional)
+**Total Estimated Effort:** 23 hours (2 hours CRITICAL + 7 hours core + 14 hours optional)
 
 ---
 

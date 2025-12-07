@@ -1,6 +1,45 @@
 # Implementation Strategy
 
-## 🆕 Latest Updates (2025-12-06)
+## 🆕 Latest Updates (2025-12-07)
+
+**🔴 CRITICAL - Recorder Performance Fix (2 hours):**
+
+- 📘 [PRD-performance.md](PRD-performance.md) - Sprint 5c: Async Resource Capture
+  - **Problem:** Multi-tab recording causes 6-25 second page load delays
+  - **Root Cause:** Synchronous network resource capture blocks navigation
+  - **Solution:** ResourceCaptureQueue with async background processing
+  - **Impact:** Page navigation <500ms (down from 6-25 seconds)
+  - **Components:**
+    - ResourceCaptureQueue class with priority support (5 concurrent per tab)
+    - Non-blocking response handler (fire-and-forget)
+    - Background SHA1 hashing with setImmediate
+    - Graceful queue draining on stop()
+  - **Effort:** 2 hours (IMMEDIATE)
+- 📋 [TASKS-performance.md](TASKS-performance.md) - Sprint 5c Implementation Tasks
+  - Task 5c.1: ResourceCaptureQueue Implementation (1h)
+  - Task 5c.2: Non-Blocking Resource Capture (0.5h)
+  - Task 5c.3: Background SHA1 Hashing (0.25h)
+  - Task 5c.4: Testing & Verification (0.25h)
+
+**Performance Metrics:**
+
+| Metric | Before | After (Target) |
+|--------|--------|----------------|
+| Page navigation delay | 6-25 seconds | <500ms |
+| Resource capture blocking | Yes (blocks user) | No (background) |
+| Concurrent downloads | Unlimited | 5 per tab |
+| User experience | Unusable | Instant, responsive |
+
+**Architecture:**
+```
+Browser Navigation → Response Events → ResourceCaptureQueue (priority, async)
+                                              ↓ (5 concurrent)
+                                       Background Downloads
+                                              ↓ (setImmediate)
+                                       SHA1 Hash → Disk Save
+```
+
+---
 
 **🎯 NEXT UP - Intent Pipeline & Post-Recording Processing:**
 
@@ -58,6 +97,26 @@ Note that these need to be reviewed, vetted and refined. These are only initial 
   - **Semantic Search:** Vector embeddings for voice transcripts and intent
   - **Feature Extraction:** Derived patterns from multiple sessions
   - **Use Cases:** Example discovery, feature_list.json generation, documentation, Q&A
+
+---
+
+**🔮 Future Viewer Enhancements:**
+
+- 📘 [PRD-VIEWER-SERVICE-WORKER.md](PRD-VIEWER-SERVICE-WORKER.md) - Refactor Session Viewer to Use Service Worker Architecture
+  - **Problem:** Chrome-specific URLs (`chrome://`, `chrome-extension://`) fail in iframes, resource handling fragile
+  - **Current Workaround:** URL stripping and hiding broken resources (not ideal)
+  - **Proper Solution:** Service worker architecture matching Playwright trace viewer
+  - **Benefits:** No URL rewriting, all resources load correctly, Chrome URLs handled, better error handling
+  - **Architecture:** Service Worker intercepts fetch → serves from IndexedDB → snapshots + resources
+  - **Implementation Phases:**
+    - Phase 1: Service Worker Foundation (3-5 days)
+    - Phase 2: Session Storage (IndexedDB) (3-5 days)
+    - Phase 3: Service Worker Request Handlers (5-7 days)
+    - Phase 4: Viewer Refactoring (2-3 days)
+    - Phase 5: Testing & Polish (3-5 days)
+  - **Effort:** 2-3 weeks
+  - **Status:** Planned (not immediate next work)
+  - **Reference:** [Playwright Trace Viewer Service Worker](https://github.com/microsoft/playwright/blob/main/packages/trace-viewer/src/sw/main.ts)
 
 ---
 

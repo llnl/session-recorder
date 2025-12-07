@@ -1,9 +1,9 @@
 # TASKS-Performance: Performance Optimization Implementation Tasks
 
 **Related PRD:** [PRD-performance.md](./PRD-performance.md)
-**Status:** 🎯 POST-MVP - Performance Enhancements
-**Total Estimated Time:** 21 hours (7 hours core + 14 hours optional)
-**Dependencies:** PRD-4 (Production Deployment) should be complete first
+**Status:** 🔴 CRITICAL - Sprint 5c required IMMEDIATELY
+**Total Estimated Time:** 23 hours (2 hours CRITICAL + 7 hours core + 14 hours optional)
+**Dependencies:** Multi-tab recording (complete)
 
 ---
 
@@ -11,11 +11,268 @@
 
 This document breaks down performance optimization objectives into actionable tasks for handling extended recording sessions (4+ hours) and very large file sizes.
 
-**Note:** These tasks should only be implemented AFTER completing PRD-4 (Production Deployment) and having real-world usage data from 1-2 hour recording sessions.
+**CRITICAL UPDATE:** Sprint 5c (Recorder Performance) must be implemented IMMEDIATELY due to severe slowdown (6-25 second page loads) caused by multi-tab resource capture blocking.
 
 ---
 
-## Sprint 5d: Performance & Polish (7 hours)
+## Sprint 5c: Recorder Performance Fix (2 hours) - 🔴 CRITICAL
+
+**Goal:** Eliminate blocking resource capture that causes 6-25 second page load delays
+**Deliverable:** Instant page navigation with background async resource capture
+**Priority:** IMMEDIATE - Recording is currently unusable
+
+### Problem Analysis
+
+**Current bottleneck in `SessionRecorder._handleNetworkResponse()` (lines 790-869):**
+- Line 854: `buffer = await response.body()` - Blocks waiting for full download
+- Line 857: `this._calculateSha1(buffer)` - CPU-intensive, blocks event loop
+- Line 865: `this.onContentBlob()` - Synchronous disk I/O
+- Lines 868-880: CSS rewriting adds additional processing
+
+**Impact with multi-tab:**
+- 3 tabs × 100 resources each = 300 total resources
+- 300 resources × 100ms average = 30 seconds of blocking
+- User experiences 6-25 second delays during page navigation
+
+### Task 5c.1: ResourceCaptureQueue Implementation (1 hour)
+
+**Priority:** 🔴 CRITICAL
+**File:** Create `src/node/ResourceCaptureQueue.ts`
+
+#### Implementation
+
+Create a queue class with concurrency limits and priority support:
+
+```typescript
+import { Response } from '@playwright/test';
+
+interface ResourceCapture {
+  url: string;
+  response: Response;
+  priority: number; // 0=critical, 1=normal, 2=low
+  tabId: number;
+}
+
+export class ResourceCaptureQueue {
+  private queue: ResourceCapture[] = [];
+  private activeDownloads = 0;
+  private readonly maxConcurrent = 5;
+  private processing = false;
+  private onCapture: (capture: ResourceCapture) => Promise<void>;
+
+  constructor(onCapture: (capture: ResourceCapture) => Promise<void>) {
+    this.onCapture = onCapture;
+  }
+
+  enqueue(capture: ResourceCapture): void {
+    // Insert based on priority
+    const insertIndex = this.queue.findIndex(item => item.priority > capture.priority);
+    if (insertIndex === -1) {
+      this.queue.push(capture);
+    } else {
+      this.queue.splice(insertIndex, 0, capture);
+    }
+
+    if (!this.processing) {
+      this.processQueue();
+    }
+  }
+
+  private processQueue(): void {
+    if (this.processing) return;
+    this.processing = true;
+
+    setImmediate(async () => {
+      while (this.queue.length > 0 && this.activeDownloads < this.maxConcurrent) {
+        const capture = this.queue.shift()!;
+        this.activeDownloads++;
+
+        this.onCapture(capture)
+          .catch(err => console.warn(`[Tab ${capture.tabId}] Resource capture failed: ${err.message}`))
+          .finally(() => {
+            this.activeDownloads--;
+            if (this.queue.length > 0) {
+              this.processQueue();
+            } else {
+              this.processing = false;
+            }
+          });
+      }
+    });
+  }
+
+  async drain(): Promise<void> {
+    while (this.queue.length > 0 || this.activeDownloads > 0) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+  }
+}
+```
+
+#### Acceptance Criteria
+
+- ✅ ResourceCaptureQueue class created
+- ✅ Concurrency limited to 5 downloads
+- ✅ Priority-based queue insertion
+- ✅ Drain method for graceful shutdown
+
+---
+
+### Task 5c.2: Non-Blocking Resource Capture (0.5 hour)
+
+**Priority:** 🔴 CRITICAL
+**File:** `src/node/SessionRecorder.ts`
+
+#### Changes Required
+
+1. **Add resource queue to SessionRecorder** (line ~40):
+```typescript
+private resourceQueue: ResourceCaptureQueue;
+```
+
+2. **Initialize queue in constructor**:
+```typescript
+this.resourceQueue = new ResourceCaptureQueue(this._captureResource.bind(this));
+```
+
+3. **Update response handler** (line ~195 in `_attachToPage`):
+```typescript
+// OLD (blocking):
+page.on('response', async (response) => {
+  await this._handleNetworkResponse(response);
+});
+
+// NEW (non-blocking):
+page.on('response', (response) => {
+  const priority = this._getResourcePriority(response);
+  this.resourceQueue.enqueue({
+    url: response.url(),
+    response,
+    priority,
+    tabId
+  });
+});
+```
+
+4. **Add priority helper**:
+```typescript
+private _getResourcePriority(response: Response): number {
+  const contentType = response.headers()['content-type'] || '';
+  // Critical: CSS, fonts
+  if (contentType.includes('text/css') || contentType.includes('font/')) return 0;
+  // Normal: JS, images
+  if (contentType.includes('javascript') || contentType.includes('image/')) return 1;
+  // Low: other
+  return 2;
+}
+```
+
+5. **Rename `_handleNetworkResponse` to `_captureResource`** and update signature:
+```typescript
+private async _captureResource(capture: ResourceCapture): Promise<void> {
+  const { response, url, tabId } = capture;
+  // ... existing logic from _handleNetworkResponse ...
+}
+```
+
+6. **Wait for queue in stop()** (line ~500):
+```typescript
+async stop(): Promise<void> {
+  // Wait for any pending actions to complete
+  await this.actionQueue;
+
+  // NEW: Wait for resource queue to drain
+  console.log('⏳ Waiting for resource captures to complete...');
+  await this.resourceQueue.drain();
+
+  // ... rest of existing stop logic ...
+}
+```
+
+#### Acceptance Criteria
+
+- ✅ Response handler is non-blocking
+- ✅ Resources enqueued with priority
+- ✅ Queue drains before stop() completes
+- ✅ No `await` in response handler
+
+---
+
+### Task 5c.3: Background SHA1 Hashing (0.25 hour)
+
+**Priority:** 🟡 MEDIUM
+**File:** `src/node/SessionRecorder.ts`
+
+#### Changes Required
+
+Replace synchronous SHA1 with async version using `setImmediate`:
+
+```typescript
+/**
+ * Calculate SHA1 asynchronously to prevent blocking
+ */
+private async _calculateSha1Async(buffer: Buffer): Promise<string> {
+  return new Promise((resolve) => {
+    setImmediate(() => {
+      const hash = crypto.createHash('sha1');
+      hash.update(buffer);
+      resolve(hash.digest('hex'));
+    });
+  });
+}
+```
+
+Update all calls in `_captureResource`:
+```typescript
+// OLD:
+const sha1 = this._calculateSha1(buffer);
+
+// NEW:
+const sha1 = await this._calculateSha1Async(buffer);
+```
+
+#### Acceptance Criteria
+
+- ✅ SHA1 wrapped in setImmediate
+- ✅ All callers use async version
+- ✅ Event loop remains responsive
+
+---
+
+### Task 5c.4: Testing & Verification (0.25 hour)
+
+**Priority:** 🔴 CRITICAL
+
+#### Test Plan
+
+1. **Navigation speed test:**
+   - Record 3 tabs (Todoist, GitHub, Twitter)
+   - Navigate between tabs rapidly
+   - Verify <500ms delay (vs previous 6-25s)
+
+2. **Resource correctness:**
+   - Check session.json has all resources
+   - Verify viewer loads resources correctly
+
+3. **Queue monitoring:**
+   - Add console logging: `console.log('📦 Queue status:', this.resourceQueue.getStatus())`
+   - Verify queue processes in background
+
+4. **Graceful shutdown:**
+   - Heavy resource load → immediate stop()
+   - Verify drain() completes
+   - Confirm all resources saved
+
+#### Acceptance Criteria
+
+- ✅ Page navigation <500ms
+- ✅ Resources captured correctly
+- ✅ Multi-tab browsing smooth
+- ✅ Graceful shutdown works
+
+---
+
+## Sprint 5d: Viewer Performance & Polish (7 hours)
 
 **Goal:** Optimize viewer for large sessions (1000+ actions) and add metadata view
 **Deliverable:** Viewer handles extended sessions smoothly with comprehensive statistics
