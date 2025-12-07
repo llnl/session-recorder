@@ -10,6 +10,11 @@
     "test:spa": "node dist/test/spa-test.js",
     "test:console": "node dist/test/console-test.js",
     "test:voice": "node dist/test/voice-test.js",
+    "record": "node dist/test/record-session.js",
+    "record:browser": "node dist/test/record-session.js --mode browser",
+    "record:voice": "node dist/test/record-session.js --mode voice",
+    "record:full": "node dist/test/record-session.js --mode full",
+    "record:connect": "node dist/test/record-session.js --mode full --connect 9222",
     "viewer-old": "node dist/src/viewer/server.js",
     "viewer": "cd viewer && npm run dev"
   },

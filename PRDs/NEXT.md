@@ -14,6 +14,7 @@
   - Dependencies: `sounddevice`, `soundfile`, `openai-whisper`, `torch`, `numpy`
 
 **Files Modified:**
+
 - `src/voice/VoiceRecorder.ts` - Refactored to spawn single Python process
 - `src/voice/record_and_transcribe.py` - NEW: Unified recording + transcription
 - `src/node/SessionRecorder.ts` - Updated to use new VoiceRecorder API
@@ -35,11 +36,13 @@
   - Comprehensive voice-related CSS styling
 
 **Files Created:**
+
 - `viewer/src/components/VoiceTranscriptViewer/VoiceTranscriptViewer.tsx`
 - `viewer/src/components/VoiceTranscriptViewer/VoiceTranscriptViewer.css`
 - `viewer/src/components/VoiceTranscriptViewer/index.ts`
 
 **Files Modified:**
+
 - `viewer/src/types/session.ts` - Added `VoiceTranscriptAction` type
 - `viewer/src/stores/sessionStore.ts` - Added voice tab and audioBlob state
 - `viewer/src/components/Timeline/Timeline.tsx` - Voice segment indicators
@@ -53,6 +56,7 @@
 - `viewer/src/hooks/useFilteredActions.ts` - Voice action support
 
 **Next Steps:**
+
 - 🎯 **Optional:** Initiative 3 - Desktop Application (20 hours)
 - 🎯 **Optional:** Initiative 4 - MCP Server (12 hours)
 
@@ -71,18 +75,21 @@
   - Test suite: `test/voice-test.ts`
 
 **Files Created:**
+
 - `src/voice/VoiceRecorder.ts` - TypeScript process manager
 - `src/voice/record_and_transcribe.py` - Python unified recorder + transcriber
 - `src/voice/whisper_transcribe.py` - Standalone transcription script (optional)
 - `test/voice-test.ts` - Voice recording test suite
 
 **Files Modified:**
+
 - `src/node/SessionRecorder.ts` - Added voice recording support
 - `src/node/types.ts` - Added `VoiceTranscriptAction` type
 - `package.json` - Added `test:voice` script
 - `test/simple-test.ts`, `test/spa-test.ts` - Type guards for voice actions
 
 **Next Steps:**
+
 - 🎯 **Optional:** Initiative 3 - Desktop Application (20 hours)
 - 🎯 **Optional:** Initiative 4 - MCP Server (12 hours)
 

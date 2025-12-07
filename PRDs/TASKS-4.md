@@ -14,6 +14,7 @@
 This document breaks down PRD-4 objectives into actionable tasks for making Session Recorder production-ready with voice recording capabilities.
 
 **Latest Progress:**
+
 - ✅ **Phase 1 Complete (16 hours):** Voice Recording Backend fully implemented
 - ✅ **Phase 2 Complete (14 hours):** Viewer Integration fully implemented
 - 🎯 **Next:** Phase 3 - Testing & Documentation (4 hours) - Optional
@@ -24,6 +25,7 @@ This document breaks down PRD-4 objectives into actionable tasks for making Sess
 
 **Status:** ✅ COMPLETE
 **Implementation Summary:**
+
 - Created `VoiceRecorder.ts` with audio capture and Whisper transcription
 - Created `whisper_transcribe.py` Python script with GPU auto-detection
 - Updated `SessionRecorder.ts` with `browser_record` and `voice_record` flags
@@ -54,6 +56,7 @@ This document breaks down PRD-4 objectives into actionable tasks for making Sess
    - Audio quality issues
 
 #### Acceptance Criteria
+
 - ✅ Audio captured from system microphone
 - ✅ Level meter shows real-time audio levels
 - ✅ Noise gate filters background noise
@@ -67,6 +70,7 @@ This document breaks down PRD-4 objectives into actionable tasks for making Sess
 **Status:** ✅ COMPLETE
 
 **Implementation:**
+
 - Created `whisper_transcribe.py` using official OpenAI Whisper
 - Auto-detects GPU (CUDA/MPS) with CPU fallback
 - Word-level timestamps with millisecond precision
@@ -74,6 +78,7 @@ This document breaks down PRD-4 objectives into actionable tasks for making Sess
 - Handles errors gracefully
 
 **Files Created:**
+
 - `src/voice/whisper_transcribe.py` - Python Whisper transcription script
 
 #### Acceptance Criteria
@@ -92,12 +97,14 @@ This document breaks down PRD-4 objectives into actionable tasks for making Sess
 **Status:** ✅ COMPLETE
 
 **Implementation:**
+
 - Implemented `convertToVoiceActions()` in VoiceRecorder
 - Converts relative Whisper timestamps to absolute UTC
 - Aligns voice segments with browser actions chronologically
 - Finds nearest snapshot for each voice segment
 
 **Code Location:**
+
 - `src/voice/VoiceRecorder.ts` - `convertToVoiceActions()` method
 - `src/node/SessionRecorder.ts` - `_findNearestSnapshot()` method
 
@@ -115,6 +122,7 @@ This document breaks down PRD-4 objectives into actionable tasks for making Sess
 **Status:** ✅ COMPLETE
 
 **Implementation:**
+
 - Extended `SessionData` type with `voiceRecording` metadata
 - Created `VoiceTranscriptAction` type for voice actions
 - Merges voice actions with browser actions chronologically
@@ -122,6 +130,7 @@ This document breaks down PRD-4 objectives into actionable tasks for making Sess
 - Stores audio as `audio/recording.wav`
 
 **Files Modified:**
+
 - `src/node/types.ts` - Added `VoiceTranscriptAction` and voice metadata
 - `src/node/SessionRecorder.ts` - Voice action merging in `stop()` method
 
@@ -138,18 +147,21 @@ This document breaks down PRD-4 objectives into actionable tasks for making Sess
 **Status:** ✅ COMPLETE
 
 **Implementation:**
+
 - Created `test/voice-test.ts` for end-to-end testing
 - Created `docs/VOICE_RECORDING.md` comprehensive guide
 - Updated `package.json` with `test:voice` script
 - Fixed type guards in existing tests
 
 **Files Created/Modified:**
+
 - `test/voice-test.ts` - Voice recording test suite
 - `docs/VOICE_RECORDING.md` - Complete setup and usage guide
 - `package.json` - Added test:voice script
 - `test/simple-test.ts`, `test/spa-test.ts` - Type guard fixes
 
 **Documentation Includes:**
+
 - Python dependency installation
 - GPU acceleration setup
 - Whisper model comparison
@@ -166,6 +178,7 @@ This document breaks down PRD-4 objectives into actionable tasks for making Sess
 **Status:** ✅ COMPLETE
 
 **Implementation Summary:**
+
 - Updated viewer types to support `VoiceTranscriptAction`
 - Enhanced Timeline with green bars for voice segments
 - Added hover tooltips for voice segments with transcript preview
@@ -176,11 +189,13 @@ This document breaks down PRD-4 objectives into actionable tasks for making Sess
 - Comprehensive voice-related CSS styling
 
 **Files Created:**
+
 - `viewer/src/components/VoiceTranscriptViewer/VoiceTranscriptViewer.tsx`
 - `viewer/src/components/VoiceTranscriptViewer/VoiceTranscriptViewer.css`
 - `viewer/src/components/VoiceTranscriptViewer/index.ts`
 
 **Files Modified:**
+
 - `viewer/src/types/session.ts` - Added voice types
 - `viewer/src/stores/sessionStore.ts` - Added voice tab and audioBlob
 - `viewer/src/components/Timeline/Timeline.tsx` - Voice indicators

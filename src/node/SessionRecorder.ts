@@ -34,6 +34,7 @@ export class SessionRecorder {
   private sessionStartTime: number = 0;
   private resourceStorage: ResourceStorage; // SHA1-based resource deduplication
   private voiceRecorder: VoiceRecorder | null = null;
+  private voiceStarted: boolean = false;
   private audioDir: string;
   private options: SessionRecorderOptions;
 
@@ -85,22 +86,53 @@ export class SessionRecorder {
     }
   }
 
+  /**
+   * Start voice recording early, before browser is ready.
+   * Call this when you want to capture audio during browser launch/connection.
+   */
+  async startVoiceEarly(): Promise<void> {
+    if (!this.options.voice_record || !this.voiceRecorder) {
+      return;
+    }
+
+    if (this.voiceStarted) {
+      return; // Already started
+    }
+
+    // Set session start time if not already set
+    if (!this.sessionStartTime) {
+      this.sessionStartTime = Date.now();
+    }
+
+    // Create output directories
+    fs.mkdirSync(this.sessionDir, { recursive: true });
+
+    console.log(`🎙️  Starting voice recording early...`);
+    await this.voiceRecorder.startRecording(this.audioDir, this.sessionStartTime);
+    this.voiceStarted = true;
+    console.log(`✅ Voice recording active`);
+  }
+
   async start(page: Page): Promise<void> {
     if (this.page) {
       throw new Error('Recording already started');
     }
 
     this.page = page;
-    this.sessionStartTime = Date.now();
+
+    // Set session start time if not already set (voice may have set it earlier)
+    if (!this.sessionStartTime) {
+      this.sessionStartTime = Date.now();
+    }
 
     // Create output directories
     fs.mkdirSync(this.sessionDir, { recursive: true });
 
-    // Start voice recording FIRST if enabled (before browser setup)
-    // This ensures we capture audio from the very beginning
-    if (this.options.voice_record && this.voiceRecorder) {
+    // Start voice recording if enabled and not already started
+    if (this.options.voice_record && this.voiceRecorder && !this.voiceStarted) {
       console.log(`🎙️  Initializing voice recording...`);
       await this.voiceRecorder.startRecording(this.audioDir, this.sessionStartTime);
+      this.voiceStarted = true;
       console.log(`✅ Voice recording is ready - proceeding with browser setup`);
     }
 
