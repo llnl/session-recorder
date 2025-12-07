@@ -10,7 +10,8 @@ import { useVirtualList } from '@/hooks/useVirtualList';
 import type { VoiceTranscriptAction, RecordedAction } from '@/types/session';
 import './ActionList.css';
 
-const ACTION_ITEM_HEIGHT = 80; // Estimated height per action item
+const ACTION_ITEM_HEIGHT = 80; // Estimated height per regular action item
+const VOICE_ITEM_HEIGHT = 100; // Estimated height per voice transcript item (more content)
 
 // Type guard for voice transcript actions
 function isVoiceTranscriptAction(action: RecordedAction | VoiceTranscriptAction): action is VoiceTranscriptAction {
@@ -25,10 +26,15 @@ export const ActionList = () => {
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Virtual scrolling setup
+  // Virtual scrolling setup with dynamic heights for different action types
+  const getItemHeight = (index: number) => {
+    const action = filteredActions[index];
+    return action && isVoiceTranscriptAction(action) ? VOICE_ITEM_HEIGHT : ACTION_ITEM_HEIGHT;
+  };
+
   const { virtualizer, items: virtualItems, totalSize } = useVirtualList({
     items: filteredActions,
-    estimateSize: ACTION_ITEM_HEIGHT,
+    estimateSize: getItemHeight,
     scrollElement: scrollRef,
     overscan: 5,
   });
@@ -157,6 +163,10 @@ export const ActionList = () => {
 
               // Render browser action
               const browserAction = action as RecordedAction;
+              const hasMultipleTabs = sessionData.actions.some(
+                a => !isVoiceTranscriptAction(a) && (a as RecordedAction).tabId !== undefined && (a as RecordedAction).tabId !== 0
+              );
+
               return (
                 <div
                   key={action.id}
@@ -175,6 +185,11 @@ export const ActionList = () => {
                     <span className="action-list-item-icon">
                       {getActionIcon(action.type)}
                     </span>
+                    {hasMultipleTabs && browserAction.tabId !== undefined && (
+                      <span className="action-list-item-tab" title={browserAction.tabUrl || 'Tab ' + browserAction.tabId}>
+                        Tab {browserAction.tabId + 1}
+                      </span>
+                    )}
                     <span className="action-list-item-type">{action.type}</span>
                     <span className="action-list-item-time">
                       {formatTime(action.timestamp)}

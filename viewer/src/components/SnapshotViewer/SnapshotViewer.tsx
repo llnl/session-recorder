@@ -6,13 +6,146 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSessionStore } from '@/stores/sessionStore';
 import { generateRestorationScript } from '../../../../src/browser/snapshotRestoration';
+import type { RecordedAction } from '@/types/session';
 import './SnapshotViewer.css';
 
 type SnapshotView = 'before' | 'after';
 
+// Track created blob URLs for cleanup
+const blobUrlCache = new Map<string, string>();
+
+/**
+ * Remove Chrome-specific URLs that won't work in iframe
+ * Handles chrome://, chrome-extension://, etc.
+ */
+function removeChromeUrls(html: string): string {
+  // Remove chrome:// and chrome-extension:// URLs from src and href attributes
+  // Replace with placeholder or empty string to avoid broken images
+  return html
+    .replace(/src=["']chrome:\/\/[^"']*["']/gi, 'src=""')
+    .replace(/href=["']chrome:\/\/[^"']*["']/gi, 'href=""')
+    .replace(/src=["']chrome-extension:\/\/[^"']*["']/gi, 'src=""')
+    .replace(/href=["']chrome-extension:\/\/[^"']*["']/gi, 'href=""');
+}
+
+/**
+ * Convert relative resource paths in HTML to blob URLs
+ * HTML references resources like ../resources/xxx.css (relative to snapshots/)
+ * We need to convert these to blob URLs from our resources Map
+ */
+function convertResourcePathsToBlobUrls(
+  html: string,
+  resources: Map<string, Blob>
+): string {
+  // Determine the base path for resolving relative URLs
+  // snapshotPath is like "snapshots/action-1-before.html"
+  // Resources are keyed like "resources/xxx.css"
+
+  // Pattern to match resource references in href and src attributes
+  // Matches: href="../resources/xxx" or src="../resources/xxx" or href="resources/xxx"
+  const resourcePattern = /(?:href|src)=["']([^"']*?(?:\.\.\/)?resources\/[^"']+)["']/gi;
+
+  return html.replace(resourcePattern, (match, relativePath) => {
+    // Normalize the path - remove ../ prefix if present
+    let resourceKey = relativePath;
+    if (relativePath.startsWith('../')) {
+      resourceKey = relativePath.substring(3); // Remove "../"
+    }
+
+    // Check if we have this resource
+    const blob = resources.get(resourceKey);
+    if (!blob) {
+      // Try without any path manipulation
+      const altBlob = resources.get(relativePath);
+      if (!altBlob) {
+        console.warn(`Resource not found: ${resourceKey} (original: ${relativePath})`);
+        return match; // Keep original if not found
+      }
+      resourceKey = relativePath;
+    }
+
+    // Check cache first
+    if (blobUrlCache.has(resourceKey)) {
+      const blobUrl = blobUrlCache.get(resourceKey)!;
+      return match.replace(relativePath, blobUrl);
+    }
+
+    // Create blob URL
+    const resourceBlob = resources.get(resourceKey)!;
+    const blobUrl = URL.createObjectURL(resourceBlob);
+    blobUrlCache.set(resourceKey, blobUrl);
+
+    return match.replace(relativePath, blobUrl);
+  });
+}
+
+/**
+ * Convert CSS url() references to blob URLs
+ * Handles font URLs and background images in inline styles and <style> tags
+ */
+function convertCSSUrlsToBlobUrls(
+  html: string,
+  resources: Map<string, Blob>
+): string {
+  // Pattern to match CSS url() references pointing to our resources
+  // Matches: url('../resources/xxx') or url("../resources/xxx") or url(../resources/xxx)
+  const cssUrlPattern = /url\(\s*(['"]?)([^'")]*?(?:\.\.\/)?resources\/[^'")]+)\1\s*\)/gi;
+
+  return html.replace(cssUrlPattern, (match, quote, relativePath) => {
+    // Normalize the path - remove ../ prefix if present
+    let resourceKey = relativePath;
+    if (relativePath.startsWith('../')) {
+      resourceKey = relativePath.substring(3); // Remove "../"
+    }
+
+    // Check if we have this resource
+    const blob = resources.get(resourceKey);
+    if (!blob) {
+      // Try without any path manipulation
+      const altBlob = resources.get(relativePath);
+      if (!altBlob) {
+        // Resource not found - keep original
+        return match;
+      }
+      resourceKey = relativePath;
+    }
+
+    // Check cache first
+    if (blobUrlCache.has(resourceKey)) {
+      const blobUrl = blobUrlCache.get(resourceKey)!;
+      return `url(${quote}${blobUrl}${quote})`;
+    }
+
+    // Create blob URL
+    const resourceBlob = resources.get(resourceKey)!;
+    const blobUrl = URL.createObjectURL(resourceBlob);
+    blobUrlCache.set(resourceKey, blobUrl);
+
+    return `url(${quote}${blobUrl}${quote})`;
+  });
+}
+
 export const SnapshotViewer = () => {
   const selectedAction = useSessionStore((state) => state.getSelectedAction());
+  const sessionData = useSessionStore((state) => state.sessionData);
+  const selectedActionIndex = useSessionStore((state) => state.selectedActionIndex);
   const resources = useSessionStore((state) => state.resources);
+
+  /**
+   * Find the closest previous action that has snapshots (for voice transcript actions)
+   */
+  const getClosestSnapshotAction = (): { action: RecordedAction; index: number } | null => {
+    if (!sessionData || selectedActionIndex === null) return null;
+
+    // Search backwards from the current action
+    for (let i = selectedActionIndex - 1; i >= 0; i--) {
+      const action = sessionData.actions[i];
+      if (action.type !== 'voice_transcript' && 'before' in action && 'after' in action) {
+        return { action: action as RecordedAction, index: i };
+      }
+    }
+    return null;
+  };
 
   const [currentView, setCurrentView] = useState<SnapshotView>('before');
   const [zoom, setZoom] = useState<number>(100);
@@ -42,6 +175,15 @@ export const SnapshotViewer = () => {
     return script + html;
   };
 
+  // Cleanup blob URLs when session changes or component unmounts
+  useEffect(() => {
+    return () => {
+      // Revoke all blob URLs to prevent memory leaks
+      blobUrlCache.forEach((url) => URL.revokeObjectURL(url));
+      blobUrlCache.clear();
+    };
+  }, [sessionData?.sessionId]);
+
   // Reset view when action changes
   useEffect(() => {
     setCurrentView('before');
@@ -53,13 +195,22 @@ export const SnapshotViewer = () => {
   useEffect(() => {
     if (!selectedAction || !iframeRef.current) return;
 
-    // Voice actions don't have snapshots
+    // Determine which action to use for snapshots
+    let actionForSnapshot: RecordedAction | null = null;
+
     if (selectedAction.type === 'voice_transcript') {
-      setError('Voice transcript actions do not have snapshots');
-      return;
+      // Find closest previous action with snapshots
+      const fallback = getClosestSnapshotAction();
+      if (!fallback) {
+        setError('No snapshots available before this voice transcript');
+        return;
+      }
+      actionForSnapshot = fallback.action;
+    } else {
+      actionForSnapshot = selectedAction as RecordedAction;
     }
 
-    const snapshot = currentView === 'before' ? selectedAction.before : selectedAction.after;
+    const snapshot = currentView === 'before' ? actionForSnapshot.before : actionForSnapshot.after;
     const htmlPath = snapshot.html;
 
     // Get HTML content from resources
@@ -85,8 +236,16 @@ export const SnapshotViewer = () => {
         return;
       }
 
-      // ✅ NEW: Inject restoration script to restore form state, scroll positions, and Shadow DOM
-      const htmlWithRestoration = injectRestorationScript(htmlContent);
+      // Remove Chrome-specific URLs that won't work in iframe
+      let processedHtml = removeChromeUrls(htmlContent);
+
+      // Convert resource paths to blob URLs so CSS/images load correctly
+      let htmlWithBlobUrls = convertResourcePathsToBlobUrls(processedHtml, resources);
+      // Also convert CSS url() references (fonts, background images in inline styles)
+      htmlWithBlobUrls = convertCSSUrlsToBlobUrls(htmlWithBlobUrls, resources);
+
+      // Inject restoration script to restore form state, scroll positions, and Shadow DOM
+      const htmlWithRestoration = injectRestorationScript(htmlWithBlobUrls);
 
       iframeDoc.open();
       iframeDoc.write(htmlWithRestoration);
@@ -105,7 +264,7 @@ export const SnapshotViewer = () => {
       setError(`Failed to load snapshot: ${err.message}`);
       setIsLoading(false);
     });
-  }, [selectedAction, currentView, resources]);
+  }, [selectedAction, currentView, resources, sessionData, selectedActionIndex]);
 
   const highlightElement = (iframe: HTMLIFrameElement) => {
     try {
@@ -116,7 +275,7 @@ export const SnapshotViewer = () => {
       const targetElement = iframeDoc.querySelector('[data-recorded-el="true"]') as HTMLElement;
       if (!targetElement) return;
 
-      // Inject highlighting styles
+      // Inject highlighting styles and improve appearance of broken resources
       const style = iframeDoc.createElement('style');
       style.textContent = `
         [data-recorded-el="true"] {
@@ -139,6 +298,10 @@ export const SnapshotViewer = () => {
           box-shadow: 0 0 0 2px #ff6b6b !important;
           pointer-events: none !important;
           z-index: 999999 !important;
+        }
+        /* Hide broken images to improve appearance */
+        img[src=""], img:not([src]) {
+          display: none;
         }
       `;
       iframeDoc.head.appendChild(style);
@@ -172,17 +335,25 @@ export const SnapshotViewer = () => {
     );
   }
 
-  if (selectedAction.type === 'voice_transcript') {
+  // For voice transcripts, find the closest previous snapshot
+  const fallbackSnapshot = selectedAction.type === 'voice_transcript' ? getClosestSnapshotAction() : null;
+
+  if (selectedAction.type === 'voice_transcript' && !fallbackSnapshot) {
     return (
       <div className="snapshot-viewer">
         <div className="snapshot-viewer-empty">
-          <p>Voice transcript actions do not have snapshots</p>
+          <p>No snapshots available before this voice transcript</p>
         </div>
       </div>
     );
   }
 
-  const currentSnapshot = currentView === 'before' ? selectedAction.before : selectedAction.after;
+  // Use fallback action for voice transcripts
+  const displayAction = selectedAction.type === 'voice_transcript' && fallbackSnapshot
+    ? fallbackSnapshot.action
+    : selectedAction as RecordedAction;
+
+  const currentSnapshot = currentView === 'before' ? displayAction.before : displayAction.after;
 
   return (
     <div className="snapshot-viewer">
@@ -221,6 +392,11 @@ export const SnapshotViewer = () => {
 
         {/* Snapshot Metadata */}
         <div className="snapshot-metadata">
+          {fallbackSnapshot && (
+            <span className="metadata-item fallback-notice">
+              Showing snapshot from previous action
+            </span>
+          )}
           <span className="metadata-item">
             <strong>URL:</strong> {currentSnapshot.url}
           </span>
@@ -252,7 +428,7 @@ export const SnapshotViewer = () => {
             ref={iframeRef}
             className="snapshot-iframe"
             title={`${currentView} snapshot`}
-            sandbox="allow-same-origin"
+            sandbox="allow-same-origin allow-scripts"
           />
         </div>
       </div>

@@ -32,6 +32,10 @@ export interface RecordedAction {
   timestamp: string;  // ISO 8601 UTC
   type: 'click' | 'input' | 'change' | 'submit' | 'keydown';
 
+  // Multi-tab support
+  tabId: number;      // Tab index (0-based)
+  tabUrl?: string;    // URL of the tab when action occurred
+
   before: SnapshotWithScreenshot;
   action: ActionDetails;
   after: SnapshotWithScreenshot;

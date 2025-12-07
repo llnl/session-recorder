@@ -2,7 +2,7 @@
  * Session Recorder - Main API for recording user actions in Playwright
  */
 
-import { Page } from '@playwright/test';
+import { Page, BrowserContext } from '@playwright/test';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
@@ -11,6 +11,13 @@ import { SessionData, RecordedAction, HarEntry, SnapshotterBlob, NetworkEntry, C
 import { ResourceStorage } from '../storage/resourceStorage';
 import { VoiceRecorder } from '../voice/VoiceRecorder';
 
+// Extend Window interface for session recorder flags
+declare global {
+  interface Window {
+    __sessionRecorderLoaded?: boolean;
+  }
+}
+
 export interface SessionRecorderOptions {
   browser_record?: boolean;  // Capture DOM + actions (default: true)
   voice_record?: boolean;    // Capture audio + transcript (default: false)
@@ -18,8 +25,18 @@ export interface SessionRecorderOptions {
   whisper_device?: 'cuda' | 'mps' | 'cpu';
 }
 
+// Track page info for multi-tab support
+interface TrackedPage {
+  page: Page;
+  tabId: number;
+  url: string;
+}
+
 export class SessionRecorder {
-  private page: Page | null = null;
+  private page: Page | null = null;  // Primary page (for backward compat)
+  private pages: Map<number, TrackedPage> = new Map();  // All tracked pages by tabId
+  private nextTabId: number = 0;
+  private context: BrowserContext | null = null;
   private sessionData: SessionData;
   private sessionDir: string;
   private actionQueue: Promise<void> = Promise.resolve();
@@ -120,6 +137,9 @@ export class SessionRecorder {
 
     this.page = page;
 
+    // Get browser context for multi-tab support
+    this.context = page.context();
+
     // Set session start time if not already set (voice may have set it earlier)
     if (!this.sessionStartTime) {
       this.sessionStartTime = Date.now();
@@ -147,35 +167,96 @@ export class SessionRecorder {
       // Create console log file (JSON Lines format)
       fs.writeFileSync(this.consoleLogPath, '', 'utf-8');
 
-      // Setup network resource capture (like HarTracer)
-      page.on('response', async (response) => {
-        await this._handleNetworkResponse(response);
+      // Attach to the initial page
+      await this._attachToPage(page);
+
+      // Listen for new pages (tabs) being opened
+      this.context.on('page', async (newPage) => {
+        console.log(`📑 New tab detected: ${newPage.url() || '(loading...)'}`);
+        await this._attachToPage(newPage);
       });
 
-      // Read compiled browser-side code
-      // When compiled, __dirname is dist/src/node, so browser code is at ../browser
-      const browserDir = path.join(__dirname, '../browser');
+      console.log(`📹 Browser recording started: ${this.sessionData.sessionId}`);
+    }
 
-      const snapshotCaptureCode = fs.readFileSync(
-        path.join(browserDir, 'snapshotCapture.js'),
-        'utf-8'
-      );
-      const actionListenerCode = fs.readFileSync(
-        path.join(browserDir, 'actionListener.js'),
-        'utf-8'
-      );
-      const consoleCaptureCode = fs.readFileSync(
-        path.join(browserDir, 'consoleCapture.js'),
-        'utf-8'
-      );
-      const injectedCode = fs.readFileSync(
-        path.join(browserDir, 'injected.js'),
-        'utf-8'
-      );
+    console.log(`📹 Session recording started: ${this.sessionData.sessionId}`);
+    console.log(`   Browser: ${this.options.browser_record ? '✅' : '❌'}`);
+    console.log(`   Voice: ${this.options.voice_record ? '✅' : '❌'}`);
+    console.log(`📁 Output: ${this.sessionDir}`);
+  }
 
-      // Bundle and inject browser-side code (already compiled to JS, no type stripping needed)
-      const fullInjectedCode = `
-      console.log('🎬 Starting session recorder injection...');
+  /**
+   * Attach recording to a page (tab)
+   * Sets up event handlers, exposes callbacks, and injects browser-side code
+   */
+  private async _attachToPage(page: Page): Promise<number> {
+    const tabId = this.nextTabId++;
+    const tabUrl = page.url();
+
+    // Track this page
+    this.pages.set(tabId, { page, tabId, url: tabUrl });
+
+    console.log(`📑 Attaching to tab ${tabId}: ${tabUrl || '(blank)'}`);
+
+    // Setup network resource capture for this page
+    page.on('response', async (response) => {
+      await this._handleNetworkResponse(response);
+    });
+
+    // Update tab URL when page navigates
+    page.on('framenavigated', (frame) => {
+      if (frame === page.mainFrame()) {
+        const tracked = this.pages.get(tabId);
+        if (tracked) {
+          tracked.url = page.url();
+        }
+      }
+    });
+
+    // Remove page from tracking when closed
+    page.on('close', () => {
+      console.log(`📑 Tab ${tabId} closed`);
+      this.pages.delete(tabId);
+    });
+
+    // Read compiled browser-side code
+    // When running from source (ts-node), __dirname is src/node/
+    // When running compiled, __dirname is dist/src/node/
+    // Browser code is always compiled JS in dist/src/browser/
+    let browserDir = path.join(__dirname, '../browser');
+    if (!fs.existsSync(path.join(browserDir, 'snapshotCapture.js'))) {
+      // Running from source, use dist/ directory
+      browserDir = path.join(__dirname, '../../dist/src/browser');
+    }
+
+    const snapshotCaptureCode = fs.readFileSync(
+      path.join(browserDir, 'snapshotCapture.js'),
+      'utf-8'
+    );
+    const actionListenerCode = fs.readFileSync(
+      path.join(browserDir, 'actionListener.js'),
+      'utf-8'
+    );
+    const consoleCaptureCode = fs.readFileSync(
+      path.join(browserDir, 'consoleCapture.js'),
+      'utf-8'
+    );
+    const injectedCode = fs.readFileSync(
+      path.join(browserDir, 'injected.js'),
+      'utf-8'
+    );
+
+    // Bundle and inject browser-side code
+    // Wrapped in IIFE so we can use early return for guard clauses
+    const fullInjectedCode = `
+      (function() {
+        // Skip if already loaded (prevents double-injection)
+        if (window.__sessionRecorderLoaded) {
+          console.log('⏩ Session recorder already loaded, skipping...');
+          return;
+        }
+
+        console.log('🎬 Starting session recorder injection...');
 
       try {
         // Snapshot capture module
@@ -205,42 +286,80 @@ export class SessionRecorder {
         // Main coordinator
         console.log('Loading main coordinator...');
         ${injectedCode.replace('"use strict";', '').replace('Object.defineProperty(exports, "__esModule", { value: true });', '')}
+
+        // Mark as loaded to prevent duplicate injection
+        window.__sessionRecorderLoaded = true;
         console.log('✅ Session recorder fully loaded');
       } catch (err) {
         console.error('❌ Session recorder injection failed:', err);
       }
+      })();
     `;
 
-      await page.addInitScript(fullInjectedCode);
-
-      // Expose callbacks for browser to call
+    // Expose callbacks BEFORE injecting code - capture tabId in closure
+    // These need to be available when the injected code runs
+    try {
       await page.exposeFunction('__recordActionBefore', async (data: any) => {
         this.actionQueue = this.actionQueue.then(() =>
-          this._handleActionBefore(data)
+          this._handleActionBefore(data, tabId, page.url())
         );
       });
+    } catch (e: any) {
+      // Function might already be exposed from a previous attachment attempt
+      if (!e.message?.includes('already been registered')) throw e;
+    }
 
+    try {
       await page.exposeFunction('__recordActionAfter', async (data: any) => {
         this.actionQueue = this.actionQueue.then(() =>
-          this._handleActionAfter(data)
+          this._handleActionAfter(data, tabId, page.url())
         );
       });
+    } catch (e: any) {
+      if (!e.message?.includes('already been registered')) throw e;
+    }
 
+    try {
       await page.exposeFunction('__recordConsoleLog', async (entry: ConsoleEntry) => {
         this._handleConsoleLog(entry);
       });
-
-      console.log(`📹 Browser recording started: ${this.sessionData.sessionId}`);
+    } catch (e: any) {
+      if (!e.message?.includes('already been registered')) throw e;
     }
 
-    console.log(`📹 Session recording started: ${this.sessionData.sessionId}`);
-    console.log(`   Browser: ${this.options.browser_record ? '✅' : '❌'}`);
-    console.log(`   Voice: ${this.options.voice_record ? '✅' : '❌'}`);
-    console.log(`📁 Output: ${this.sessionDir}`);
+    // Add init script for future navigations
+    await page.addInitScript(fullInjectedCode);
+
+    // Also inject immediately for already-loaded pages
+    // page.evaluate() uses CDP which bypasses CSP restrictions
+    try {
+      const alreadyLoaded = await page.evaluate(() => {
+        return document.readyState !== 'loading' && !window.__sessionRecorderLoaded;
+      });
+
+      if (alreadyLoaded) {
+        console.log(`📑 [Tab ${tabId}] Injecting code into already-loaded page...`);
+        await page.evaluate(fullInjectedCode);
+      }
+    } catch (e: any) {
+      // Page might be closed or in a weird state
+      console.log(`⚠️ [Tab ${tabId}] Could not inject immediately: ${e.message}`);
+    }
+
+    return tabId;
   }
 
-  private async _handleActionBefore(data: any): Promise<void> {
-    if (!this.page) return;
+  private async _handleActionBefore(data: any, tabId: number = 0, tabUrl?: string): Promise<void> {
+    // Find the page for this tab
+    const tracked = this.pages.get(tabId);
+    const page = tracked?.page || this.page;
+    if (!page) return;
+
+    // Check if page is still open
+    if (page.isClosed()) {
+      console.log(`⚠️ [Tab ${tabId}] Page closed, skipping action capture`);
+      return;
+    }
 
     const actionId = `action-${this.sessionData.actions.length + 1}`;
 
@@ -267,16 +386,26 @@ export class SessionRecorder {
       `${actionId}-before.png`
     );
 
-    await this.page.screenshot({
-      path: beforeScreenshotPath,
-      type: 'png'
-    });
+    try {
+      await page.screenshot({
+        path: beforeScreenshotPath,
+        type: 'png'
+      });
+    } catch (err: any) {
+      if (err.message?.includes('closed') || err.message?.includes('Target')) {
+        console.log(`⚠️ [Tab ${tabId}] Page closed during screenshot, skipping`);
+        return;
+      }
+      throw err;
+    }
 
     // Store partial action data (with file paths, not inline HTML)
     this.currentActionData = {
       id: actionId,
       timestamp: data.action.timestamp,
       type: data.action.type,
+      tabId: tabId,  // Multi-tab support
+      tabUrl: tabUrl || data.beforeUrl,  // Multi-tab support
       before: {
         timestamp: data.beforeTimestamp,
         html: `snapshots/${actionId}-before.html`,  // File path instead of HTML string
@@ -294,11 +423,23 @@ export class SessionRecorder {
       }
     };
 
-    console.log(`📸 Captured BEFORE: ${data.action.type}`);
+    console.log(`📸 [Tab ${tabId}] Captured BEFORE: ${data.action.type}`);
   }
 
-  private async _handleActionAfter(data: any): Promise<void> {
-    if (!this.page || !this.currentActionData) return;
+  private async _handleActionAfter(data: any, tabId: number = 0, _tabUrl?: string): Promise<void> {
+    if (!this.currentActionData) return;
+
+    // Find the page for this tab
+    const tracked = this.pages.get(tabId);
+    const page = tracked?.page || this.page;
+    if (!page) return;
+
+    // Check if page is still open
+    if (page.isClosed()) {
+      console.log(`⚠️ [Tab ${tabId}] Page closed, skipping after capture`);
+      this.currentActionData = null;
+      return;
+    }
 
     const actionId = this.currentActionData.id;
 
@@ -325,10 +466,19 @@ export class SessionRecorder {
       `${actionId}-after.png`
     );
 
-    await this.page.screenshot({
-      path: afterScreenshotPath,
-      type: 'png'
-    });
+    try {
+      await page.screenshot({
+        path: afterScreenshotPath,
+        type: 'png'
+      });
+    } catch (err: any) {
+      if (err.message?.includes('closed') || err.message?.includes('Target')) {
+        console.log(`⚠️ [Tab ${tabId}] Page closed during screenshot, skipping`);
+        this.currentActionData = null;
+        return;
+      }
+      throw err;
+    }
 
     // Complete action data (with file path, not inline HTML)
     this.currentActionData.after = {
@@ -342,7 +492,7 @@ export class SessionRecorder {
     // Add to session
     this.sessionData.actions.push(this.currentActionData);
 
-    console.log(`✅ Recorded action #${this.sessionData.actions.length}: ${this.currentActionData.type}`);
+    console.log(`✅ [Tab ${tabId}] Recorded action #${this.sessionData.actions.length}: ${this.currentActionData.type}`);
 
     this.currentActionData = null;
   }
@@ -525,6 +675,34 @@ export class SessionRecorder {
       // Finalize the archive
       archive.finalize();
     });
+  }
+
+  /**
+   * Attach to all existing pages in the browser context
+   * Call this after start() when connecting to an existing browser with multiple tabs
+   */
+  async attachToExistingPages(): Promise<void> {
+    if (!this.context || !this.options.browser_record) {
+      return;
+    }
+
+    const pages = this.context.pages();
+    console.log(`📑 Found ${pages.length} existing page(s) in context`);
+
+    for (const page of pages) {
+      // Skip if already tracked (the page passed to start())
+      const alreadyTracked = Array.from(this.pages.values()).some(t => t.page === page);
+      if (!alreadyTracked) {
+        await this._attachToPage(page);
+      }
+    }
+  }
+
+  /**
+   * Get the number of tracked pages (tabs)
+   */
+  getTrackedPageCount(): number {
+    return this.pages.size;
   }
 
   getSessionDir(): string {
@@ -887,6 +1065,15 @@ export class SessionRecorder {
       }
     );
 
+    // Rewrite inline <style> tag content (fixes font and background-image URLs)
+    rewritten = rewritten.replace(
+      /<style([^>]*)>([\s\S]*?)<\/style>/gi,
+      (match, attrs, content) => {
+        const rewrittenContent = this._rewriteCSSUrls(content, baseUrl);
+        return `<style${attrs}>${rewrittenContent}</style>`;
+      }
+    );
+
     return rewritten;
   }
 
@@ -899,41 +1086,81 @@ export class SessionRecorder {
 
   /**
    * Rewrite url() references in CSS content
+   * Handles all quote styles: url("..."), url('...'), url(...)
    */
   private _rewriteCSSUrls(css: string, baseUrl?: string): string {
-    return css.replace(
-      /url\(["']?([^"')]+)["']?\)/g,
-      (match, url) => {
-        // Handle data URLs
-        if (url.startsWith('data:')) {
-          return match;
-        }
+    // Enhanced pattern to handle all CSS url() variations:
+    // - url("https://...") - double quoted
+    // - url('https://...') - single quoted
+    // - url(https://...) - unquoted
+    // - url( "..." ) - with whitespace
+    const urlPattern = /url\(\s*(['"]?)([^'")]+)\1\s*\)/gi;
 
-        // Resolve absolute URL if we have a base URL
-        let absoluteUrl = url;
-        if (baseUrl && !url.startsWith('http://') && !url.startsWith('https://')) {
-          try {
-            absoluteUrl = new URL(url, baseUrl).href;
-          } catch {
-            // Invalid URL, keep original
-            return match;
-          }
-        }
+    return css.replace(urlPattern, (match, _quote, urlValue) => {
+      const url = urlValue.trim();
 
-        const localPath = this.urlToResourceMap.get(absoluteUrl);
-        if (localPath) {
-          return `url('../resources/${localPath}')`;
-        }
-
-        // Try original URL if resolution failed
-        const localPathOriginal = this.urlToResourceMap.get(url);
-        if (localPathOriginal) {
-          return `url('../resources/${localPathOriginal}')`;
-        }
-
+      // Skip data URLs (already embedded)
+      if (url.startsWith('data:')) {
         return match;
       }
-    );
+
+      // Skip blob URLs
+      if (url.startsWith('blob:')) {
+        return match;
+      }
+
+      // Skip empty URLs
+      if (!url) {
+        return match;
+      }
+
+      // Resolve absolute URL if we have a base URL
+      let absoluteUrl = url;
+      if (baseUrl && !url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('//')) {
+        try {
+          absoluteUrl = new URL(url, baseUrl).href;
+        } catch {
+          // Invalid URL, keep original
+          return match;
+        }
+      }
+
+      // Handle protocol-relative URLs
+      if (url.startsWith('//') && baseUrl) {
+        try {
+          const baseUrlObj = new URL(baseUrl);
+          absoluteUrl = `${baseUrlObj.protocol}${url}`;
+        } catch {
+          return match;
+        }
+      }
+
+      // Try to find the resource in our map
+      const localPath = this.urlToResourceMap.get(absoluteUrl);
+      if (localPath) {
+        return `url('../resources/${localPath}')`;
+      }
+
+      // Try original URL if resolution failed
+      const localPathOriginal = this.urlToResourceMap.get(url);
+      if (localPathOriginal) {
+        return `url('../resources/${localPathOriginal}')`;
+      }
+
+      // Try without query string/hash
+      try {
+        const urlObj = new URL(absoluteUrl);
+        const cleanUrl = urlObj.origin + urlObj.pathname;
+        const localPathClean = this.urlToResourceMap.get(cleanUrl);
+        if (localPathClean) {
+          return `url('../resources/${localPathClean}')`;
+        }
+      } catch {
+        // Not a valid URL
+      }
+
+      return match;
+    });
   }
 
   /**

@@ -17,6 +17,7 @@ export interface SnapshotData {
   url: string;
   timestamp: string; // ISO 8601 UTC
   resourceOverrides: ResourceOverride[];
+  fontUrls?: string[]; // Font URLs found in CSS (for verification/debugging)
 }
 
 export function createSnapshotCapture() {
@@ -69,14 +70,47 @@ export function createSnapshotCapture() {
   }
 
   /**
-   * Extract external resources (stylesheets, images) for offline viewing
+   * Extract font URLs from CSS content
+   * Returns array of absolute font URLs found in @font-face declarations
+   */
+  function extractFontUrlsFromCSS(cssContent: string, baseUrl: string): string[] {
+    const fontUrls: string[] = [];
+    // Match url() in CSS, handling various quote styles
+    const urlPattern = /url\(\s*(['"]?)([^'")]+)\1\s*\)/gi;
+    // Font file extensions
+    const fontExtensions = /\.(woff2?|ttf|otf|eot)(\?|#|$)/i;
+
+    let match;
+    while ((match = urlPattern.exec(cssContent)) !== null) {
+      const url = match[2].trim();
+
+      // Skip data URLs
+      if (url.startsWith('data:')) continue;
+
+      // Check if it's a font file
+      if (fontExtensions.test(url)) {
+        try {
+          const absoluteUrl = new URL(url, baseUrl).href;
+          fontUrls.push(absoluteUrl);
+        } catch {
+          // Invalid URL, skip
+        }
+      }
+    }
+
+    return fontUrls;
+  }
+
+  /**
+   * Extract external resources (stylesheets, images, fonts) for offline viewing
    * Based on Playwright's resource extraction approach
    */
   function extractResources(): ResourceOverride[] {
     const resources: ResourceOverride[] = [];
     const processedUrls = new Set<string>();
+    const fontUrls: string[] = [];
 
-    // 1. Extract external stylesheets
+    // 1. Extract external stylesheets and collect font URLs
     try {
       for (const sheet of Array.from(document.styleSheets)) {
         // Only process external stylesheets (with href)
@@ -99,6 +133,10 @@ export function createSnapshotCapture() {
                 contentType: 'text/css',
                 size: content.length
               });
+
+              // Extract font URLs from this stylesheet
+              const fonts = extractFontUrlsFromCSS(content, url);
+              fontUrls.push(...fonts);
             }
           } catch (e) {
             // CORS or access issues - stylesheet will fall back to network
@@ -110,7 +148,21 @@ export function createSnapshotCapture() {
       console.warn('[Snapshot] Error extracting stylesheets:', e);
     }
 
-    // 2. Extract small images (<100KB) as data URLs
+    // 2. Extract font URLs from inline <style> tags
+    try {
+      const styleTags = document.querySelectorAll('style');
+      for (const styleTag of Array.from(styleTags)) {
+        const cssContent = styleTag.textContent || '';
+        if (cssContent) {
+          const fonts = extractFontUrlsFromCSS(cssContent, document.baseURI);
+          fontUrls.push(...fonts);
+        }
+      }
+    } catch (e) {
+      console.warn('[Snapshot] Error extracting fonts from inline styles:', e);
+    }
+
+    // 3. Extract small images (<100KB) as data URLs
     try {
       const images = document.querySelectorAll('img[src^="http"]');
       for (const img of Array.from(images)) {
@@ -154,6 +206,13 @@ export function createSnapshotCapture() {
       console.warn('[Snapshot] Error extracting images:', e);
     }
 
+    // Log font URLs found (for debugging)
+    if (fontUrls.length > 0) {
+      console.log(`[Snapshot] Found ${fontUrls.length} font URLs in CSS`);
+    }
+
+    // Return resources with font URLs as metadata
+    (resources as any).__fontUrls = [...new Set(fontUrls)]; // Deduplicated
     return resources;
   }
 

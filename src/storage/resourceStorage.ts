@@ -225,8 +225,13 @@ export class ResourceStorage {
       'font/woff2': 'woff2',
       'font/ttf': 'ttf',
       'font/otf': 'otf',
+      'font/eot': 'eot',
       'application/font-woff': 'woff',
       'application/font-woff2': 'woff2',
+      'application/x-font-ttf': 'ttf',
+      'application/x-font-otf': 'otf',
+      'application/vnd.ms-fontobject': 'eot',
+      'application/octet-stream': 'dat', // Generic binary, often used for fonts
     };
 
     // Extract base content type (remove charset, etc.)

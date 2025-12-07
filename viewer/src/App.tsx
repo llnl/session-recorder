@@ -140,7 +140,7 @@ function App() {
               </main>
             </div>
 
-            {/* Bottom: Tab Panel (Resizable) */}
+            {/* Bottom: Tab Panel (Resizable from top) */}
             <ResizablePanel
               direction="horizontal"
               initialSize={300}
@@ -148,6 +148,7 @@ function App() {
               maxSize={600}
               storageKey="tabs-height"
               className="layout-tabs"
+              handlePosition="start"
             >
               <TabPanel />
             </ResizablePanel>

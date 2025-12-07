@@ -145,6 +145,8 @@
   border-left: 4px solid #4CAF50;
   background-color: rgba(76, 175, 80, 0.08);
   padding-left: calc(0.75rem - 4px);
+  min-height: 90px;
+  box-sizing: border-box;
 }
 
 .action-list-item.voice-item:hover {
@@ -181,4 +183,15 @@
   padding: 2px 6px;
   border-radius: 3px;
   font-weight: 600;
+}
+
+/* Tab indicator for multi-tab recordings */
+.action-list-item-tab {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #e4e6eb;
+  background-color: #667eea;
+  padding: 2px 6px;
+  border-radius: 3px;
+  white-space: nowrap;
 }

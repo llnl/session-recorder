@@ -15,6 +15,8 @@ interface ResizablePanelProps {
   maxSize?: number;
   storageKey?: string;
   className?: string;
+  /** Position of resize handle: 'start' (top/left) or 'end' (bottom/right). Default: 'end' */
+  handlePosition?: 'start' | 'end';
 }
 
 export const ResizablePanel = ({
@@ -25,6 +27,7 @@ export const ResizablePanel = ({
   maxSize = 800,
   storageKey,
   className = '',
+  handlePosition = 'end',
 }: ResizablePanelProps) => {
   const [size, setSize] = useState<number>(() => {
     if (storageKey) {
@@ -59,7 +62,11 @@ export const ResizablePanel = ({
 
     const handleMouseMove = (e: MouseEvent) => {
       const currentPos = direction === 'horizontal' ? e.clientY : e.clientX;
-      const delta = currentPos - startPosRef.current;
+      let delta = currentPos - startPosRef.current;
+      // Invert delta when handle is at start (top/left) - dragging down/right should decrease size
+      if (handlePosition === 'start') {
+        delta = -delta;
+      }
       const newSize = Math.max(minSize, Math.min(maxSize, startSizeRef.current + delta));
       setSize(newSize);
     };
@@ -75,7 +82,7 @@ export const ResizablePanel = ({
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isDragging, direction, minSize, maxSize]);
+  }, [isDragging, direction, minSize, maxSize, handlePosition]);
 
   const style: CSSProperties = direction === 'horizontal'
     ? { height: `${size}px` }
@@ -83,14 +90,14 @@ export const ResizablePanel = ({
 
   return (
     <div
-      className={`resizable-panel ${direction} ${className}`}
+      className={`resizable-panel ${direction} handle-${handlePosition} ${className}`}
       style={style}
     >
       <div className="resizable-panel-content">
         {children}
       </div>
       <div
-        className={`resizable-handle ${direction} ${isDragging ? 'dragging' : ''}`}
+        className={`resizable-handle ${direction} handle-${handlePosition} ${isDragging ? 'dragging' : ''}`}
         onMouseDown={handleMouseDown}
       >
         <div className="resizable-handle-indicator" />

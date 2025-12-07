@@ -337,11 +337,8 @@ async function main(): Promise<void> {
         printSummary(summary, recorder.getSessionDir());
       }
 
-      // Close browser (or just disconnect if we connected to existing)
+      // Close browser
       if (browser) {
-        if (isConnectedBrowser) {
-          console.log('[Browser] Disconnecting (browser stays open)');
-        }
         await browser.close().catch(() => {});
       }
     } catch (err) {
@@ -511,6 +508,12 @@ async function main(): Promise<void> {
     console.log('[Recorder] Starting...');
     await recorder.start(page);
 
+    // When connected to existing browser, attach to all existing pages
+    if (isConnectedBrowser) {
+      await recorder.attachToExistingPages();
+      console.log(`[Recorder] Recording ${recorder.getTrackedPageCount()} tab(s)`);
+    }
+
     // Navigate to URL (skip if connecting to existing browser with page already open)
     if (!isConnectedBrowser || page.url() === 'about:blank') {
       console.log(`[Browser] Navigating to: ${options.url}`);
@@ -529,12 +532,7 @@ async function main(): Promise<void> {
     if (recorderOptions.voice_record) {
       console.log('    - Speak to record voice narration');
     }
-    if (isConnectedBrowser) {
-      console.log('    - Press Ctrl+C to stop recording (browser stays open)');
-    } else {
-      console.log('    - Close the browser window to stop recording');
-      console.log('    - Press Ctrl+C to cancel');
-    }
+    console.log('    - Close the browser window to stop recording');
     console.log('');
     console.log('-'.repeat(60));
     console.log('');

@@ -2,6 +2,65 @@
 
 ## 🆕 Latest Updates (2025-12-06)
 
+**🎯 NEXT UP - Intent Pipeline & Post-Recording Processing:**
+
+- 📘 [PRD-INTENT-PIPELINE.md](PRD-INTENT-PIPELINE.md) - Session Intent Pipeline & Guided Workflows (v2.0)
+  - **5 Use Case Templates:** Legacy Discovery, Feature Docs, Test Suite, Presentation, UI Research
+  - **Voice as Intent Signal:** Natural phrases like "This feature is called..." or "Nobody uses this anymore" - no hotkeys needed
+  - **Post-Recording Template Selection:** Record once → Apply multiple templates → Generate different outputs
+  - **Confidence Scoring + AI Interview:** Low-confidence extractions trigger clarifying questions
+  - **Output Generators:** feature_list.json (harness format), Playwright tests, docs, slides
+  - **Key Insight:** Same recording → Different interpretation based on user intent
+  - **Effort:** 68 hours
+
+  **Architecture:**
+  ```
+  Record (simple) → Universal Pass 1 → Template Pass (on demand)
+                          ↓                    ↓
+                    session.md          feature_list.json
+                    (timeline)          tests.spec.ts
+                    (embeddings)        docs.md / slides.pptx
+  ```
+
+---
+
+**📋 MCP Server & Desktop Application PRDs:**
+
+Note that these need to be reviewed, vetted and refined. These are only initial TASKS and PRD docs. for this
+
+- 📘 [PRD-MCP.md](PRD-MCP.md) - MCP Server for AI Coding Assistants
+  - **5 MCP Tools:** start_browser_recording, start_voice_recording, start_combined_recording, stop_recording, get_recording_status
+  - **Target:** Claude Code, Cline, Continue.dev, Cursor integration
+  - **Effort:** 12 hours
+- 📋 [TASKS-MCP.md](TASKS-MCP.md) - MCP Server Implementation Tasks
+  - Phase 1: MCP Server Setup (4h)
+  - Phase 2: Tool Implementations (5h)
+  - Phase 3: Integration & Testing (3h)
+
+- 📘 [PRD-DESKTOP.md](PRD-DESKTOP.md) - Desktop Application for Non-Developers
+  - **Cross-Platform:** Windows, macOS, Linux (Electron)
+  - **Features:** One-click recording, system tray, recent recordings, settings
+  - **Target:** QA testers, product managers, support staff
+  - **Effort:** 20 hours
+- 📋 [TASKS-DESKTOP.md](TASKS-DESKTOP.md) - Desktop Application Implementation Tasks
+  - Phase 1: Core Electron App (4h)
+  - Phase 2: Recording Integration (5h)
+  - Phase 3: UI Polish (4h)
+  - Phase 4: System Integration (4h)
+  - Phase 5: Testing & Distribution (3h)
+
+---
+
+**📊 OpenSearch Schema Design:**
+
+- 📘 [OPENSEARCH-SCHEMA.md](OPENSEARCH-SCHEMA.md) - Complete OpenSearch schema for AI-powered queries
+  - **3 Indices:** `sessions`, `actions`, `features`
+  - **Semantic Search:** Vector embeddings for voice transcripts and intent
+  - **Feature Extraction:** Derived patterns from multiple sessions
+  - **Use Cases:** Example discovery, feature_list.json generation, documentation, Q&A
+
+---
+
 **✅ ARCHITECTURAL IMPROVEMENT - Python Unified Recording:**
 
 - ✅ **VoiceRecorder Architecture Refactored** - Single Python process for recording + transcription
@@ -57,8 +116,8 @@
 
 **Next Steps:**
 
-- 🎯 **Optional:** Initiative 3 - Desktop Application (20 hours)
-- 🎯 **Optional:** Initiative 4 - MCP Server (12 hours)
+- 🎯 **Optional:** Initiative 3 - Desktop Application (20 hours) → [PRD-DESKTOP.md](PRD-DESKTOP.md) | [TASKS-DESKTOP.md](TASKS-DESKTOP.md)
+- 🎯 **Optional:** Initiative 4 - MCP Server (12 hours) → [PRD-MCP.md](PRD-MCP.md) | [TASKS-MCP.md](TASKS-MCP.md)
 
 ---
 
@@ -90,8 +149,8 @@
 
 **Next Steps:**
 
-- 🎯 **Optional:** Initiative 3 - Desktop Application (20 hours)
-- 🎯 **Optional:** Initiative 4 - MCP Server (12 hours)
+- 🎯 **Optional:** Initiative 3 - Desktop Application (20 hours) → [PRD-DESKTOP.md](PRD-DESKTOP.md) | [TASKS-DESKTOP.md](TASKS-DESKTOP.md)
+- 🎯 **Optional:** Initiative 4 - MCP Server (12 hours) → [PRD-MCP.md](PRD-MCP.md) | [TASKS-MCP.md](TASKS-MCP.md)
 
 ---
 
@@ -368,20 +427,20 @@ Sprint 6 is broken into 6 phases.
 - Voice recording tests
 - Viewer integration tests
 
-#### Phase 6.4: MCP Server (12h) → [TASKS-4.md Phase 4](TASKS-4.md#phase-4-mcp-server-12-hours)
+#### Phase 6.4: MCP Server (12h) → [PRD-MCP.md](PRD-MCP.md) | [TASKS-MCP.md](TASKS-MCP.md)
 
-- MCP server setup
-- 5 recording tools (start/stop browser/voice/combined, get status)
-- SessionRecorder integration
-- Error handling
+- MCP server setup with 5 tools
+- Claude Desktop integration
+- RecordingManager wrapper
+- Integration tests and documentation
 
-#### Phase 6.5: Desktop Application (20h) → [TASKS-4.md Phase 5](TASKS-4.md#phase-5-desktop-application-20-hours)
+#### Phase 6.5: Desktop Application (20h) → [PRD-DESKTOP.md](PRD-DESKTOP.md) | [TASKS-DESKTOP.md](TASKS-DESKTOP.md)
 
-- Electron app structure
-- Recording controls UI
-- Voice capture integration
-- Browser automation
-- Zip creation and viewer links
+- Cross-platform Electron app (Windows, macOS, Linux)
+- One-click recording with mode selection
+- System tray integration
+- Recent recordings management
+- Settings persistence
 
 #### Phase 6.6: Final Testing & Documentation (12h) → [TASKS-4.md Phase 6](TASKS-4.md#phase-6-final-testing--documentation-12-hours)
 
@@ -448,8 +507,8 @@ Sprint 6 is broken into 6 phases.
 - Sprint 6 Phase 1: Voice Recording Backend: 16 hours 🚀 **PRODUCTION**
 - Sprint 6 Phase 2: Viewer Integration: 14 hours 🚀 **PRODUCTION**
 - Sprint 6 Phase 3: Testing & Documentation (Phases 1-2): 4 hours 🚀 **PRODUCTION**
-- Sprint 6 Phase 4: MCP Server: 12 hours 🚀 **PRODUCTION**
-- Sprint 6 Phase 5: Desktop Application: 20 hours 🚀 **PRODUCTION**
+- Sprint 6 Phase 4: MCP Server: 12 hours 🚀 **PRODUCTION** → [TASKS-MCP.md](TASKS-MCP.md)
+- Sprint 6 Phase 5: Desktop Application: 20 hours 🚀 **PRODUCTION** → [TASKS-DESKTOP.md](TASKS-DESKTOP.md)
 - Sprint 6 Phase 6: Final Testing & Documentation: 12 hours 🚀 **PRODUCTION**
 - **Subtotal: 78 hours**
 
@@ -535,8 +594,8 @@ Sprint 6 is broken into 6 phases.
   - Voice Recording Backend (16h)
   - Viewer Integration (14h)
   - Testing & Documentation for Phases 1-2 (4h)
-  - MCP Server for AI assistants (12h)
-  - Desktop Application for non-developers (20h)
+  - MCP Server for AI assistants (12h) → [TASKS-MCP.md](TASKS-MCP.md)
+  - Desktop Application for non-developers (20h) → [TASKS-DESKTOP.md](TASKS-DESKTOP.md)
   - Final Testing & Documentation (12h)
 
 **Progress:**
@@ -544,8 +603,8 @@ Sprint 6 is broken into 6 phases.
 - ✅ Core snapshot system complete (Path 2)
 - ⏳ Voice recording infrastructure
 - ⏳ Viewer voice integration
-- ⏳ MCP Server for Claude Code / Cline / Continue.dev
-- ⏳ One-click recording for QA/PM/Support staff
+- ⏳ MCP Server for Claude Code / Cline / Continue.dev → [TASKS-MCP.md](TASKS-MCP.md)
+- ⏳ One-click recording for QA/PM/Support staff → [TASKS-DESKTOP.md](TASKS-DESKTOP.md)
 - ⏳ Audio playback with synchronized transcripts
 
 **Result:** Production-ready tool accessible to all company employees (78 hours remaining)
@@ -615,7 +674,7 @@ Sprint 6 is broken into 6 phases.
 **Follow Path 4 (83 hours remaining)** to make the tool accessible to all employees:
 
 1. Complete Sprint 5d + Sprint 6 (13 hours) - Final polish
-2. Then implement Sprint 8 (70 hours) - Desktop app + MCP + Voice
+2. Then implement Desktop app ([TASKS-DESKTOP.md](TASKS-DESKTOP.md)) + MCP ([TASKS-MCP.md](TASKS-MCP.md)) + Voice
 3. Optional: Add Sprint 7 (14 hours) if file size becomes an issue
 
 The Playwright architecture in PRD-3.md is battle-tested and Path 2 is now complete!
