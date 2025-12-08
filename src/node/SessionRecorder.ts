@@ -7,7 +7,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
 import archiver from 'archiver';
-import { SessionData, RecordedAction, HarEntry, SnapshotterBlob, NetworkEntry, ConsoleEntry, VoiceTranscriptAction } from './types';
+import { SessionData, RecordedAction, NavigationAction, HarEntry, SnapshotterBlob, NetworkEntry, ConsoleEntry, VoiceTranscriptAction } from './types';
 import { ResourceStorage } from '../storage/resourceStorage';
 import { VoiceRecorder } from '../voice/VoiceRecorder';
 
@@ -30,6 +30,8 @@ interface TrackedPage {
   page: Page;
   tabId: number;
   url: string;
+  previousUrl: string;  // For tracking navigation events
+  isInitialLoad: boolean;  // True until first navigation event recorded
 }
 
 export class SessionRecorder {
@@ -194,7 +196,13 @@ export class SessionRecorder {
     const tabUrl = page.url();
 
     // Track this page
-    this.pages.set(tabId, { page, tabId, url: tabUrl });
+    this.pages.set(tabId, {
+      page,
+      tabId,
+      url: tabUrl,
+      previousUrl: '',  // Empty for initial load
+      isInitialLoad: true
+    });
 
     console.log(`📑 Attaching to tab ${tabId}: ${tabUrl || '(blank)'}`);
 
@@ -203,12 +211,25 @@ export class SessionRecorder {
       await this._handleNetworkResponse(response);
     });
 
-    // Update tab URL when page navigates
-    page.on('framenavigated', (frame) => {
+    // Track navigation events
+    page.on('framenavigated', async (frame) => {
       if (frame === page.mainFrame()) {
         const tracked = this.pages.get(tabId);
         if (tracked) {
-          tracked.url = page.url();
+          const newUrl = page.url();
+          const oldUrl = tracked.url;
+
+          // Don't record if URL didn't actually change (e.g., hash-only changes we want to skip)
+          // But DO record initial loads and actual URL changes
+          if (newUrl !== oldUrl || tracked.isInitialLoad) {
+            // Record navigation event
+            await this._recordNavigationEvent(tabId, oldUrl, newUrl, tracked.isInitialLoad);
+
+            // Update tracking
+            tracked.previousUrl = oldUrl;
+            tracked.url = newUrl;
+            tracked.isInitialLoad = false;
+          }
         }
       }
     });
@@ -340,6 +361,25 @@ export class SessionRecorder {
       if (alreadyLoaded) {
         console.log(`📑 [Tab ${tabId}] Injecting code into already-loaded page...`);
         await page.evaluate(fullInjectedCode);
+      } else {
+        // Page is still loading - wait for it and inject if initScript didn't run
+        // This handles the race condition where page starts loading before we attach
+        page.waitForLoadState('domcontentloaded').then(async () => {
+          try {
+            const needsInjection = await page.evaluate(() => !window.__sessionRecorderLoaded);
+            if (needsInjection) {
+              console.log(`📑 [Tab ${tabId}] Injecting code after load...`);
+              await page.evaluate(fullInjectedCode);
+            }
+          } catch (e: any) {
+            // Page might be closed
+            if (!e.message?.includes('closed') && !e.message?.includes('Target')) {
+              console.log(`⚠️ [Tab ${tabId}] Post-load injection failed: ${e.message}`);
+            }
+          }
+        }).catch(() => {
+          // Page might have been closed before load completed
+        });
       }
     } catch (e: any) {
       // Page might be closed or in a weird state
@@ -347,6 +387,77 @@ export class SessionRecorder {
     }
 
     return tabId;
+  }
+
+  /**
+   * Record a navigation event (URL change or initial page load)
+   */
+  private async _recordNavigationEvent(
+    tabId: number,
+    fromUrl: string,
+    toUrl: string,
+    isInitialLoad: boolean
+  ): Promise<void> {
+    const tracked = this.pages.get(tabId);
+    const page = tracked?.page || this.page;
+    if (!page || page.isClosed()) return;
+
+    // Skip about:blank navigations
+    if (toUrl === 'about:blank') return;
+
+    const actionId = `nav-${this.sessionData.actions.length + 1}`;
+    const timestamp = new Date().toISOString();
+
+    // Try to capture a screenshot
+    let screenshotData: NavigationAction['screenshot'] | undefined;
+    try {
+      // Wait a moment for the page to render
+      await page.waitForLoadState('domcontentloaded', { timeout: 5000 }).catch(() => {});
+
+      const screenshotPath = `screenshots/${actionId}.png`;
+      const fullScreenshotPath = path.join(this.sessionDir, screenshotPath);
+
+      await page.screenshot({
+        path: fullScreenshotPath,
+        type: 'png'
+      });
+
+      screenshotData = {
+        path: screenshotPath,
+        type: 'png'
+      };
+    } catch (err: any) {
+      // Screenshot failed - page might be navigating or closed
+      if (!err.message?.includes('closed') && !err.message?.includes('Target')) {
+        console.log(`⚠️ [Tab ${tabId}] Navigation screenshot failed: ${err.message}`);
+      }
+    }
+
+    // Determine navigation type
+    let navigationType: NavigationAction['navigation']['navigationType'] = 'other';
+    if (isInitialLoad) {
+      navigationType = 'initial';
+    } else if (fromUrl && toUrl) {
+      // Try to determine if it was a link click, typed URL, etc.
+      // This is a heuristic - Playwright doesn't give us this info directly
+      navigationType = 'link';  // Default to link since we're recording user interactions
+    }
+
+    const navigationAction: NavigationAction = {
+      id: actionId,
+      timestamp,
+      type: 'navigation',
+      tabId,
+      navigation: {
+        fromUrl: fromUrl || '',
+        toUrl,
+        navigationType
+      },
+      screenshot: screenshotData
+    };
+
+    this.sessionData.actions.push(navigationAction);
+    console.log(`🔗 [Tab ${tabId}] Navigation: ${fromUrl || '(new)'} → ${toUrl}`);
   }
 
   private async _handleActionBefore(data: any, tabId: number = 0, tabUrl?: string): Promise<void> {
@@ -728,6 +839,14 @@ export class SessionRecorder {
             type: a.type,
             timestamp: a.timestamp,
             text: a.transcript.text.slice(0, 100)
+          };
+        }
+        if (a.type === 'navigation') {
+          return {
+            id: a.id,
+            type: a.type,
+            timestamp: a.timestamp,
+            url: a.navigation.toUrl
           };
         }
         return {

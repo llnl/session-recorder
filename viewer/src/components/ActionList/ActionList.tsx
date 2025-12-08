@@ -7,15 +7,21 @@ import { useRef, useEffect } from 'react';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useFilteredActions } from '@/hooks/useFilteredActions';
 import { useVirtualList } from '@/hooks/useVirtualList';
-import type { VoiceTranscriptAction, RecordedAction } from '@/types/session';
+import type { VoiceTranscriptAction, RecordedAction, NavigationAction } from '@/types/session';
 import './ActionList.css';
 
 const ACTION_ITEM_HEIGHT = 80; // Estimated height per regular action item
 const VOICE_ITEM_HEIGHT = 100; // Estimated height per voice transcript item (more content)
+const NAV_ITEM_HEIGHT = 60; // Estimated height per navigation item
 
 // Type guard for voice transcript actions
-function isVoiceTranscriptAction(action: RecordedAction | VoiceTranscriptAction): action is VoiceTranscriptAction {
+function isVoiceTranscriptAction(action: RecordedAction | NavigationAction | VoiceTranscriptAction): action is VoiceTranscriptAction {
   return action.type === 'voice_transcript';
+}
+
+// Type guard for navigation actions
+function isNavigationAction(action: RecordedAction | NavigationAction | VoiceTranscriptAction): action is NavigationAction {
+  return action.type === 'navigation';
 }
 
 export const ActionList = () => {
@@ -29,7 +35,10 @@ export const ActionList = () => {
   // Virtual scrolling setup with dynamic heights for different action types
   const getItemHeight = (index: number) => {
     const action = filteredActions[index];
-    return action && isVoiceTranscriptAction(action) ? VOICE_ITEM_HEIGHT : ACTION_ITEM_HEIGHT;
+    if (!action) return ACTION_ITEM_HEIGHT;
+    if (isVoiceTranscriptAction(action)) return VOICE_ITEM_HEIGHT;
+    if (isNavigationAction(action)) return NAV_ITEM_HEIGHT;
+    return ACTION_ITEM_HEIGHT;
   };
 
   const { virtualizer, items: virtualItems, totalSize } = useVirtualList({
@@ -161,11 +170,58 @@ export const ActionList = () => {
                 );
               }
 
+              // Check for multi-tab to show tab indicators
+              const hasMultipleTabs = sessionData.actions.some(
+                a => !isVoiceTranscriptAction(a) && !isNavigationAction(a) && (a as RecordedAction).tabId !== undefined && (a as RecordedAction).tabId !== 0
+              ) || sessionData.actions.some(
+                a => isNavigationAction(a) && (a as NavigationAction).tabId !== 0
+              );
+
+              // Render navigation action
+              if (isNavigationAction(action)) {
+                const navAction = action as NavigationAction;
+                const displayUrl = navAction.navigation.toUrl.length > 50
+                  ? navAction.navigation.toUrl.substring(0, 47) + '...'
+                  : navAction.navigation.toUrl;
+
+                return (
+                  <div
+                    key={action.id}
+                    className={`action-list-item navigation-item ${isSelected ? 'selected' : ''}`}
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      height: `${virtualRow.size}px`,
+                      transform: `translateY(${virtualRow.start}px)`,
+                    }}
+                    onClick={() => selectAction(actualIndex)}
+                  >
+                    <div className="action-list-item-header">
+                      <span className="action-list-item-icon">🔗</span>
+                      {hasMultipleTabs && (
+                        <span className="action-list-item-tab" title={navAction.navigation.toUrl}>
+                          Tab {navAction.tabId + 1}
+                        </span>
+                      )}
+                      <span className="action-list-item-type">
+                        {navAction.navigation.navigationType === 'initial' ? 'Page Load' : 'Navigation'}
+                      </span>
+                      <span className="action-list-item-time">
+                        {formatTime(action.timestamp)}
+                      </span>
+                    </div>
+
+                    <div className="action-list-item-url navigation-url" title={navAction.navigation.toUrl}>
+                      {displayUrl}
+                    </div>
+                  </div>
+                );
+              }
+
               // Render browser action
               const browserAction = action as RecordedAction;
-              const hasMultipleTabs = sessionData.actions.some(
-                a => !isVoiceTranscriptAction(a) && (a as RecordedAction).tabId !== undefined && (a as RecordedAction).tabId !== 0
-              );
 
               return (
                 <div

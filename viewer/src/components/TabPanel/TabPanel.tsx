@@ -7,8 +7,18 @@ import { useState, useMemo } from 'react';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useFilteredConsole } from '@/hooks/useFilteredConsole';
 import { useFilteredNetwork } from '@/hooks/useFilteredNetwork';
-import type { VoiceTranscriptAction } from '@/types/session';
+import type { VoiceTranscriptAction, NavigationAction, RecordedAction } from '@/types/session';
 import { VoiceTranscriptViewer } from '@/components/VoiceTranscriptViewer';
+
+// Type guard for navigation actions
+function isNavigationAction(action: any): action is NavigationAction {
+  return action?.type === 'navigation';
+}
+
+// Type guard for recorded actions (browser interactions)
+function isRecordedAction(action: any): action is RecordedAction {
+  return action && 'before' in action && 'after' in action && 'action' in action;
+}
 import './TabPanel.css';
 
 type ConsoleLevelFilter = 'all' | 'error' | 'warn' | 'info' | 'log' | 'debug';
@@ -195,7 +205,29 @@ export const TabPanel = () => {
                       </div>
                     )}
                   </>
-                ) : (
+                ) : isNavigationAction(selectedAction) ? (
+                  // Navigation action specific fields
+                  <>
+                    <div className="info-item">
+                      <span className="info-label">Tab:</span>
+                      <span className="info-value">Tab {selectedAction.tabId}</span>
+                    </div>
+                    <div className="info-item">
+                      <span className="info-label">Navigation Type:</span>
+                      <span className="info-value">{selectedAction.navigation.navigationType}</span>
+                    </div>
+                    {selectedAction.navigation.fromUrl && (
+                      <div className="info-item">
+                        <span className="info-label">From URL:</span>
+                        <span className="info-value">{selectedAction.navigation.fromUrl}</span>
+                      </div>
+                    )}
+                    <div className="info-item">
+                      <span className="info-label">To URL:</span>
+                      <span className="info-value">{selectedAction.navigation.toUrl}</span>
+                    </div>
+                  </>
+                ) : isRecordedAction(selectedAction) ? (
                   // Browser action specific fields
                   <>
                     {selectedAction.action.x !== undefined && (
@@ -227,7 +259,7 @@ export const TabPanel = () => {
                       </span>
                     </div>
                   </>
-                )}
+                ) : null}
               </div>
             ) : (
               <div className="tab-empty">

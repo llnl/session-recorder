@@ -362,8 +362,8 @@ export const Timeline = () => {
 
         <div className="timeline-thumbnails" style={{ width: timelineWidth }}>
           {sessionData.actions.map((action, index) => {
-            // Skip voice actions (no thumbnails)
-            if (action.type === 'voice_transcript') return null;
+            // Skip voice actions and navigation actions (no full thumbnails)
+            if (action.type === 'voice_transcript' || action.type === 'navigation') return null;
 
             const x = timestampToX(action.timestamp);
             const screenshotPath = action.before.screenshot;
@@ -401,7 +401,7 @@ export const Timeline = () => {
             <div className="timeline-hover-zoom-preview">
               {(() => {
                 const action = sessionData.actions[hoveredActionIndex];
-                if (action.type === 'voice_transcript') return null;
+                if (action.type === 'voice_transcript' || action.type === 'navigation') return null;
                 const screenshotPath = action.before.screenshot;
                 const screenshotBlob = resources.get(screenshotPath);
                 const screenshotUrl = screenshotBlob ? URL.createObjectURL(screenshotBlob) : null;
@@ -414,18 +414,33 @@ export const Timeline = () => {
             </div>
             <div className="timeline-hover-zoom-tooltip">
               <div className="timeline-hover-zoom-tooltip-type">
-                {sessionData.actions[hoveredActionIndex].type}
+                {sessionData.actions[hoveredActionIndex].type === 'navigation'
+                  ? 'Navigation'
+                  : sessionData.actions[hoveredActionIndex].type}
               </div>
               <div className="timeline-hover-zoom-tooltip-time">
                 {((new Date(sessionData.actions[hoveredActionIndex].timestamp).getTime() -
                    new Date(sessionData.startTime).getTime()) / 1000).toFixed(2)}s
               </div>
-              {sessionData.actions[hoveredActionIndex].type !== 'voice_transcript' && 
-               sessionData.actions[hoveredActionIndex].before?.url && (
-                <div className="timeline-hover-zoom-tooltip-target">
-                  {sessionData.actions[hoveredActionIndex].before.url}
-                </div>
-              )}
+              {(() => {
+                const action = sessionData.actions[hoveredActionIndex];
+                if (action.type === 'voice_transcript') return null;
+                if (action.type === 'navigation') {
+                  return (
+                    <div className="timeline-hover-zoom-tooltip-target">
+                      {action.navigation.toUrl}
+                    </div>
+                  );
+                }
+                if (action.before?.url) {
+                  return (
+                    <div className="timeline-hover-zoom-tooltip-target">
+                      {action.before.url}
+                    </div>
+                  );
+                }
+                return null;
+              })()}
             </div>
           </div>
         )}

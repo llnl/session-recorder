@@ -7,6 +7,7 @@ import { create } from 'zustand';
 import type {
   SessionData,
   RecordedAction,
+  NavigationAction,
   VoiceTranscriptAction,
   NetworkEntry,
   ConsoleEntry,
@@ -51,10 +52,10 @@ export interface SessionStore {
   getResourceBySha1: (sha1: string) => StoredResource | null;
 
   // Derived selectors (computed values)
-  getFilteredActions: () => (RecordedAction | VoiceTranscriptAction)[];
+  getFilteredActions: () => (RecordedAction | NavigationAction | VoiceTranscriptAction)[];
   getFilteredConsole: () => ConsoleEntry[];
   getFilteredNetwork: () => NetworkEntry[];
-  getSelectedAction: () => RecordedAction | VoiceTranscriptAction | null;
+  getSelectedAction: () => RecordedAction | NavigationAction | VoiceTranscriptAction | null;
 }
 
 export const useSessionStore = create<SessionStore>((set, get) => ({

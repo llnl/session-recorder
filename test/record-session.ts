@@ -479,16 +479,31 @@ async function main(): Promise<void> {
       }
     });
 
-    // Handle page close
-    page.on('close', () => {
+    // Helper to check if all pages are closed and trigger shutdown
+    const checkAllPagesClosed = () => {
       if (!isShuttingDown && browser?.isConnected()) {
-        // Page closed but browser still open - might have more pages
-        const pages = context?.pages() || [];
-        if (pages.length === 0) {
+        // Check ALL contexts for remaining pages
+        const allPages = browser.contexts().flatMap(ctx => ctx.pages());
+        if (allPages.length === 0) {
           shutdown('All pages closed');
         }
       }
-    });
+    };
+
+    // Handle page close for initial page
+    page.on('close', checkAllPagesClosed);
+
+    // Listen for new pages (tabs) in ALL contexts and attach close handlers
+    const attachPageCloseHandler = (ctx: BrowserContext) => {
+      ctx.on('page', (newPage) => {
+        newPage.on('close', checkAllPagesClosed);
+      });
+    };
+
+    // Attach to all existing contexts (for CDP-connected browsers)
+    for (const ctx of browser.contexts()) {
+      attachPageCloseHandler(ctx);
+    }
 
     // Capture console messages (optional logging)
     page.on('console', msg => {
@@ -512,6 +527,15 @@ async function main(): Promise<void> {
     if (isConnectedBrowser) {
       await recorder.attachToExistingPages();
       console.log(`[Recorder] Recording ${recorder.getTrackedPageCount()} tab(s)`);
+
+      // Also attach close handlers to all existing pages (not just the initial one)
+      for (const ctx of browser.contexts()) {
+        for (const p of ctx.pages()) {
+          if (p !== page) {  // Skip the initial page, already has handler
+            p.on('close', checkAllPagesClosed);
+          }
+        }
+      }
     }
 
     // Navigate to URL (skip if connecting to existing browser with page already open)

@@ -15,7 +15,7 @@ export interface SessionData {
   sessionId: string;
   startTime: string;  // ISO 8601 UTC
   endTime?: string;   // ISO 8601 UTC
-  actions: (RecordedAction | VoiceTranscriptAction)[];
+  actions: (RecordedAction | NavigationAction | VoiceTranscriptAction)[];
   resources?: string[];  // List of captured resource SHA1s
   resourceStorage?: Record<string, StoredResource>; // SHA1-based resource deduplication
   network?: {
@@ -49,6 +49,26 @@ export interface RecordedAction {
   before: SnapshotWithScreenshot;
   action: ActionDetails;
   after: SnapshotWithScreenshot;
+}
+
+export interface NavigationAction {
+  id: string;
+  timestamp: string;  // ISO 8601 UTC
+  type: 'navigation';
+
+  // Multi-tab support
+  tabId: number;      // Tab index (0-based)
+
+  navigation: {
+    fromUrl: string;   // URL before navigation (empty string for initial load)
+    toUrl: string;     // URL navigated to
+    navigationType: 'initial' | 'link' | 'typed' | 'reload' | 'back_forward' | 'other';
+  };
+
+  screenshot?: {
+    path: string;      // Path to screenshot file
+    type: 'png';
+  };
 }
 
 export interface VoiceTranscriptAction {

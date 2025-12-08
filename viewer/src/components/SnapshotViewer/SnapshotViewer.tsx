@@ -6,8 +6,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSessionStore } from '@/stores/sessionStore';
 import { generateRestorationScript } from '../../../../src/browser/snapshotRestoration';
-import type { RecordedAction } from '@/types/session';
+import type { RecordedAction, NavigationAction } from '@/types/session';
 import './SnapshotViewer.css';
+
+// Type guard for navigation actions
+function isNavigationAction(action: any): action is NavigationAction {
+  return action?.type === 'navigation';
+}
 
 type SnapshotView = 'before' | 'after';
 
@@ -132,15 +137,17 @@ export const SnapshotViewer = () => {
   const resources = useSessionStore((state) => state.resources);
 
   /**
-   * Find the closest previous action that has snapshots (for voice transcript actions)
+   * Find the closest previous action that has snapshots
+   * (for voice transcript and navigation actions which don't have their own snapshots)
    */
   const getClosestSnapshotAction = (): { action: RecordedAction; index: number } | null => {
     if (!sessionData || selectedActionIndex === null) return null;
 
-    // Search backwards from the current action
+    // Search backwards from the current action for a RecordedAction with snapshots
     for (let i = selectedActionIndex - 1; i >= 0; i--) {
       const action = sessionData.actions[i];
-      if (action.type !== 'voice_transcript' && 'before' in action && 'after' in action) {
+      // Only RecordedActions have before/after snapshots (not voice_transcript or navigation)
+      if (action.type !== 'voice_transcript' && action.type !== 'navigation' && 'before' in action && 'after' in action) {
         return { action: action as RecordedAction, index: i };
       }
     }
@@ -198,11 +205,12 @@ export const SnapshotViewer = () => {
     // Determine which action to use for snapshots
     let actionForSnapshot: RecordedAction | null = null;
 
-    if (selectedAction.type === 'voice_transcript') {
-      // Find closest previous action with snapshots
+    if (selectedAction.type === 'voice_transcript' || isNavigationAction(selectedAction)) {
+      // Find closest previous action with snapshots for voice transcripts and navigations
       const fallback = getClosestSnapshotAction();
       if (!fallback) {
-        setError('No snapshots available before this voice transcript');
+        const actionType = selectedAction.type === 'voice_transcript' ? 'voice transcript' : 'navigation';
+        setError(`No snapshots available before this ${actionType}`);
         return;
       }
       actionForSnapshot = fallback.action;
@@ -335,21 +343,23 @@ export const SnapshotViewer = () => {
     );
   }
 
-  // For voice transcripts, find the closest previous snapshot
-  const fallbackSnapshot = selectedAction.type === 'voice_transcript' ? getClosestSnapshotAction() : null;
+  // For voice transcripts and navigations, find the closest previous snapshot
+  const needsFallback = selectedAction.type === 'voice_transcript' || isNavigationAction(selectedAction);
+  const fallbackSnapshot = needsFallback ? getClosestSnapshotAction() : null;
 
-  if (selectedAction.type === 'voice_transcript' && !fallbackSnapshot) {
+  if (needsFallback && !fallbackSnapshot) {
+    const actionType = selectedAction.type === 'voice_transcript' ? 'voice transcript' : 'navigation';
     return (
       <div className="snapshot-viewer">
         <div className="snapshot-viewer-empty">
-          <p>No snapshots available before this voice transcript</p>
+          <p>No snapshots available before this {actionType}</p>
         </div>
       </div>
     );
   }
 
-  // Use fallback action for voice transcripts
-  const displayAction = selectedAction.type === 'voice_transcript' && fallbackSnapshot
+  // Use fallback action for voice transcripts and navigations
+  const displayAction = needsFallback && fallbackSnapshot
     ? fallbackSnapshot.action
     : selectedAction as RecordedAction;
 
