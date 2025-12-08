@@ -86,6 +86,12 @@
   border: 1px solid #3a3f4b;
 }
 
+.info-value.error-text {
+  color: #ef4444;
+  background-color: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
 /* Tab Controls */
 .tab-controls {
   display: flex;

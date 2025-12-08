@@ -4,9 +4,9 @@
 
 import { useMemo } from 'react';
 import { useSessionStore } from '@/stores/sessionStore';
-import type { RecordedAction, NavigationAction, VoiceTranscriptAction } from '@/types/session';
+import type { AnyAction } from '@/types/session';
 
-export function useFilteredActions(): (RecordedAction | NavigationAction | VoiceTranscriptAction)[] {
+export function useFilteredActions(): AnyAction[] {
   const sessionData = useSessionStore((state) => state.sessionData);
   const timelineSelection = useSessionStore((state) => state.timelineSelection);
 

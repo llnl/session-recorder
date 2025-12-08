@@ -11,11 +11,22 @@ export interface StoredResource {
   timestamp: number;
 }
 
+// Union type for all action types
+export type AnyAction =
+  | RecordedAction
+  | NavigationAction
+  | VoiceTranscriptAction
+  | PageVisibilityAction
+  | MediaAction
+  | DownloadAction
+  | FullscreenAction
+  | PrintAction;
+
 export interface SessionData {
   sessionId: string;
   startTime: string;  // ISO 8601 UTC
   endTime?: string;   // ISO 8601 UTC
-  actions: (RecordedAction | NavigationAction | VoiceTranscriptAction)[];
+  actions: AnyAction[];
   resources?: string[];  // List of captured resource SHA1s
   resourceStorage?: Record<string, StoredResource>; // SHA1-based resource deduplication
   network?: {
@@ -89,6 +100,99 @@ export interface VoiceTranscriptAction {
   };
   audioFile?: string;  // Relative path to audio segment
   nearestSnapshotId?: string;
+}
+
+/**
+ * Browser event snapshot - screenshot captured at moment of event
+ */
+export interface BrowserEventSnapshot {
+  screenshot: string;  // Relative path to screenshot: screenshots/visibility-1.png
+  url: string;
+  viewport: { width: number; height: number };
+  timestamp: string;  // ISO 8601 UTC
+}
+
+/**
+ * Page visibility change event (tab switch, minimize, etc.)
+ */
+export interface PageVisibilityAction {
+  id: string;
+  type: 'page_visibility';
+  timestamp: string;  // ISO 8601 UTC
+  tabId: number;
+  visibility: {
+    state: 'visible' | 'hidden';
+    previousState?: 'visible' | 'hidden';
+  };
+  snapshot?: BrowserEventSnapshot;  // Screenshot at moment of visibility change
+}
+
+/**
+ * Media playback event (video/audio)
+ */
+export interface MediaAction {
+  id: string;
+  type: 'media';
+  timestamp: string;  // ISO 8601 UTC
+  tabId: number;
+  media: {
+    event: 'play' | 'pause' | 'ended' | 'seeked' | 'volumechange';
+    mediaType: 'video' | 'audio';
+    src?: string;           // Media source URL
+    currentTime?: number;   // Current playback position in seconds
+    duration?: number;      // Total duration in seconds
+    volume?: number;        // Volume level 0-1
+    muted?: boolean;
+  };
+  snapshot?: BrowserEventSnapshot;  // Screenshot at moment of media event
+}
+
+/**
+ * Download initiated event
+ */
+export interface DownloadAction {
+  id: string;
+  type: 'download';
+  timestamp: string;  // ISO 8601 UTC
+  tabId: number;
+  download: {
+    url: string;            // Download URL
+    suggestedFilename?: string;
+    state: 'started' | 'completed' | 'canceled' | 'failed';
+    totalBytes?: number;
+    receivedBytes?: number;
+    error?: string;
+  };
+  snapshot?: BrowserEventSnapshot;  // Screenshot at moment of download event
+}
+
+/**
+ * Fullscreen change event
+ */
+export interface FullscreenAction {
+  id: string;
+  type: 'fullscreen';
+  timestamp: string;  // ISO 8601 UTC
+  tabId: number;
+  fullscreen: {
+    state: 'entered' | 'exited';
+    element?: string;  // Tag name of fullscreen element (e.g., 'VIDEO', 'DIV')
+  };
+  snapshot?: BrowserEventSnapshot;  // Screenshot at moment of fullscreen change
+}
+
+/**
+ * Print event (before/after print)
+ */
+export interface PrintAction {
+  id: string;
+  type: 'print';
+  timestamp: string;  // ISO 8601 UTC
+  tabId: number;
+  print: {
+    event: 'beforeprint' | 'afterprint';
+  };
+  snapshot?: BrowserEventSnapshot;  // Screenshot at moment of print event
 }
 
 export interface SnapshotWithScreenshot {

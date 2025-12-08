@@ -362,11 +362,14 @@ export const Timeline = () => {
 
         <div className="timeline-thumbnails" style={{ width: timelineWidth }}>
           {sessionData.actions.map((action, index) => {
-            // Skip voice actions and navigation actions (no full thumbnails)
-            if (action.type === 'voice_transcript' || action.type === 'navigation') return null;
+            // Skip voice actions, navigation actions, and browser events (no full thumbnails)
+            if (action.type === 'voice_transcript' || action.type === 'navigation' ||
+                action.type === 'page_visibility' || action.type === 'media' ||
+                action.type === 'download' || action.type === 'fullscreen' ||
+                action.type === 'print') return null;
 
             const x = timestampToX(action.timestamp);
-            const screenshotPath = action.before.screenshot;
+            const screenshotPath = (action as any).before.screenshot;
             const screenshotBlob = resources.get(screenshotPath);
             const screenshotUrl = screenshotBlob ? URL.createObjectURL(screenshotBlob) : null;
 
@@ -401,8 +404,11 @@ export const Timeline = () => {
             <div className="timeline-hover-zoom-preview">
               {(() => {
                 const action = sessionData.actions[hoveredActionIndex];
-                if (action.type === 'voice_transcript' || action.type === 'navigation') return null;
-                const screenshotPath = action.before.screenshot;
+                if (action.type === 'voice_transcript' || action.type === 'navigation' ||
+                    action.type === 'page_visibility' || action.type === 'media' ||
+                    action.type === 'download' || action.type === 'fullscreen' ||
+                    action.type === 'print') return null;
+                const screenshotPath = (action as any).before.screenshot;
                 const screenshotBlob = resources.get(screenshotPath);
                 const screenshotUrl = screenshotBlob ? URL.createObjectURL(screenshotBlob) : null;
                 return screenshotUrl ? (
@@ -432,10 +438,14 @@ export const Timeline = () => {
                     </div>
                   );
                 }
-                if (action.before?.url) {
+                // Skip browser event types that don't have screenshots
+                if (action.type === 'page_visibility' || action.type === 'media' ||
+                    action.type === 'download' || action.type === 'fullscreen' ||
+                    action.type === 'print') return null;
+                if ((action as any).before?.url) {
                   return (
                     <div className="timeline-hover-zoom-tooltip-target">
-                      {action.before.url}
+                      {(action as any).before.url}
                     </div>
                   );
                 }

@@ -7,21 +7,27 @@ import { useRef, useEffect } from 'react';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useFilteredActions } from '@/hooks/useFilteredActions';
 import { useVirtualList } from '@/hooks/useVirtualList';
-import type { VoiceTranscriptAction, RecordedAction, NavigationAction } from '@/types/session';
+import type { VoiceTranscriptAction, RecordedAction, NavigationAction, PageVisibilityAction, MediaAction, DownloadAction, FullscreenAction, PrintAction, AnyAction } from '@/types/session';
 import './ActionList.css';
 
 const ACTION_ITEM_HEIGHT = 80; // Estimated height per regular action item
 const VOICE_ITEM_HEIGHT = 100; // Estimated height per voice transcript item (more content)
 const NAV_ITEM_HEIGHT = 60; // Estimated height per navigation item
+const EVENT_ITEM_HEIGHT = 50; // Estimated height for simple event items
 
 // Type guard for voice transcript actions
-function isVoiceTranscriptAction(action: RecordedAction | NavigationAction | VoiceTranscriptAction): action is VoiceTranscriptAction {
+function isVoiceTranscriptAction(action: AnyAction): action is VoiceTranscriptAction {
   return action.type === 'voice_transcript';
 }
 
 // Type guard for navigation actions
-function isNavigationAction(action: RecordedAction | NavigationAction | VoiceTranscriptAction): action is NavigationAction {
+function isNavigationAction(action: AnyAction): action is NavigationAction {
   return action.type === 'navigation';
+}
+
+// Type guard for browser event actions (visibility, media, download, fullscreen, print)
+function isBrowserEventAction(action: AnyAction): action is PageVisibilityAction | MediaAction | DownloadAction | FullscreenAction | PrintAction {
+  return ['page_visibility', 'media', 'download', 'fullscreen', 'print'].includes(action.type);
 }
 
 export const ActionList = () => {
@@ -38,6 +44,7 @@ export const ActionList = () => {
     if (!action) return ACTION_ITEM_HEIGHT;
     if (isVoiceTranscriptAction(action)) return VOICE_ITEM_HEIGHT;
     if (isNavigationAction(action)) return NAV_ITEM_HEIGHT;
+    if (isBrowserEventAction(action)) return EVENT_ITEM_HEIGHT;
     return ACTION_ITEM_HEIGHT;
   };
 
@@ -85,6 +92,18 @@ export const ActionList = () => {
         return '🔤';
       case 'voice_transcript':
         return '🎙️';
+      case 'navigation':
+        return '🔗';
+      case 'page_visibility':
+        return '👁️';
+      case 'media':
+        return '🎬';
+      case 'download':
+        return '📥';
+      case 'fullscreen':
+        return '📺';
+      case 'print':
+        return '🖨️';
       default:
         return '▶️';
     }
@@ -220,7 +239,65 @@ export const ActionList = () => {
                 );
               }
 
-              // Render browser action
+              // Render browser event actions (visibility, media, download, fullscreen, print)
+              if (isBrowserEventAction(action)) {
+                let eventDescription = '';
+                let eventClass = 'event-item';
+
+                if (action.type === 'page_visibility') {
+                  const visAction = action as PageVisibilityAction;
+                  // Use clearer naming: "Tab Focused" when visible, "Tab Switched" when hidden
+                  eventDescription = visAction.visibility.state === 'visible' ? 'Tab Focused' : 'Tab Switched';
+                  eventClass = visAction.visibility.state === 'visible' ? 'event-item visibility-visible' : 'event-item visibility-hidden';
+                } else if (action.type === 'media') {
+                  const mediaAction = action as MediaAction;
+                  eventDescription = `${mediaAction.media.mediaType} ${mediaAction.media.event}`;
+                  eventClass = 'event-item media-item';
+                } else if (action.type === 'download') {
+                  const dlAction = action as DownloadAction;
+                  eventDescription = `${dlAction.download.suggestedFilename || 'File'} (${dlAction.download.state})`;
+                  eventClass = dlAction.download.state === 'completed' ? 'event-item download-completed' : 'event-item download-item';
+                } else if (action.type === 'fullscreen') {
+                  const fsAction = action as FullscreenAction;
+                  eventDescription = fsAction.fullscreen.state === 'entered' ? 'Entered fullscreen' : 'Exited fullscreen';
+                  eventClass = 'event-item fullscreen-item';
+                } else if (action.type === 'print') {
+                  const printAction = action as PrintAction;
+                  eventDescription = printAction.print.event === 'beforeprint' ? 'Print started' : 'Print ended';
+                  eventClass = 'event-item print-item';
+                }
+
+                return (
+                  <div
+                    key={action.id}
+                    className={`action-list-item ${eventClass} ${isSelected ? 'selected' : ''}`}
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      height: `${virtualRow.size}px`,
+                      transform: `translateY(${virtualRow.start}px)`,
+                    }}
+                    onClick={() => selectAction(actualIndex)}
+                  >
+                    <div className="action-list-item-header">
+                      <span className="action-list-item-icon">{getActionIcon(action.type)}</span>
+                      {hasMultipleTabs && 'tabId' in action && (
+                        <span className="action-list-item-tab">
+                          Tab {(action as any).tabId + 1}
+                        </span>
+                      )}
+                      <span className="action-list-item-type">{eventDescription}</span>
+                      <span className="action-list-item-time">
+                        {formatTime(action.timestamp)}
+                      </span>
+                    </div>
+                  </div>
+                );
+              }
+
+              // Render browser action (click, input, etc.)
               const browserAction = action as RecordedAction;
 
               return (

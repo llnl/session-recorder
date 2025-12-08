@@ -168,6 +168,41 @@
   border: 1px solid #ef9a9a;
 }
 
+/* Event Type Badge */
+.snapshot-event-type {
+  display: flex;
+  align-items: center;
+}
+
+.event-type-badge {
+  background-color: #667eea;
+  color: white;
+  padding: 0.25rem 0.625rem;
+  border-radius: 3px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+/* Image Container (for browser event screenshots) */
+.snapshot-image-container {
+  transform-origin: top left;
+  transition: transform 0.2s ease-out;
+  min-width: 100%;
+  min-height: 100%;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+
+.snapshot-image {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  background-color: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
 /* Iframe Container */
 .snapshot-iframe-container {
   transform-origin: top left;

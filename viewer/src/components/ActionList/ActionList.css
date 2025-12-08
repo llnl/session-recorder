@@ -214,3 +214,58 @@
   color: #667eea;
   font-size: 0.75rem;
 }
+
+/* Browser event action items */
+.action-list-item.event-item {
+  background-color: rgba(156, 163, 175, 0.1);
+  border-left: 3px solid #9ca3af;
+  min-height: 50px;
+}
+
+.action-list-item.event-item:hover {
+  background-color: rgba(156, 163, 175, 0.2);
+}
+
+.action-list-item.event-item.selected {
+  background-color: rgba(156, 163, 175, 0.25);
+}
+
+/* Visibility events - Tab Focused (green) and Tab Switched (orange) */
+.action-list-item.visibility-visible {
+  border-left-color: #10b981;
+  background-color: rgba(16, 185, 129, 0.1);
+}
+
+.action-list-item.visibility-hidden {
+  border-left-color: #f59e0b;
+  background-color: rgba(245, 158, 11, 0.1);
+}
+
+/* Media events */
+.action-list-item.media-item {
+  border-left-color: #8b5cf6;
+  background-color: rgba(139, 92, 246, 0.1);
+}
+
+/* Download events */
+.action-list-item.download-item {
+  border-left-color: #f59e0b;
+  background-color: rgba(245, 158, 11, 0.1);
+}
+
+.action-list-item.download-completed {
+  border-left-color: #10b981;
+  background-color: rgba(16, 185, 129, 0.1);
+}
+
+/* Fullscreen events */
+.action-list-item.fullscreen-item {
+  border-left-color: #3b82f6;
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+/* Print events */
+.action-list-item.print-item {
+  border-left-color: #ec4899;
+  background-color: rgba(236, 72, 153, 0.1);
+}

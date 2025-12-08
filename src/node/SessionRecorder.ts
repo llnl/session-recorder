@@ -7,7 +7,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
 import archiver from 'archiver';
-import { SessionData, RecordedAction, NavigationAction, HarEntry, SnapshotterBlob, NetworkEntry, ConsoleEntry, VoiceTranscriptAction } from './types';
+import { SessionData, RecordedAction, NavigationAction, HarEntry, SnapshotterBlob, NetworkEntry, ConsoleEntry, VoiceTranscriptAction, PageVisibilityAction, MediaAction, DownloadAction, FullscreenAction, PrintAction, AnyAction, BrowserEventSnapshot } from './types';
 import { ResourceStorage } from '../storage/resourceStorage';
 import { VoiceRecorder } from '../voice/VoiceRecorder';
 
@@ -32,6 +32,8 @@ interface TrackedPage {
   url: string;
   previousUrl: string;  // For tracking navigation events
   isInitialLoad: boolean;  // True until first navigation event recorded
+  pendingNavigation?: NodeJS.Timeout;  // Debounce timer for navigation events
+  visibilityState?: 'visible' | 'hidden';  // Last known visibility state
 }
 
 export class SessionRecorder {
@@ -211,7 +213,7 @@ export class SessionRecorder {
       await this._handleNetworkResponse(response);
     });
 
-    // Track navigation events
+    // Track navigation events with debouncing
     page.on('framenavigated', async (frame) => {
       if (frame === page.mainFrame()) {
         const tracked = this.pages.get(tabId);
@@ -219,16 +221,32 @@ export class SessionRecorder {
           const newUrl = page.url();
           const oldUrl = tracked.url;
 
+          // Skip about:blank
+          if (newUrl === 'about:blank') return;
+
           // Don't record if URL didn't actually change (e.g., hash-only changes we want to skip)
           // But DO record initial loads and actual URL changes
           if (newUrl !== oldUrl || tracked.isInitialLoad) {
-            // Record navigation event
-            await this._recordNavigationEvent(tabId, oldUrl, newUrl, tracked.isInitialLoad);
+            // Clear any pending navigation (debounce rapid navigations)
+            if (tracked.pendingNavigation) {
+              clearTimeout(tracked.pendingNavigation);
+            }
 
-            // Update tracking
+            // Store the navigation details to capture
+            const captureFromUrl = oldUrl;
+            const captureToUrl = newUrl;
+            const captureIsInitial = tracked.isInitialLoad;
+
+            // Update tracking immediately to avoid duplicate triggers
             tracked.previousUrl = oldUrl;
             tracked.url = newUrl;
             tracked.isInitialLoad = false;
+
+            // Debounce: wait 500ms for rapid navigations to settle
+            tracked.pendingNavigation = setTimeout(async () => {
+              tracked.pendingNavigation = undefined;
+              await this._recordNavigationEvent(tabId, captureFromUrl, captureToUrl, captureIsInitial);
+            }, 500);
           }
         }
       }
@@ -237,7 +255,77 @@ export class SessionRecorder {
     // Remove page from tracking when closed
     page.on('close', () => {
       console.log(`📑 Tab ${tabId} closed`);
+      // Clear any pending navigation timer
+      const tracked = this.pages.get(tabId);
+      if (tracked?.pendingNavigation) {
+        clearTimeout(tracked.pendingNavigation);
+      }
       this.pages.delete(tabId);
+    });
+
+    // Track download events
+    page.on('download', async (download) => {
+      const actionId = `download-${this.sessionData.actions.length + 1}`;
+
+      // Capture screenshot at moment of download start
+      const snapshot = await this._captureBrowserEventSnapshot(page, actionId, tabId);
+
+      const downloadAction: DownloadAction = {
+        id: actionId,
+        timestamp: new Date().toISOString(),
+        type: 'download',
+        tabId,
+        download: {
+          url: download.url(),
+          suggestedFilename: download.suggestedFilename(),
+          state: 'started'
+        },
+        snapshot
+      };
+      this.sessionData.actions.push(downloadAction);
+      console.log(`📥 [Tab ${tabId}] Download started: ${download.suggestedFilename()}${snapshot ? ' (screenshot captured)' : ''}`);
+
+      // Track download completion
+      download.path().then(async (downloadPath) => {
+        if (downloadPath) {
+          const completedActionId = `download-${this.sessionData.actions.length + 1}`;
+          const completedSnapshot = await this._captureBrowserEventSnapshot(page, completedActionId, tabId);
+
+          const completedAction: DownloadAction = {
+            id: completedActionId,
+            timestamp: new Date().toISOString(),
+            type: 'download',
+            tabId,
+            download: {
+              url: download.url(),
+              suggestedFilename: download.suggestedFilename(),
+              state: 'completed'
+            },
+            snapshot: completedSnapshot
+          };
+          this.sessionData.actions.push(completedAction);
+          console.log(`✅ [Tab ${tabId}] Download completed: ${download.suggestedFilename()}`);
+        }
+      }).catch(async (err) => {
+        const failedActionId = `download-${this.sessionData.actions.length + 1}`;
+        const failedSnapshot = await this._captureBrowserEventSnapshot(page, failedActionId, tabId);
+
+        const failedAction: DownloadAction = {
+          id: failedActionId,
+          timestamp: new Date().toISOString(),
+          type: 'download',
+          tabId,
+          download: {
+            url: download.url(),
+            suggestedFilename: download.suggestedFilename(),
+            state: 'failed',
+            error: err.message
+          },
+          snapshot: failedSnapshot
+        };
+        this.sessionData.actions.push(failedAction);
+        console.log(`❌ [Tab ${tabId}] Download failed: ${err.message}`);
+      });
     });
 
     // Read compiled browser-side code
@@ -308,6 +396,96 @@ export class SessionRecorder {
         console.log('Loading main coordinator...');
         ${injectedCode.replace('"use strict";', '').replace('Object.defineProperty(exports, "__esModule", { value: true });', '')}
 
+        // Browser event listeners module
+        (function() {
+          console.log('Setting up browser event listeners...');
+
+          // Page visibility changes (tab switches)
+          document.addEventListener('visibilitychange', function() {
+            if (typeof window.__recordVisibilityChange === 'function') {
+              window.__recordVisibilityChange({
+                state: document.visibilityState
+              });
+            }
+          });
+
+          // Media events (video/audio)
+          function setupMediaListeners(mediaElement) {
+            const mediaType = mediaElement.tagName.toLowerCase();
+            const events = ['play', 'pause', 'ended', 'seeked', 'volumechange'];
+
+            events.forEach(function(eventName) {
+              mediaElement.addEventListener(eventName, function() {
+                if (typeof window.__recordMediaEvent === 'function') {
+                  window.__recordMediaEvent({
+                    event: eventName,
+                    mediaType: mediaType,
+                    src: mediaElement.src || mediaElement.currentSrc,
+                    currentTime: mediaElement.currentTime,
+                    duration: mediaElement.duration || 0,
+                    volume: mediaElement.volume,
+                    muted: mediaElement.muted
+                  });
+                }
+              });
+            });
+          }
+
+          // Setup listeners for existing media elements
+          document.querySelectorAll('video, audio').forEach(setupMediaListeners);
+
+          // Watch for new media elements
+          var mediaObserver = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+              mutation.addedNodes.forEach(function(node) {
+                if (node.nodeType === 1) {
+                  if (node.tagName === 'VIDEO' || node.tagName === 'AUDIO') {
+                    setupMediaListeners(node);
+                  }
+                  // Check descendants
+                  node.querySelectorAll && node.querySelectorAll('video, audio').forEach(setupMediaListeners);
+                }
+              });
+            });
+          });
+          mediaObserver.observe(document.body, { childList: true, subtree: true });
+
+          // Fullscreen changes
+          document.addEventListener('fullscreenchange', function() {
+            if (typeof window.__recordFullscreenChange === 'function') {
+              var fullscreenElement = document.fullscreenElement;
+              window.__recordFullscreenChange({
+                state: fullscreenElement ? 'entered' : 'exited',
+                element: fullscreenElement ? fullscreenElement.tagName : undefined
+              });
+            }
+          });
+          // Webkit prefix for Safari
+          document.addEventListener('webkitfullscreenchange', function() {
+            if (typeof window.__recordFullscreenChange === 'function') {
+              var fullscreenElement = document.webkitFullscreenElement;
+              window.__recordFullscreenChange({
+                state: fullscreenElement ? 'entered' : 'exited',
+                element: fullscreenElement ? fullscreenElement.tagName : undefined
+              });
+            }
+          });
+
+          // Print events
+          window.addEventListener('beforeprint', function() {
+            if (typeof window.__recordPrintEvent === 'function') {
+              window.__recordPrintEvent({ event: 'beforeprint' });
+            }
+          });
+          window.addEventListener('afterprint', function() {
+            if (typeof window.__recordPrintEvent === 'function') {
+              window.__recordPrintEvent({ event: 'afterprint' });
+            }
+          });
+
+          console.log('✅ Browser event listeners loaded');
+        })();
+
         // Mark as loaded to prevent duplicate injection
         window.__sessionRecorderLoaded = true;
         console.log('✅ Session recorder fully loaded');
@@ -343,6 +521,107 @@ export class SessionRecorder {
     try {
       await page.exposeFunction('__recordConsoleLog', async (entry: ConsoleEntry) => {
         this._handleConsoleLog(entry);
+      });
+    } catch (e: any) {
+      if (!e.message?.includes('already been registered')) throw e;
+    }
+
+    // Expose function for visibility changes
+    try {
+      await page.exposeFunction('__recordVisibilityChange', async (data: { state: string; previousState?: string }) => {
+        const tracked = this.pages.get(tabId);
+        if (tracked) {
+          const prevState = tracked.visibilityState;
+          tracked.visibilityState = data.state as 'visible' | 'hidden';
+
+          const actionId = `visibility-${this.sessionData.actions.length + 1}`;
+
+          // Capture screenshot at moment of visibility change
+          const snapshot = await this._captureBrowserEventSnapshot(page, actionId, tabId);
+
+          const action: PageVisibilityAction = {
+            id: actionId,
+            timestamp: new Date().toISOString(),
+            type: 'page_visibility',
+            tabId,
+            visibility: {
+              state: data.state as 'visible' | 'hidden',
+              previousState: prevState
+            },
+            snapshot
+          };
+          this.sessionData.actions.push(action);
+          console.log(`👁️ [Tab ${tabId}] Visibility: ${data.state}${snapshot ? ' (screenshot captured)' : ''}`);
+        }
+      });
+    } catch (e: any) {
+      if (!e.message?.includes('already been registered')) throw e;
+    }
+
+    // Expose function for media events
+    try {
+      await page.exposeFunction('__recordMediaEvent', async (data: MediaAction['media']) => {
+        const actionId = `media-${this.sessionData.actions.length + 1}`;
+
+        // Capture screenshot at moment of media event
+        const snapshot = await this._captureBrowserEventSnapshot(page, actionId, tabId);
+
+        const action: MediaAction = {
+          id: actionId,
+          timestamp: new Date().toISOString(),
+          type: 'media',
+          tabId,
+          media: data,
+          snapshot
+        };
+        this.sessionData.actions.push(action);
+        console.log(`🎬 [Tab ${tabId}] Media ${data.event}: ${data.mediaType}${snapshot ? ' (screenshot captured)' : ''}`);
+      });
+    } catch (e: any) {
+      if (!e.message?.includes('already been registered')) throw e;
+    }
+
+    // Expose function for fullscreen changes
+    try {
+      await page.exposeFunction('__recordFullscreenChange', async (data: { state: 'entered' | 'exited'; element?: string }) => {
+        const actionId = `fullscreen-${this.sessionData.actions.length + 1}`;
+
+        // Capture screenshot at moment of fullscreen change
+        const snapshot = await this._captureBrowserEventSnapshot(page, actionId, tabId);
+
+        const action: FullscreenAction = {
+          id: actionId,
+          timestamp: new Date().toISOString(),
+          type: 'fullscreen',
+          tabId,
+          fullscreen: data,
+          snapshot
+        };
+        this.sessionData.actions.push(action);
+        console.log(`📺 [Tab ${tabId}] Fullscreen: ${data.state}${snapshot ? ' (screenshot captured)' : ''}`);
+      });
+    } catch (e: any) {
+      if (!e.message?.includes('already been registered')) throw e;
+    }
+
+    // Expose function for print events
+    try {
+      await page.exposeFunction('__recordPrintEvent', async (data: { event: 'beforeprint' | 'afterprint' }) => {
+        const actionId = `print-${this.sessionData.actions.length + 1}`;
+
+        // Capture screenshot at moment of print event
+        const snapshot = await this._captureBrowserEventSnapshot(page, actionId, tabId);
+
+        const action: PrintAction = {
+          id: actionId,
+          timestamp: new Date().toISOString(),
+          type: 'print',
+          tabId,
+          print: data,
+          snapshot
+        };
+        this.sessionData.actions.push(action);
+        console.log(`🖨️ [Tab ${tabId}] Print: ${data.event}${snapshot ? ' (screenshot captured)' : ''}`);
       });
     } catch (e: any) {
       if (!e.message?.includes('already been registered')) throw e;
@@ -405,14 +684,31 @@ export class SessionRecorder {
     // Skip about:blank navigations
     if (toUrl === 'about:blank') return;
 
+    // Verify the page is still on the expected URL (in case of rapid navigations)
+    const currentUrl = page.url();
+    if (currentUrl !== toUrl && currentUrl !== 'about:blank') {
+      console.log(`⚠️ [Tab ${tabId}] Navigation skipped: URL changed to ${currentUrl}`);
+      return;
+    }
+
     const actionId = `nav-${this.sessionData.actions.length + 1}`;
     const timestamp = new Date().toISOString();
 
-    // Try to capture a screenshot
+    // Try to capture a screenshot after page is fully loaded
     let screenshotData: NavigationAction['screenshot'] | undefined;
     try {
-      // Wait a moment for the page to render
-      await page.waitForLoadState('domcontentloaded', { timeout: 5000 }).catch(() => {});
+      // Wait for network to be idle (page fully loaded)
+      // Use Promise.race to timeout if networkidle takes too long
+      await Promise.race([
+        page.waitForLoadState('networkidle', { timeout: 10000 }),
+        new Promise(resolve => setTimeout(resolve, 8000)) // Fallback after 8s
+      ]).catch(() => {});
+
+      // Verify page is still on the same URL after waiting
+      if (page.isClosed() || page.url() !== toUrl) {
+        console.log(`⚠️ [Tab ${tabId}] Navigation: page navigated away before screenshot`);
+        return;
+      }
 
       const screenshotPath = `screenshots/${actionId}.png`;
       const fullScreenshotPath = path.join(this.sessionDir, screenshotPath);
@@ -458,6 +754,46 @@ export class SessionRecorder {
 
     this.sessionData.actions.push(navigationAction);
     console.log(`🔗 [Tab ${tabId}] Navigation: ${fromUrl || '(new)'} → ${toUrl}`);
+  }
+
+  /**
+   * Capture a snapshot (screenshot only) for browser events
+   * Used for visibility, media, fullscreen, print, and download events
+   */
+  private async _captureBrowserEventSnapshot(
+    page: Page,
+    actionId: string,
+    tabId: number
+  ): Promise<BrowserEventSnapshot | undefined> {
+    try {
+      if (page.isClosed()) {
+        console.log(`⚠️ [Tab ${tabId}] Page closed, skipping event snapshot`);
+        return undefined;
+      }
+
+      const screenshotPath = `screenshots/${actionId}.png`;
+      const fullScreenshotPath = path.join(this.sessionDir, screenshotPath);
+
+      // Get viewport dimensions
+      const viewportSize = page.viewportSize() || { width: 1280, height: 720 };
+
+      await page.screenshot({
+        path: fullScreenshotPath,
+        type: 'png'
+      });
+
+      return {
+        screenshot: screenshotPath,
+        url: page.url(),
+        viewport: viewportSize,
+        timestamp: new Date().toISOString()
+      };
+    } catch (err: any) {
+      if (!err.message?.includes('closed') && !err.message?.includes('Target')) {
+        console.log(`⚠️ [Tab ${tabId}] Event screenshot failed: ${err.message}`);
+      }
+      return undefined;
+    }
   }
 
   private async _handleActionBefore(data: any, tabId: number = 0, tabUrl?: string): Promise<void> {
@@ -849,11 +1185,20 @@ export class SessionRecorder {
             url: a.navigation.toUrl
           };
         }
+        // Handle new event types (visibility, media, download, fullscreen, print)
+        if (a.type === 'page_visibility' || a.type === 'media' || a.type === 'download' || a.type === 'fullscreen' || a.type === 'print') {
+          return {
+            id: a.id,
+            type: a.type,
+            timestamp: a.timestamp
+          };
+        }
+        // RecordedAction (click, input, etc.)
         return {
           id: a.id,
           type: a.type,
           timestamp: a.timestamp,
-          url: a.after.url
+          url: (a as RecordedAction).after.url
         };
       })
     };

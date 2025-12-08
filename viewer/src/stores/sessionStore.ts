@@ -6,9 +6,7 @@
 import { create } from 'zustand';
 import type {
   SessionData,
-  RecordedAction,
-  NavigationAction,
-  VoiceTranscriptAction,
+  AnyAction,
   NetworkEntry,
   ConsoleEntry,
   TimelineSelection,
@@ -52,10 +50,10 @@ export interface SessionStore {
   getResourceBySha1: (sha1: string) => StoredResource | null;
 
   // Derived selectors (computed values)
-  getFilteredActions: () => (RecordedAction | NavigationAction | VoiceTranscriptAction)[];
+  getFilteredActions: () => AnyAction[];
   getFilteredConsole: () => ConsoleEntry[];
   getFilteredNetwork: () => NetworkEntry[];
-  getSelectedAction: () => RecordedAction | NavigationAction | VoiceTranscriptAction | null;
+  getSelectedAction: () => AnyAction | null;
 }
 
 export const useSessionStore = create<SessionStore>((set, get) => ({

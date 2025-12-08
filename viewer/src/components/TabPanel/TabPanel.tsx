@@ -7,19 +7,257 @@ import { useState, useMemo } from 'react';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useFilteredConsole } from '@/hooks/useFilteredConsole';
 import { useFilteredNetwork } from '@/hooks/useFilteredNetwork';
-import type { VoiceTranscriptAction, NavigationAction, RecordedAction } from '@/types/session';
+import type { VoiceTranscriptAction, NavigationAction, RecordedAction, PageVisibilityAction, MediaAction, DownloadAction, FullscreenAction, PrintAction, AnyAction } from '@/types/session';
 import { VoiceTranscriptViewer } from '@/components/VoiceTranscriptViewer';
-
-// Type guard for navigation actions
-function isNavigationAction(action: any): action is NavigationAction {
-  return action?.type === 'navigation';
-}
-
-// Type guard for recorded actions (browser interactions)
-function isRecordedAction(action: any): action is RecordedAction {
-  return action && 'before' in action && 'after' in action && 'action' in action;
-}
 import './TabPanel.css';
+
+// Helper function to render action-specific details
+function renderActionDetails(action: AnyAction): React.ReactNode {
+  switch (action.type) {
+    case 'voice_transcript': {
+      const voiceAction = action as VoiceTranscriptAction;
+      return (
+        <>
+          <div className="info-item">
+            <span className="info-label">Transcript:</span>
+            <span className="info-value">{voiceAction.transcript.text}</span>
+          </div>
+          <div className="info-item">
+            <span className="info-label">Duration:</span>
+            <span className="info-value">
+              {((new Date(voiceAction.transcript.endTime).getTime() -
+                new Date(voiceAction.transcript.startTime).getTime()) / 1000).toFixed(1)}s
+            </span>
+          </div>
+          <div className="info-item">
+            <span className="info-label">Confidence:</span>
+            <span className="info-value">
+              {(voiceAction.transcript.confidence * 100).toFixed(0)}%
+            </span>
+          </div>
+          {voiceAction.transcript.words && (
+            <div className="info-item">
+              <span className="info-label">Word Count:</span>
+              <span className="info-value">
+                {voiceAction.transcript.words.length}
+              </span>
+            </div>
+          )}
+        </>
+      );
+    }
+    case 'navigation': {
+      const navAction = action as NavigationAction;
+      return (
+        <>
+          <div className="info-item">
+            <span className="info-label">Tab:</span>
+            <span className="info-value">Tab {navAction.tabId + 1}</span>
+          </div>
+          <div className="info-item">
+            <span className="info-label">Navigation Type:</span>
+            <span className="info-value">{navAction.navigation.navigationType}</span>
+          </div>
+          {navAction.navigation.fromUrl && (
+            <div className="info-item">
+              <span className="info-label">From URL:</span>
+              <span className="info-value">{navAction.navigation.fromUrl}</span>
+            </div>
+          )}
+          <div className="info-item">
+            <span className="info-label">To URL:</span>
+            <span className="info-value">{navAction.navigation.toUrl}</span>
+          </div>
+        </>
+      );
+    }
+    case 'page_visibility': {
+      const visAction = action as PageVisibilityAction;
+      return (
+        <>
+          <div className="info-item">
+            <span className="info-label">Tab:</span>
+            <span className="info-value">Tab {visAction.tabId + 1}</span>
+          </div>
+          <div className="info-item">
+            <span className="info-label">Visibility State:</span>
+            <span className="info-value">{visAction.visibility.state}</span>
+          </div>
+          {visAction.visibility.previousState && (
+            <div className="info-item">
+              <span className="info-label">Previous State:</span>
+              <span className="info-value">{visAction.visibility.previousState}</span>
+            </div>
+          )}
+        </>
+      );
+    }
+    case 'media': {
+      const mediaAction = action as MediaAction;
+      return (
+        <>
+          <div className="info-item">
+            <span className="info-label">Tab:</span>
+            <span className="info-value">Tab {mediaAction.tabId + 1}</span>
+          </div>
+          <div className="info-item">
+            <span className="info-label">Media Type:</span>
+            <span className="info-value">{mediaAction.media.mediaType}</span>
+          </div>
+          <div className="info-item">
+            <span className="info-label">Event:</span>
+            <span className="info-value">{mediaAction.media.event}</span>
+          </div>
+          {mediaAction.media.src && (
+            <div className="info-item">
+              <span className="info-label">Source:</span>
+              <span className="info-value">{mediaAction.media.src}</span>
+            </div>
+          )}
+          {mediaAction.media.currentTime !== undefined && (
+            <div className="info-item">
+              <span className="info-label">Current Time:</span>
+              <span className="info-value">{mediaAction.media.currentTime.toFixed(1)}s</span>
+            </div>
+          )}
+          {mediaAction.media.duration !== undefined && (
+            <div className="info-item">
+              <span className="info-label">Duration:</span>
+              <span className="info-value">{mediaAction.media.duration.toFixed(1)}s</span>
+            </div>
+          )}
+          {mediaAction.media.volume !== undefined && (
+            <div className="info-item">
+              <span className="info-label">Volume:</span>
+              <span className="info-value">{Math.round(mediaAction.media.volume * 100)}%</span>
+            </div>
+          )}
+          {mediaAction.media.muted !== undefined && (
+            <div className="info-item">
+              <span className="info-label">Muted:</span>
+              <span className="info-value">{mediaAction.media.muted ? 'Yes' : 'No'}</span>
+            </div>
+          )}
+        </>
+      );
+    }
+    case 'download': {
+      const dlAction = action as DownloadAction;
+      return (
+        <>
+          <div className="info-item">
+            <span className="info-label">Tab:</span>
+            <span className="info-value">Tab {dlAction.tabId + 1}</span>
+          </div>
+          <div className="info-item">
+            <span className="info-label">State:</span>
+            <span className="info-value">{dlAction.download.state}</span>
+          </div>
+          {dlAction.download.suggestedFilename && (
+            <div className="info-item">
+              <span className="info-label">Filename:</span>
+              <span className="info-value">{dlAction.download.suggestedFilename}</span>
+            </div>
+          )}
+          <div className="info-item">
+            <span className="info-label">URL:</span>
+            <span className="info-value">{dlAction.download.url}</span>
+          </div>
+          {dlAction.download.totalBytes !== undefined && (
+            <div className="info-item">
+              <span className="info-label">Total Size:</span>
+              <span className="info-value">{(dlAction.download.totalBytes / 1024).toFixed(2)} KB</span>
+            </div>
+          )}
+          {dlAction.download.receivedBytes !== undefined && (
+            <div className="info-item">
+              <span className="info-label">Received:</span>
+              <span className="info-value">{(dlAction.download.receivedBytes / 1024).toFixed(2)} KB</span>
+            </div>
+          )}
+          {dlAction.download.error && (
+            <div className="info-item">
+              <span className="info-label">Error:</span>
+              <span className="info-value error-text">{dlAction.download.error}</span>
+            </div>
+          )}
+        </>
+      );
+    }
+    case 'fullscreen': {
+      const fsAction = action as FullscreenAction;
+      return (
+        <>
+          <div className="info-item">
+            <span className="info-label">Tab:</span>
+            <span className="info-value">Tab {fsAction.tabId + 1}</span>
+          </div>
+          <div className="info-item">
+            <span className="info-label">State:</span>
+            <span className="info-value">{fsAction.fullscreen.state === 'entered' ? 'Entered Fullscreen' : 'Exited Fullscreen'}</span>
+          </div>
+          {fsAction.fullscreen.element && (
+            <div className="info-item">
+              <span className="info-label">Element:</span>
+              <span className="info-value">&lt;{fsAction.fullscreen.element.toLowerCase()}&gt;</span>
+            </div>
+          )}
+        </>
+      );
+    }
+    case 'print': {
+      const printAction = action as PrintAction;
+      return (
+        <>
+          <div className="info-item">
+            <span className="info-label">Tab:</span>
+            <span className="info-value">Tab {printAction.tabId + 1}</span>
+          </div>
+          <div className="info-item">
+            <span className="info-label">Event:</span>
+            <span className="info-value">{printAction.print.event === 'beforeprint' ? 'Print Started' : 'Print Ended'}</span>
+          </div>
+        </>
+      );
+    }
+    default: {
+      // RecordedAction (click, input, change, submit, keydown)
+      const browserAction = action as RecordedAction;
+      return (
+        <>
+          {browserAction.action.x !== undefined && (
+            <div className="info-item">
+              <span className="info-label">Coordinates:</span>
+              <span className="info-value">({browserAction.action.x}, {browserAction.action.y})</span>
+            </div>
+          )}
+          {browserAction.action.value && (
+            <div className="info-item">
+              <span className="info-label">Value:</span>
+              <span className="info-value">{browserAction.action.value}</span>
+            </div>
+          )}
+          {browserAction.action.key && (
+            <div className="info-item">
+              <span className="info-label">Key:</span>
+              <span className="info-value">{browserAction.action.key}</span>
+            </div>
+          )}
+          <div className="info-item">
+            <span className="info-label">URL:</span>
+            <span className="info-value">{browserAction.before.url}</span>
+          </div>
+          <div className="info-item">
+            <span className="info-label">Viewport:</span>
+            <span className="info-value">
+              {browserAction.before.viewport.width} x {browserAction.before.viewport.height}
+            </span>
+          </div>
+        </>
+      );
+    }
+  }
+}
 
 type ConsoleLevelFilter = 'all' | 'error' | 'warn' | 'info' | 'log' | 'debug';
 type NetworkResourceFilter = 'all' | 'document' | 'stylesheet' | 'script' | 'image' | 'xhr' | 'fetch' | 'font' | 'other';
@@ -176,90 +414,7 @@ export const TabPanel = () => {
                   <span className="info-value">{formatTimestamp(selectedAction.timestamp)}</span>
                 </div>
                 
-                {selectedAction.type === 'voice_transcript' ? (
-                  // Voice transcript specific fields
-                  <>
-                    <div className="info-item">
-                      <span className="info-label">Transcript:</span>
-                      <span className="info-value">{(selectedAction as VoiceTranscriptAction).transcript.text}</span>
-                    </div>
-                    <div className="info-item">
-                      <span className="info-label">Duration:</span>
-                      <span className="info-value">
-                        {((new Date((selectedAction as VoiceTranscriptAction).transcript.endTime).getTime() -
-                          new Date((selectedAction as VoiceTranscriptAction).transcript.startTime).getTime()) / 1000).toFixed(1)}s
-                      </span>
-                    </div>
-                    <div className="info-item">
-                      <span className="info-label">Confidence:</span>
-                      <span className="info-value">
-                        {((selectedAction as VoiceTranscriptAction).transcript.confidence * 100).toFixed(0)}%
-                      </span>
-                    </div>
-                    {(selectedAction as VoiceTranscriptAction).transcript.words && (
-                      <div className="info-item">
-                        <span className="info-label">Word Count:</span>
-                        <span className="info-value">
-                          {(selectedAction as VoiceTranscriptAction).transcript.words!.length}
-                        </span>
-                      </div>
-                    )}
-                  </>
-                ) : isNavigationAction(selectedAction) ? (
-                  // Navigation action specific fields
-                  <>
-                    <div className="info-item">
-                      <span className="info-label">Tab:</span>
-                      <span className="info-value">Tab {selectedAction.tabId}</span>
-                    </div>
-                    <div className="info-item">
-                      <span className="info-label">Navigation Type:</span>
-                      <span className="info-value">{selectedAction.navigation.navigationType}</span>
-                    </div>
-                    {selectedAction.navigation.fromUrl && (
-                      <div className="info-item">
-                        <span className="info-label">From URL:</span>
-                        <span className="info-value">{selectedAction.navigation.fromUrl}</span>
-                      </div>
-                    )}
-                    <div className="info-item">
-                      <span className="info-label">To URL:</span>
-                      <span className="info-value">{selectedAction.navigation.toUrl}</span>
-                    </div>
-                  </>
-                ) : isRecordedAction(selectedAction) ? (
-                  // Browser action specific fields
-                  <>
-                    {selectedAction.action.x !== undefined && (
-                      <div className="info-item">
-                        <span className="info-label">Coordinates:</span>
-                        <span className="info-value">({selectedAction.action.x}, {selectedAction.action.y})</span>
-                      </div>
-                    )}
-                    {selectedAction.action.value && (
-                      <div className="info-item">
-                        <span className="info-label">Value:</span>
-                        <span className="info-value">{selectedAction.action.value}</span>
-                      </div>
-                    )}
-                    {selectedAction.action.key && (
-                      <div className="info-item">
-                        <span className="info-label">Key:</span>
-                        <span className="info-value">{selectedAction.action.key}</span>
-                      </div>
-                    )}
-                    <div className="info-item">
-                      <span className="info-label">URL:</span>
-                      <span className="info-value">{selectedAction.before.url}</span>
-                    </div>
-                    <div className="info-item">
-                      <span className="info-label">Viewport:</span>
-                      <span className="info-value">
-                        {selectedAction.before.viewport.width} x {selectedAction.before.viewport.height}
-                      </span>
-                    </div>
-                  </>
-                ) : null}
+                {renderActionDetails(selectedAction)}
               </div>
             ) : (
               <div className="tab-empty">

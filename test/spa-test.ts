@@ -100,10 +100,22 @@ async function main() {
         console.log(`${index + 1}. navigation: ${action.navigation.toUrl}`);
         console.log(`   From: ${action.navigation.fromUrl || '(initial)'}`);
         console.log(`   Type: ${action.navigation.navigationType}`);
+      } else if (action.type === 'page_visibility') {
+        console.log(`${index + 1}. visibility: ${action.visibility.state}`);
+      } else if (action.type === 'media') {
+        console.log(`${index + 1}. media: ${action.media.event} (${action.media.mediaType})`);
+      } else if (action.type === 'download') {
+        console.log(`${index + 1}. download: ${action.download.suggestedFilename} (${action.download.state})`);
+      } else if (action.type === 'fullscreen') {
+        console.log(`${index + 1}. fullscreen: ${action.fullscreen.state}`);
+      } else if (action.type === 'print') {
+        console.log(`${index + 1}. print: ${action.print.event}`);
       } else {
-        console.log(`${index + 1}. ${action.type} at (${action.action.x}, ${action.action.y})`);
-        console.log(`   URL: ${action.after.url}`);
-        console.log(`   Snapshots: ${action.before.html} → ${action.after.html}`);
+        // RecordedAction
+        const recordedAction = action as import('../src/index').RecordedAction;
+        console.log(`${index + 1}. ${action.type} at (${recordedAction.action.x}, ${recordedAction.action.y})`);
+        console.log(`   URL: ${recordedAction.after.url}`);
+        console.log(`   Snapshots: ${recordedAction.before.html} → ${recordedAction.after.html}`);
       }
       console.log('');
     });

@@ -90,14 +90,19 @@ async function main() {
     let allChecksPassed = true;
 
     sessionData.actions.forEach((action, index) => {
-      // Skip voice transcript and navigation actions in this test
-      if (action.type === 'voice_transcript' || action.type === 'navigation') return;
+      // Skip non-RecordedAction types in this test (voice, navigation, visibility, media, download, fullscreen, print)
+      if (action.type === 'voice_transcript' || action.type === 'navigation' ||
+          action.type === 'page_visibility' || action.type === 'media' ||
+          action.type === 'download' || action.type === 'fullscreen' || action.type === 'print') return;
+
+      // At this point, action is a RecordedAction
+      const recordedAction = action as import('../src/index').RecordedAction;
 
       console.log(`Action ${index + 1}: ${action.type}`);
 
       // Read HTML snapshot files
-      const beforeSnapshotPath = path.resolve(__dirname, '../output/poc-test', action.before.html);
-      const afterSnapshotPath = path.resolve(__dirname, '../output/poc-test', action.after.html);
+      const beforeSnapshotPath = path.resolve(__dirname, '../output/poc-test', recordedAction.before.html);
+      const afterSnapshotPath = path.resolve(__dirname, '../output/poc-test', recordedAction.after.html);
 
       let beforeHtml = '';
       let afterHtml = '';
@@ -113,9 +118,9 @@ async function main() {
         { name: 'Timestamp is UTC', pass: action.timestamp.endsWith('Z') },
         { name: 'BEFORE snapshot file exists', pass: beforeHtml.length > 0 },
         { name: 'BEFORE snapshot has data-recorded-el', pass: beforeHtml.includes('data-recorded-el="true"') },
-        { name: 'BEFORE screenshot path exists', pass: action.before.screenshot.startsWith('screenshots/') },
+        { name: 'BEFORE screenshot path exists', pass: recordedAction.before.screenshot.startsWith('screenshots/') },
         { name: 'AFTER snapshot file exists', pass: afterHtml.length > 0 },
-        { name: 'AFTER screenshot path exists', pass: action.after.screenshot.startsWith('screenshots/') },
+        { name: 'AFTER screenshot path exists', pass: recordedAction.after.screenshot.startsWith('screenshots/') },
         { name: 'Snapshot preserves form state', pass: beforeHtml.includes('__playwright_value_') || beforeHtml.includes('__playwright_checked_') || beforeHtml.includes('<!DOCTYPE html>') }
       ];
 

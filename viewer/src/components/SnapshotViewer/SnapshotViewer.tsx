@@ -6,12 +6,59 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSessionStore } from '@/stores/sessionStore';
 import { generateRestorationScript } from '../../../../src/browser/snapshotRestoration';
-import type { RecordedAction, NavigationAction } from '@/types/session';
+import type { RecordedAction, AnyAction, BrowserEventSnapshot, NavigationAction, PageVisibilityAction, MediaAction, DownloadAction, FullscreenAction, PrintAction } from '@/types/session';
 import './SnapshotViewer.css';
 
-// Type guard for navigation actions
-function isNavigationAction(action: any): action is NavigationAction {
-  return action?.type === 'navigation';
+// Type guard for voice transcripts (only type without any screenshot)
+function isVoiceTranscript(action: AnyAction): boolean {
+  return action.type === 'voice_transcript';
+}
+
+// Type guard for browser events that have their own snapshot field
+function isBrowserEventWithSnapshot(action: AnyAction): action is (PageVisibilityAction | MediaAction | DownloadAction | FullscreenAction | PrintAction) {
+  return ['page_visibility', 'media', 'download', 'fullscreen', 'print'].includes(action.type);
+}
+
+// Type guard for navigation events (has different screenshot structure)
+function isNavigationAction(action: AnyAction): action is NavigationAction {
+  return action.type === 'navigation';
+}
+
+// Get the snapshot from a browser event or navigation
+function getBrowserEventSnapshot(action: AnyAction): BrowserEventSnapshot | null {
+  if (isBrowserEventWithSnapshot(action)) {
+    return action.snapshot || null;
+  }
+  if (isNavigationAction(action) && action.screenshot) {
+    // Convert navigation screenshot format to BrowserEventSnapshot format
+    return {
+      screenshot: action.screenshot.path,
+      url: action.navigation.toUrl,
+      viewport: { width: 1280, height: 720 }, // Default viewport for navigation
+      timestamp: action.timestamp
+    };
+  }
+  return null;
+}
+
+// Get display name for event types
+function getEventTypeName(type: string, action?: AnyAction): string {
+  switch (type) {
+    case 'voice_transcript': return 'voice transcript';
+    case 'navigation': return 'navigation';
+    case 'page_visibility': {
+      if (action && 'visibility' in action) {
+        const visAction = action as PageVisibilityAction;
+        return visAction.visibility.state === 'visible' ? 'Tab Focused' : 'Tab Switched';
+      }
+      return 'tab visibility';
+    }
+    case 'media': return 'media event';
+    case 'download': return 'download';
+    case 'fullscreen': return 'fullscreen';
+    case 'print': return 'print event';
+    default: return type;
+  }
 }
 
 type SnapshotView = 'before' | 'after';
@@ -138,7 +185,7 @@ export const SnapshotViewer = () => {
 
   /**
    * Find the closest previous action that has snapshots
-   * (for voice transcript and navigation actions which don't have their own snapshots)
+   * (only for voice_transcript which has no screenshots)
    */
   const getClosestSnapshotAction = (): { action: RecordedAction; index: number } | null => {
     if (!sessionData || selectedActionIndex === null) return null;
@@ -146,8 +193,8 @@ export const SnapshotViewer = () => {
     // Search backwards from the current action for a RecordedAction with snapshots
     for (let i = selectedActionIndex - 1; i >= 0; i--) {
       const action = sessionData.actions[i];
-      // Only RecordedActions have before/after snapshots (not voice_transcript or navigation)
-      if (action.type !== 'voice_transcript' && action.type !== 'navigation' && 'before' in action && 'after' in action) {
+      // Only RecordedActions have before/after HTML snapshots
+      if ('before' in action && 'after' in action && 'html' in (action as RecordedAction).before) {
         return { action: action as RecordedAction, index: i };
       }
     }
@@ -198,24 +245,68 @@ export const SnapshotViewer = () => {
     setError(null);
   }, [selectedAction?.id]);
 
+  // State for browser event screenshot display
+  const [browserEventScreenshot, setBrowserEventScreenshot] = useState<string | null>(null);
+  const [browserEventSnapshot, setBrowserEventSnapshot] = useState<BrowserEventSnapshot | null>(null);
+
   // Load snapshot and highlight element
   useEffect(() => {
-    if (!selectedAction || !iframeRef.current) return;
+    if (!selectedAction) return;
 
-    // Determine which action to use for snapshots
-    let actionForSnapshot: RecordedAction | null = null;
+    // Clear previous state
+    setBrowserEventScreenshot(null);
+    setBrowserEventSnapshot(null);
 
-    if (selectedAction.type === 'voice_transcript' || isNavigationAction(selectedAction)) {
-      // Find closest previous action with snapshots for voice transcripts and navigations
+    // Check if this is a browser event or navigation with its own snapshot
+    const eventSnapshot = getBrowserEventSnapshot(selectedAction);
+    if (eventSnapshot) {
+      // Browser event or navigation - display screenshot directly
+      const screenshotBlob = resources.get(eventSnapshot.screenshot);
+      if (screenshotBlob) {
+        const screenshotUrl = URL.createObjectURL(screenshotBlob);
+        setBrowserEventScreenshot(screenshotUrl);
+        setBrowserEventSnapshot(eventSnapshot);
+        setIsLoading(false);
+        setError(null);
+        return;
+      } else {
+        // Screenshot not found, fall back to previous action
+        console.warn(`Screenshot not found: ${eventSnapshot.screenshot}`);
+      }
+    }
+
+    // Check for voice transcript (no screenshot)
+    if (isVoiceTranscript(selectedAction)) {
       const fallback = getClosestSnapshotAction();
       if (!fallback) {
-        const actionType = selectedAction.type === 'voice_transcript' ? 'voice transcript' : 'navigation';
+        setError('No snapshots available before this voice transcript');
+        return;
+      }
+      // Use fallback action's HTML snapshot - will be handled below
+    }
+
+    // Need iframe for HTML snapshots
+    if (!iframeRef.current) return;
+
+    // Determine which action to use for HTML snapshots
+    let actionForSnapshot: RecordedAction | null = null;
+
+    if (isVoiceTranscript(selectedAction)) {
+      // Voice transcript - use fallback
+      const fallback = getClosestSnapshotAction();
+      if (!fallback) {
+        const actionType = getEventTypeName(selectedAction.type, selectedAction);
         setError(`No snapshots available before this ${actionType}`);
         return;
       }
       actionForSnapshot = fallback.action;
-    } else {
+    } else if ('before' in selectedAction && 'after' in selectedAction) {
+      // RecordedAction (click, input, etc.) - has HTML snapshots
       actionForSnapshot = selectedAction as RecordedAction;
+    } else {
+      // Other event types without snapshot - shouldn't reach here
+      setError(`No snapshot available for this ${getEventTypeName(selectedAction.type, selectedAction)}`);
+      return;
     }
 
     const snapshot = currentView === 'before' ? actionForSnapshot.before : actionForSnapshot.after;
@@ -273,6 +364,15 @@ export const SnapshotViewer = () => {
       setIsLoading(false);
     });
   }, [selectedAction, currentView, resources, sessionData, selectedActionIndex]);
+
+  // Cleanup browser event screenshot URL when it changes
+  useEffect(() => {
+    return () => {
+      if (browserEventScreenshot) {
+        URL.revokeObjectURL(browserEventScreenshot);
+      }
+    };
+  }, [browserEventScreenshot]);
 
   const highlightElement = (iframe: HTMLIFrameElement) => {
     try {
@@ -343,12 +443,15 @@ export const SnapshotViewer = () => {
     );
   }
 
-  // For voice transcripts and navigations, find the closest previous snapshot
-  const needsFallback = selectedAction.type === 'voice_transcript' || isNavigationAction(selectedAction);
+  // Check if we're displaying a browser event screenshot
+  const hasBrowserEventScreenshot = browserEventScreenshot !== null;
+
+  // For voice transcripts only, find the closest previous snapshot (they have no screenshots)
+  const needsFallback = isVoiceTranscript(selectedAction);
   const fallbackSnapshot = needsFallback ? getClosestSnapshotAction() : null;
 
-  if (needsFallback && !fallbackSnapshot) {
-    const actionType = selectedAction.type === 'voice_transcript' ? 'voice transcript' : 'navigation';
+  if (needsFallback && !fallbackSnapshot && !hasBrowserEventScreenshot) {
+    const actionType = getEventTypeName(selectedAction.type, selectedAction);
     return (
       <div className="snapshot-viewer">
         <div className="snapshot-viewer-empty">
@@ -358,33 +461,50 @@ export const SnapshotViewer = () => {
     );
   }
 
-  // Use fallback action for voice transcripts and navigations
-  const displayAction = needsFallback && fallbackSnapshot
-    ? fallbackSnapshot.action
-    : selectedAction as RecordedAction;
+  // Determine what snapshot metadata to show
+  const isRecordedAction = 'before' in selectedAction && 'after' in selectedAction;
+  const displayAction = isRecordedAction
+    ? selectedAction as RecordedAction
+    : fallbackSnapshot?.action;
 
-  const currentSnapshot = currentView === 'before' ? displayAction.before : displayAction.after;
+  const currentSnapshot = displayAction
+    ? (currentView === 'before' ? displayAction.before : displayAction.after)
+    : null;
+
+  // Use browser event snapshot metadata if available
+  const displayMetadata = browserEventSnapshot || currentSnapshot;
 
   return (
     <div className="snapshot-viewer">
       <div className="snapshot-viewer-controls">
-        {/* Before/After Toggle */}
-        <div className="snapshot-toggle">
-          <button
-            type="button"
-            className={`toggle-btn ${currentView === 'before' ? 'active' : ''}`}
-            onClick={() => setCurrentView('before')}
-          >
-            Before
-          </button>
-          <button
-            type="button"
-            className={`toggle-btn ${currentView === 'after' ? 'active' : ''}`}
-            onClick={() => setCurrentView('after')}
-          >
-            After
-          </button>
-        </div>
+        {/* Before/After Toggle - only show for RecordedActions */}
+        {isRecordedAction && !hasBrowserEventScreenshot && (
+          <div className="snapshot-toggle">
+            <button
+              type="button"
+              className={`toggle-btn ${currentView === 'before' ? 'active' : ''}`}
+              onClick={() => setCurrentView('before')}
+            >
+              Before
+            </button>
+            <button
+              type="button"
+              className={`toggle-btn ${currentView === 'after' ? 'active' : ''}`}
+              onClick={() => setCurrentView('after')}
+            >
+              After
+            </button>
+          </div>
+        )}
+
+        {/* Event type indicator for browser events */}
+        {hasBrowserEventScreenshot && (
+          <div className="snapshot-event-type">
+            <span className="event-type-badge">
+              {getEventTypeName(selectedAction.type, selectedAction)}
+            </span>
+          </div>
+        )}
 
         {/* Zoom Controls */}
         <div className="zoom-controls">
@@ -401,22 +521,24 @@ export const SnapshotViewer = () => {
         </div>
 
         {/* Snapshot Metadata */}
-        <div className="snapshot-metadata">
-          {fallbackSnapshot && (
-            <span className="metadata-item fallback-notice">
-              Showing snapshot from previous action
+        {displayMetadata && (
+          <div className="snapshot-metadata">
+            {fallbackSnapshot && (
+              <span className="metadata-item fallback-notice">
+                Showing snapshot from previous action
+              </span>
+            )}
+            <span className="metadata-item">
+              <strong>URL:</strong> {displayMetadata.url}
             </span>
-          )}
-          <span className="metadata-item">
-            <strong>URL:</strong> {currentSnapshot.url}
-          </span>
-          <span className="metadata-item">
-            <strong>Viewport:</strong> {currentSnapshot.viewport.width} × {currentSnapshot.viewport.height}
-          </span>
-          <span className="metadata-item">
-            <strong>Time:</strong> {new Date(currentSnapshot.timestamp).toLocaleTimeString()}
-          </span>
-        </div>
+            <span className="metadata-item">
+              <strong>Viewport:</strong> {displayMetadata.viewport.width} × {displayMetadata.viewport.height}
+            </span>
+            <span className="metadata-item">
+              <strong>Time:</strong> {new Date(displayMetadata.timestamp).toLocaleTimeString()}
+            </span>
+          </div>
+        )}
       </div>
 
       <div className="snapshot-viewer-content">
@@ -433,14 +555,28 @@ export const SnapshotViewer = () => {
           </div>
         )}
 
-        <div className="snapshot-iframe-container" style={{ transform: `scale(${zoom / 100})` }}>
-          <iframe
-            ref={iframeRef}
-            className="snapshot-iframe"
-            title={`${currentView} snapshot`}
-            sandbox="allow-same-origin allow-scripts"
-          />
-        </div>
+        {/* Browser event screenshot - display as image */}
+        {hasBrowserEventScreenshot && (
+          <div className="snapshot-image-container" style={{ transform: `scale(${zoom / 100})` }}>
+            <img
+              src={browserEventScreenshot}
+              alt={`${getEventTypeName(selectedAction.type, selectedAction)} screenshot`}
+              className="snapshot-image"
+            />
+          </div>
+        )}
+
+        {/* HTML snapshot - display in iframe */}
+        {!hasBrowserEventScreenshot && (
+          <div className="snapshot-iframe-container" style={{ transform: `scale(${zoom / 100})` }}>
+            <iframe
+              ref={iframeRef}
+              className="snapshot-iframe"
+              title={`${currentView} snapshot`}
+              sandbox="allow-same-origin allow-scripts"
+            />
+          </div>
+        )}
       </div>
     </div>
   );
