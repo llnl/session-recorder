@@ -3,7 +3,7 @@
  * Displays before/after HTML snapshots in iframes with element highlighting
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useSessionStore } from '@/stores/sessionStore';
 import { generateRestorationScript } from '../../../../src/browser/snapshotRestoration';
 import type { RecordedAction, AnyAction, BrowserEventSnapshot, NavigationAction, PageVisibilityAction, MediaAction, DownloadAction, FullscreenAction, PrintAction } from '@/types/session';
@@ -24,20 +24,12 @@ function isNavigationAction(action: AnyAction): action is NavigationAction {
   return action.type === 'navigation';
 }
 
-// Get the snapshot from a browser event or navigation
+// Get the snapshot from a browser event (NOT navigation - that has HTML snapshots)
 function getBrowserEventSnapshot(action: AnyAction): BrowserEventSnapshot | null {
   if (isBrowserEventWithSnapshot(action)) {
     return action.snapshot || null;
   }
-  if (isNavigationAction(action) && action.snapshot) {
-    // Convert navigation snapshot to BrowserEventSnapshot format
-    return {
-      screenshot: action.snapshot.screenshot,
-      url: action.snapshot.url || action.navigation.toUrl,
-      viewport: action.snapshot.viewport || { width: 1280, height: 720 },
-      timestamp: action.timestamp
-    };
-  }
+  // Navigation actions have HTML snapshots, so they should NOT be treated as screenshot-only
   return null;
 }
 
@@ -203,8 +195,9 @@ export const SnapshotViewer = () => {
 
   const [currentView, setCurrentView] = useState<SnapshotView>('before');
   const [zoom, setZoom] = useState<number>(100);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  // Loading state is set true by default and set false after load completes
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
@@ -238,142 +231,76 @@ export const SnapshotViewer = () => {
     };
   }, [sessionData?.sessionId]);
 
-  // Reset view when action changes
-  useEffect(() => {
-    setCurrentView('before');
-    setZoom(100);
-    setError(null);
-  }, [selectedAction?.id]);
+  // Track previous action to reset view state during render (not in effect)
+  const prevActionIdRef = useRef<string | undefined>(undefined);
+  if (selectedAction?.id !== prevActionIdRef.current) {
+    prevActionIdRef.current = selectedAction?.id;
+    // Reset state synchronously during render when action changes
+    if (currentView !== 'before') setCurrentView('before');
+    if (zoom !== 100) setZoom(100);
+    if (error !== null) setError(null);
+  }
 
-  // State for browser event screenshot display
-  const [browserEventScreenshot, setBrowserEventScreenshot] = useState<string | null>(null);
-  const [browserEventSnapshot, setBrowserEventSnapshot] = useState<BrowserEventSnapshot | null>(null);
-
-  // Load snapshot and highlight element
-  useEffect(() => {
-    if (!selectedAction) return;
-
-    // Clear previous state
-    setBrowserEventScreenshot(null);
-    setBrowserEventSnapshot(null);
-
-    // Check if this is a browser event or navigation with its own snapshot
+  // Derive browser event screenshot data using useMemo (avoids setState in effects)
+  const browserEventData = useMemo(() => {
+    if (!selectedAction) return null;
     const eventSnapshot = getBrowserEventSnapshot(selectedAction);
-    if (eventSnapshot) {
-      // Browser event or navigation - display screenshot directly
-      const screenshotBlob = resources.get(eventSnapshot.screenshot);
-      if (screenshotBlob) {
-        const screenshotUrl = URL.createObjectURL(screenshotBlob);
-        setBrowserEventScreenshot(screenshotUrl);
-        setBrowserEventSnapshot(eventSnapshot);
-        setIsLoading(false);
-        setError(null);
-        return;
-      } else {
-        // Screenshot not found, fall back to previous action
-        console.warn(`Screenshot not found: ${eventSnapshot.screenshot}`);
-      }
-    }
+    if (!eventSnapshot) return null;
 
-    // Check for voice transcript (no screenshot)
-    if (isVoiceTranscript(selectedAction)) {
-      const fallback = getClosestSnapshotAction();
-      if (!fallback) {
-        setError('No snapshots available before this voice transcript');
-        return;
-      }
-      // Use fallback action's HTML snapshot - will be handled below
-    }
+    const screenshotBlob = resources.get(eventSnapshot.screenshot);
+    if (!screenshotBlob) return null;
 
-    // Need iframe for HTML snapshots
-    if (!iframeRef.current) return;
+    return {
+      screenshotUrl: URL.createObjectURL(screenshotBlob),
+      snapshot: eventSnapshot
+    };
+  }, [selectedAction, resources]);
 
-    // Determine which action to use for HTML snapshots
-    let actionForSnapshot: RecordedAction | null = null;
-
-    if (isVoiceTranscript(selectedAction)) {
-      // Voice transcript - use fallback
-      const fallback = getClosestSnapshotAction();
-      if (!fallback) {
-        const actionType = getEventTypeName(selectedAction.type, selectedAction);
-        setError(`No snapshots available before this ${actionType}`);
-        return;
-      }
-      actionForSnapshot = fallback.action;
-    } else if ('before' in selectedAction && 'after' in selectedAction) {
-      // RecordedAction (click, input, etc.) - has HTML snapshots
-      actionForSnapshot = selectedAction as RecordedAction;
-    } else {
-      // Other event types without snapshot - shouldn't reach here
-      setError(`No snapshot available for this ${getEventTypeName(selectedAction.type, selectedAction)}`);
-      return;
-    }
-
-    const snapshot = currentView === 'before' ? actionForSnapshot.before : actionForSnapshot.after;
-    const htmlPath = snapshot.html;
-
-    // Get HTML content from resources
-    const htmlBlob = resources.get(htmlPath);
-    if (!htmlBlob) {
-      setError(`Snapshot not found: ${htmlPath}`);
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
-
-    // Load HTML into iframe
-    htmlBlob.text().then((htmlContent) => {
-      const iframe = iframeRef.current;
-      if (!iframe) return;
-
-      // Write content to iframe
-      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-      if (!iframeDoc) {
-        setError('Failed to access iframe document');
-        setIsLoading(false);
-        return;
-      }
-
-      // Remove Chrome-specific URLs that won't work in iframe
-      let processedHtml = removeChromeUrls(htmlContent);
-
-      // Convert resource paths to blob URLs so CSS/images load correctly
-      let htmlWithBlobUrls = convertResourcePathsToBlobUrls(processedHtml, resources);
-      // Also convert CSS url() references (fonts, background images in inline styles)
-      htmlWithBlobUrls = convertCSSUrlsToBlobUrls(htmlWithBlobUrls, resources);
-
-      // Inject restoration script to restore form state, scroll positions, and Shadow DOM
-      const htmlWithRestoration = injectRestorationScript(htmlWithBlobUrls);
-
-      iframeDoc.open();
-      iframeDoc.write(htmlWithRestoration);
-      iframeDoc.close();
-
-      // Wait for iframe to load
-      iframe.onload = () => {
-        setIsLoading(false);
-
-        // Highlight element only for 'before' snapshot
-        if (currentView === 'before') {
-          highlightElement(iframe);
-        }
-      };
-    }).catch((err) => {
-      setError(`Failed to load snapshot: ${err.message}`);
-      setIsLoading(false);
-    });
-  }, [selectedAction, currentView, resources, sessionData, selectedActionIndex]);
-
-  // Cleanup browser event screenshot URL when it changes
+  // Cleanup blob URL when browserEventData changes
   useEffect(() => {
     return () => {
-      if (browserEventScreenshot) {
-        URL.revokeObjectURL(browserEventScreenshot);
+      if (browserEventData?.screenshotUrl) {
+        URL.revokeObjectURL(browserEventData.screenshotUrl);
       }
     };
-  }, [browserEventScreenshot]);
+  }, [browserEventData]);
 
+  // Compute HTML path for actions that need iframe display (derived value)
+  const getHtmlSnapshotPath = (): { path: string } | { error: string } | null => {
+    if (!selectedAction || browserEventData) return null;
+
+    if (isVoiceTranscript(selectedAction)) {
+      // Voice transcript - need fallback from previous action
+      if (!sessionData || selectedActionIndex === null) return { error: 'No session data' };
+      for (let i = selectedActionIndex - 1; i >= 0; i--) {
+        const action = sessionData.actions[i];
+        if ('before' in action && 'after' in action && 'html' in (action as RecordedAction).before) {
+          const recordedAction = action as RecordedAction;
+          const snapshot = currentView === 'before' ? recordedAction.before : recordedAction.after;
+          return { path: snapshot.html };
+        }
+      }
+      return { error: 'No snapshots available before this voice transcript' };
+    }
+
+    if (isNavigationAction(selectedAction)) {
+      if (!selectedAction.snapshot?.html) {
+        return { error: 'No HTML snapshot available for this navigation' };
+      }
+      return { path: selectedAction.snapshot.html };
+    }
+
+    if ('before' in selectedAction && 'after' in selectedAction) {
+      const recordedAction = selectedAction as RecordedAction;
+      const snapshot = currentView === 'before' ? recordedAction.before : recordedAction.after;
+      return { path: snapshot.html };
+    }
+
+    return { error: `No snapshot available for this ${getEventTypeName(selectedAction.type, selectedAction)}` };
+  };
+  const htmlSnapshotPath = getHtmlSnapshotPath();
+
+  // Highlight the target element in the iframe
   const highlightElement = (iframe: HTMLIFrameElement) => {
     try {
       const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
@@ -421,6 +348,63 @@ export const SnapshotViewer = () => {
     }
   };
 
+  // Load HTML snapshot into iframe (browser events are handled by useMemo above)
+  useEffect(() => {
+    // Skip if no valid HTML path (browser events, errors handled elsewhere)
+    if (!htmlSnapshotPath || 'error' in htmlSnapshotPath) return;
+    if (!iframeRef.current) return;
+
+    const htmlPath = htmlSnapshotPath.path;
+
+    // Get HTML content from resources
+    const htmlBlob = resources.get(htmlPath);
+    if (!htmlBlob) return;
+
+    // Load HTML into iframe
+    htmlBlob.text().then((htmlContent) => {
+      const iframe = iframeRef.current;
+      if (!iframe) return;
+
+      // Write content to iframe
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+      if (!iframeDoc) {
+        setError('Failed to access iframe document');
+        setIsLoading(false);
+        return;
+      }
+
+      // Remove Chrome-specific URLs that won't work in iframe
+      const processedHtml = removeChromeUrls(htmlContent);
+
+      // Convert resource paths to blob URLs so CSS/images load correctly
+      // Also convert CSS url() references (fonts, background images in inline styles)
+      const htmlWithBlobUrls = convertCSSUrlsToBlobUrls(
+        convertResourcePathsToBlobUrls(processedHtml, resources),
+        resources
+      );
+
+      // Inject restoration script to restore form state, scroll positions, and Shadow DOM
+      const htmlWithRestoration = injectRestorationScript(htmlWithBlobUrls);
+
+      iframeDoc.open();
+      iframeDoc.write(htmlWithRestoration);
+      iframeDoc.close();
+
+      // Wait for iframe to load
+      iframe.onload = () => {
+        setIsLoading(false);
+
+        // Highlight element only for 'before' snapshot
+        if (currentView === 'before') {
+          highlightElement(iframe);
+        }
+      };
+    }).catch((err) => {
+      setError(`Failed to load snapshot: ${err.message}`);
+      setIsLoading(false);
+    });
+  }, [htmlSnapshotPath, resources, currentView]);
+
   const handleZoomIn = () => {
     setZoom((prev) => Math.min(prev + 25, 200));
   };
@@ -444,7 +428,7 @@ export const SnapshotViewer = () => {
   }
 
   // Check if we're displaying a browser event screenshot
-  const hasBrowserEventScreenshot = browserEventScreenshot !== null;
+  const hasBrowserEventScreenshot = browserEventData !== null;
 
   // For voice transcripts only, find the closest previous snapshot (they have no screenshots)
   const needsFallback = isVoiceTranscript(selectedAction);
@@ -463,6 +447,7 @@ export const SnapshotViewer = () => {
 
   // Determine what snapshot metadata to show
   const isRecordedAction = 'before' in selectedAction && 'after' in selectedAction;
+  const isNavigation = isNavigationAction(selectedAction);
   const displayAction = isRecordedAction
     ? selectedAction as RecordedAction
     : fallbackSnapshot?.action;
@@ -471,8 +456,17 @@ export const SnapshotViewer = () => {
     ? (currentView === 'before' ? displayAction.before : displayAction.after)
     : null;
 
-  // Use browser event snapshot metadata if available
-  const displayMetadata = browserEventSnapshot || currentSnapshot;
+  // Get navigation snapshot metadata
+  const navigationSnapshot = isNavigation && selectedAction.snapshot
+    ? {
+        url: selectedAction.snapshot.url,
+        viewport: selectedAction.snapshot.viewport,
+        timestamp: selectedAction.timestamp
+      }
+    : null;
+
+  // Use browser event snapshot metadata, navigation metadata, or recorded action snapshot
+  const displayMetadata = browserEventData?.snapshot || navigationSnapshot || currentSnapshot;
 
   return (
     <div className="snapshot-viewer">
@@ -497,8 +491,8 @@ export const SnapshotViewer = () => {
           </div>
         )}
 
-        {/* Event type indicator for browser events */}
-        {hasBrowserEventScreenshot && (
+        {/* Event type indicator for browser events and navigation */}
+        {(hasBrowserEventScreenshot || isNavigation) && (
           <div className="snapshot-event-type">
             <span className="event-type-badge">
               {getEventTypeName(selectedAction.type, selectedAction)}
@@ -556,10 +550,10 @@ export const SnapshotViewer = () => {
         )}
 
         {/* Browser event screenshot - display as image */}
-        {hasBrowserEventScreenshot && (
+        {hasBrowserEventScreenshot && browserEventData && (
           <div className="snapshot-image-container" style={{ transform: `scale(${zoom / 100})` }}>
             <img
-              src={browserEventScreenshot}
+              src={browserEventData.screenshotUrl}
               alt={`${getEventTypeName(selectedAction.type, selectedAction)} screenshot`}
               className="snapshot-image"
             />
