@@ -539,8 +539,11 @@ export class SessionRecorder {
 
           const actionId = `visibility-${this.sessionData.actions.length + 1}`;
 
-          // Capture screenshot at moment of visibility change
-          const snapshot = await this._captureBrowserEventSnapshot(page, actionId, tabId);
+          // Only capture screenshot when switching TO this tab (visible state)
+          // When switching away (hidden), the page content would be blank/white
+          const snapshot = data.state === 'visible'
+            ? await this._captureBrowserEventSnapshot(page, actionId, tabId)
+            : undefined;
 
           const action: PageVisibilityAction = {
             id: actionId,
