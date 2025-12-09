@@ -185,6 +185,62 @@
   font-weight: 600;
 }
 
+/* Voice play button */
+.voice-play-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background-color: #4CAF50;
+  color: white;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.voice-play-btn:hover {
+  background-color: #45a049;
+  transform: scale(1.1);
+}
+
+.voice-play-btn:active {
+  transform: scale(0.95);
+}
+
+.voice-play-btn.playing {
+  background-color: #ff9800;
+  animation: pulse 1.5s infinite;
+}
+
+.voice-play-btn.playing:hover {
+  background-color: #f57c00;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(255, 152, 0, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(255, 152, 0, 0);
+  }
+}
+
+/* Voice item playing state */
+.action-list-item.voice-item.playing {
+  background-color: rgba(76, 175, 80, 0.25);
+  border-left-color: #ff9800;
+}
+
+/* Hidden audio element */
+.audio-hidden {
+  display: none;
+}
+
 /* Tab indicator for multi-tab recordings */
 .action-list-item-tab {
   font-size: 0.65rem;

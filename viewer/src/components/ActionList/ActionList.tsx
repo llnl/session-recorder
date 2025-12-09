@@ -3,7 +3,7 @@
  * Displays chronological list of recorded actions with virtual scrolling
  */
 
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useFilteredActions } from '@/hooks/useFilteredActions';
 import { useVirtualList } from '@/hooks/useVirtualList';
@@ -34,9 +34,104 @@ export const ActionList = () => {
   const sessionData = useSessionStore((state) => state.sessionData);
   const selectedActionIndex = useSessionStore((state) => state.selectedActionIndex);
   const selectAction = useSessionStore((state) => state.selectAction);
+  const audioBlob = useSessionStore((state) => state.audioBlob);
   const filteredActions = useFilteredActions();
 
   const scrollRef = useRef<HTMLDivElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+  // Audio playback state
+  const [playingVoiceId, setPlayingVoiceId] = useState<string | null>(null);
+  const [currentSegmentEnd, setCurrentSegmentEnd] = useState<number | null>(null);
+
+  // Create audio URL from blob
+  const audioUrl = useMemo(() => {
+    if (!audioBlob) return null;
+    return URL.createObjectURL(audioBlob);
+  }, [audioBlob]);
+
+  // Clean up audio URL on unmount
+  useEffect(() => {
+    return () => {
+      if (audioUrl) {
+        URL.revokeObjectURL(audioUrl);
+      }
+    };
+  }, [audioUrl]);
+
+  // Get the audio recording start time from the first voice transcript's startTime
+  const audioStartTime = useMemo(() => {
+    if (!sessionData) return null;
+    const firstVoice = sessionData.actions.find(isVoiceTranscriptAction);
+    if (!firstVoice) return null;
+    // Use transcript's startTime as reference (consistent with segment times)
+    return new Date(firstVoice.transcript.startTime).getTime();
+  }, [sessionData]);
+
+  // Handle audio timeupdate to stop at segment end
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio || !audioStartTime) return;
+
+    const handleTimeUpdate = () => {
+      if (currentSegmentEnd !== null) {
+        const currentAbsTime = audioStartTime + audio.currentTime * 1000;
+        if (currentAbsTime >= currentSegmentEnd) {
+          audio.pause();
+          setPlayingVoiceId(null);
+          setCurrentSegmentEnd(null);
+        }
+      }
+    };
+
+    const handleEnded = () => {
+      setPlayingVoiceId(null);
+      setCurrentSegmentEnd(null);
+    };
+
+    const handlePause = () => {
+      // Only clear state if we're not auto-stopping at segment end
+      if (currentSegmentEnd === null) {
+        setPlayingVoiceId(null);
+      }
+    };
+
+    audio.addEventListener('timeupdate', handleTimeUpdate);
+    audio.addEventListener('ended', handleEnded);
+    audio.addEventListener('pause', handlePause);
+
+    return () => {
+      audio.removeEventListener('timeupdate', handleTimeUpdate);
+      audio.removeEventListener('ended', handleEnded);
+      audio.removeEventListener('pause', handlePause);
+    };
+  }, [audioStartTime, currentSegmentEnd]);
+
+  // Play/pause voice segment
+  const handleVoicePlayPause = useCallback((e: React.MouseEvent, voiceAction: VoiceTranscriptAction) => {
+    e.stopPropagation(); // Don't trigger item selection
+
+    const audio = audioRef.current;
+    if (!audio || !audioUrl || !audioStartTime) return;
+
+    if (playingVoiceId === voiceAction.id) {
+      // Currently playing this segment - pause it
+      audio.pause();
+      setPlayingVoiceId(null);
+      setCurrentSegmentEnd(null);
+    } else {
+      // Trust the session.json values - use transcript times directly
+      const segmentStart = new Date(voiceAction.transcript.startTime).getTime();
+      const segmentEnd = Math.ceil(new Date(voiceAction.transcript.endTime).getTime() / 1000) * 1000;
+
+      const relativeStart = (segmentStart - audioStartTime) / 1000;
+
+      audio.currentTime = Math.max(0, relativeStart);
+      setCurrentSegmentEnd(segmentEnd);
+      setPlayingVoiceId(voiceAction.id);
+      audio.play().catch(console.error);
+    }
+  }, [playingVoiceId, audioUrl, audioStartTime]);
 
   // Virtual scrolling setup with dynamic heights for different action types
   const getItemHeight = (index: number) => {
@@ -124,6 +219,11 @@ export const ActionList = () => {
 
   return (
     <div className="action-list">
+      {/* Hidden audio element for voice playback */}
+      {audioUrl && (
+        <audio ref={audioRef} src={audioUrl} preload="metadata" className="audio-hidden" />
+      )}
+
       <div className="action-list-header">
         <h3>Actions</h3>
         <span className="action-list-count">
@@ -151,11 +251,12 @@ export const ActionList = () => {
                 const voiceAction = action;
                 const duration = ((new Date(voiceAction.transcript.endTime).getTime() -
                                   new Date(voiceAction.transcript.startTime).getTime()) / 1000).toFixed(1);
+                const isPlayingThis = playingVoiceId === voiceAction.id;
 
                 return (
                   <div
                     key={action.id}
-                    className={`action-list-item voice-item ${isSelected ? 'selected' : ''}`}
+                    className={`action-list-item voice-item ${isSelected ? 'selected' : ''} ${isPlayingThis ? 'playing' : ''}`}
                     style={{
                       position: 'absolute',
                       top: 0,
@@ -180,6 +281,16 @@ export const ActionList = () => {
                     </div>
 
                     <div className="action-list-item-meta voice-meta">
+                      {audioUrl && (
+                        <button
+                          type="button"
+                          className={`voice-play-btn ${isPlayingThis ? 'playing' : ''}`}
+                          onClick={(e) => handleVoicePlayPause(e, voiceAction)}
+                          title={isPlayingThis ? 'Pause' : 'Play segment'}
+                        >
+                          {isPlayingThis ? '❚❚' : '▶'}
+                        </button>
+                      )}
                       <span className="voice-duration">{duration}s</span>
                       <span className="voice-confidence">
                         {(voiceAction.transcript.confidence * 100).toFixed(0)}%
