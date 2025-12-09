@@ -65,10 +65,15 @@ class AudioRecorder:
 
         self.stream.start()
 
+        # Capture the exact moment recording starts (for timestamp alignment)
+        recording_start = datetime.now(timezone.utc)
+        self.recording_start_time = recording_start
+
         print(json.dumps({
             "type": "status",
             "message": "Recording started",
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": recording_start.isoformat(),
+            "recording_start_time": int(recording_start.timestamp() * 1000)  # Epoch ms for Node.js
         }), flush=True)
 
     def stop_recording(self, output_path):

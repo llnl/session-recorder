@@ -176,6 +176,13 @@ export class VoiceRecorder {
                 if (msg.message === 'Recording started' && !recordingStarted) {
                   recordingStarted = true;
                   this.recording = true;
+                  // Use the actual recording start time from Python for accurate timestamp alignment
+                  if (msg.recording_start_time) {
+                    const oldStartTime = this.sessionStartTime;
+                    this.sessionStartTime = msg.recording_start_time;
+                    const offsetMs = this.sessionStartTime - oldStartTime;
+                    console.log(`🕐 Recording start offset: ${offsetMs}ms (adjusted for accurate alignment)`);
+                  }
                   console.log(`✅ Voice recording ready: ${this.audioFilePath}`);
                   resolve();
                 }

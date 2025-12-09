@@ -87,19 +87,26 @@ export interface VoiceTranscriptAction {
   type: 'voice_transcript';
   timestamp: string;  // ISO 8601 UTC - when segment started
   transcript: {
-    text: string;
-    startTime: string;  // ISO 8601 UTC
-    endTime: string;    // ISO 8601 UTC
-    confidence: number; // 0-1 probability
+    text: string;           // The text for this segment (may be partial if split)
+    fullText?: string;      // Original full segment text (only set if split)
+    startTime: string;      // ISO 8601 UTC
+    endTime: string;        // ISO 8601 UTC
+    confidence: number;     // 0-1 probability
     words?: Array<{
       word: string;
       startTime: string;  // ISO 8601 UTC
       endTime: string;    // ISO 8601 UTC
       probability: number;
     }>;
+    // Split segment metadata (for action list alignment)
+    isPartial?: boolean;    // True if this was split from a larger segment
+    partIndex?: number;     // 0, 1, 2... which part of the split
+    totalParts?: number;    // Total number of parts this segment was split into
   };
   audioFile?: string;  // Relative path to audio segment
   nearestSnapshotId?: string;
+  // Action alignment - which browser action follows this voice segment
+  associatedActionId?: string;
 }
 
 /**

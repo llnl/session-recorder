@@ -15,6 +15,9 @@ import { VoiceRecorder } from '../voice/VoiceRecorder';
 declare global {
   interface Window {
     __sessionRecorderLoaded?: boolean;
+    __snapshotCapture?: {
+      captureSnapshot: () => { html: string; resourceOverrides: any[] };
+    };
   }
 }
 
@@ -694,8 +697,8 @@ export class SessionRecorder {
     const actionId = `nav-${this.sessionData.actions.length + 1}`;
     const timestamp = new Date().toISOString();
 
-    // Try to capture a screenshot after page is fully loaded
-    let screenshotData: NavigationAction['screenshot'] | undefined;
+    // Try to capture snapshot (HTML + screenshot) after page is fully loaded
+    let snapshotData: NavigationAction['snapshot'] | undefined;
     try {
       // Wait for network to be idle (page fully loaded)
       // Use Promise.race to timeout if networkidle takes too long
@@ -706,10 +709,54 @@ export class SessionRecorder {
 
       // Verify page is still on the same URL after waiting
       if (page.isClosed() || page.url() !== toUrl) {
-        console.log(`⚠️ [Tab ${tabId}] Navigation: page navigated away before screenshot`);
+        console.log(`⚠️ [Tab ${tabId}] Navigation: page navigated away before snapshot`);
         return;
       }
 
+      // Get viewport dimensions
+      const viewportSize = page.viewportSize() || { width: 1280, height: 720 };
+
+      // Capture HTML snapshot using browser-side code
+      let htmlContent: string | null = null;
+      let resourceOverrides: any[] = [];
+      try {
+        const snapshotResult = await page.evaluate(() => {
+          if (window.__snapshotCapture && typeof window.__snapshotCapture.captureSnapshot === 'function') {
+            return window.__snapshotCapture.captureSnapshot();
+          }
+          // Fallback: just get the raw HTML
+          return {
+            html: document.documentElement.outerHTML,
+            resourceOverrides: []
+          };
+        });
+        htmlContent = snapshotResult.html;
+        resourceOverrides = snapshotResult.resourceOverrides || [];
+      } catch (err: any) {
+        // Snapshot capture might fail on some pages, use fallback
+        if (!err.message?.includes('closed') && !err.message?.includes('Target')) {
+          console.log(`⚠️ [Tab ${tabId}] HTML snapshot capture failed, using fallback: ${err.message}`);
+        }
+        try {
+          htmlContent = await page.content();
+        } catch {
+          // Page might be closed
+        }
+      }
+
+      // Process snapshot resources (CSS, images)
+      if (resourceOverrides.length > 0) {
+        await this._processSnapshotResources(resourceOverrides);
+      }
+
+      // Save HTML snapshot
+      if (htmlContent) {
+        const rewrittenHtml = this._rewriteHTML(htmlContent, toUrl);
+        const snapshotPath = path.join(this.sessionDir, 'snapshots', `${actionId}.html`);
+        fs.writeFileSync(snapshotPath, rewrittenHtml, 'utf-8');
+      }
+
+      // Capture screenshot
       const screenshotPath = `screenshots/${actionId}.png`;
       const fullScreenshotPath = path.join(this.sessionDir, screenshotPath);
 
@@ -718,14 +765,18 @@ export class SessionRecorder {
         type: 'png'
       });
 
-      screenshotData = {
-        path: screenshotPath,
-        type: 'png'
+      snapshotData = {
+        html: `snapshots/${actionId}.html`,
+        screenshot: screenshotPath,
+        url: toUrl,
+        viewport: viewportSize
       };
+
+      console.log(`📸 [Tab ${tabId}] Captured navigation snapshot: ${actionId}`);
     } catch (err: any) {
-      // Screenshot failed - page might be navigating or closed
+      // Snapshot failed - page might be navigating or closed
       if (!err.message?.includes('closed') && !err.message?.includes('Target')) {
-        console.log(`⚠️ [Tab ${tabId}] Navigation screenshot failed: ${err.message}`);
+        console.log(`⚠️ [Tab ${tabId}] Navigation snapshot failed: ${err.message}`);
       }
     }
 
@@ -749,7 +800,7 @@ export class SessionRecorder {
         toUrl,
         navigationType
       },
-      screenshot: screenshotData
+      snapshot: snapshotData
     };
 
     this.sessionData.actions.push(navigationAction);
@@ -986,9 +1037,14 @@ export class SessionRecorder {
         allActions.sort((a, b) =>
           new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
         );
-        this.sessionData.actions = allActions;
 
-        console.log(`🎙️  Added ${voiceActions.length} voice transcript segments`);
+        // Align voice segments with browser actions (split at action boundaries)
+        this.sessionData.actions = this._alignVoiceWithActions(allActions);
+
+        const alignedVoiceCount = this.sessionData.actions.filter(
+          a => a.type === 'voice_transcript'
+        ).length;
+        console.log(`🎙️  Added ${voiceActions.length} voice segments → ${alignedVoiceCount} aligned segments`);
       } else {
         console.error(`❌ Transcription failed: ${transcript?.error || 'Unknown error'}`);
       }
@@ -1075,6 +1131,144 @@ export class SessionRecorder {
     }
 
     return nearest?.id;
+  }
+
+  /**
+   * Align voice segments with browser actions
+   * Splits voice segments at action boundaries and associates them with actions
+   *
+   * This creates two views:
+   * - Timeline view: Full interleaved actions (original behavior)
+   * - Action list: Voice segments split and associated with the actions they describe
+   */
+  private _alignVoiceWithActions(actions: AnyAction[]): AnyAction[] {
+    const result: AnyAction[] = [];
+    const browserActions = actions.filter(a => a.type !== 'voice_transcript');
+    const voiceActions = actions.filter(a => a.type === 'voice_transcript') as VoiceTranscriptAction[];
+
+    // Sort browser actions by timestamp for binary search
+    const sortedBrowserActions = [...browserActions].sort((a, b) =>
+      new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    );
+
+    for (const voice of voiceActions) {
+      const voiceStart = new Date(voice.transcript.startTime).getTime();
+      const voiceEnd = new Date(voice.transcript.endTime).getTime();
+      const words = voice.transcript.words || [];
+
+      // Find browser actions that occur during this voice segment
+      const actionsInSegment = sortedBrowserActions.filter(action => {
+        const actionTime = new Date(action.timestamp).getTime();
+        return actionTime > voiceStart && actionTime < voiceEnd;
+      });
+
+      // Find the action that immediately follows this voice segment (within 5 seconds)
+      const followingAction = sortedBrowserActions.find(action => {
+        const actionTime = new Date(action.timestamp).getTime();
+        return actionTime >= voiceEnd && actionTime <= voiceEnd + 5000;
+      });
+
+      if (actionsInSegment.length === 0) {
+        // No splitting needed - associate with following action if any
+        const alignedVoice: VoiceTranscriptAction = {
+          ...voice,
+          associatedActionId: followingAction?.id
+        };
+        result.push(alignedVoice);
+      } else {
+        // Split the voice segment at each action boundary
+        const splitPoints: { time: number; actionId?: string }[] = [
+          { time: voiceStart }
+        ];
+
+        for (const action of actionsInSegment) {
+          splitPoints.push({
+            time: new Date(action.timestamp).getTime(),
+            actionId: action.id
+          });
+        }
+
+        splitPoints.push({
+          time: voiceEnd,
+          actionId: followingAction?.id
+        });
+
+        // Create voice segments for each split
+        const totalParts = splitPoints.length - 1;
+        let partCounter = 1;
+
+        for (let i = 0; i < splitPoints.length - 1; i++) {
+          const segmentStart = splitPoints[i].time;
+          const segmentEnd = splitPoints[i + 1].time;
+          const associatedActionId = splitPoints[i + 1].actionId;
+
+          // Get words in this time range (word belongs to segment if it starts within it)
+          const segmentWords = words.filter(w => {
+            const wordStart = new Date(w.startTime).getTime();
+            return wordStart >= segmentStart && wordStart < segmentEnd;
+          });
+
+          // Skip empty segments (no words)
+          if (segmentWords.length === 0) {
+            continue;
+          }
+
+          const segmentText = segmentWords.map(w => w.word).join(' ').trim();
+
+          // Skip if text is empty or only whitespace
+          if (!segmentText) {
+            continue;
+          }
+
+          const alignedVoice: VoiceTranscriptAction = {
+            id: totalParts > 1 ? `${voice.id}-part${partCounter}` : voice.id,
+            type: 'voice_transcript',
+            timestamp: new Date(segmentStart).toISOString(),
+            transcript: {
+              text: segmentText,
+              fullText: voice.transcript.text,
+              startTime: segmentWords[0].startTime,
+              endTime: segmentWords[segmentWords.length - 1].endTime,
+              confidence: voice.transcript.confidence,
+              words: segmentWords,
+              isPartial: totalParts > 1,
+              partIndex: i,
+              totalParts: totalParts
+            },
+            audioFile: voice.audioFile,
+            nearestSnapshotId: voice.nearestSnapshotId,
+            associatedActionId
+          };
+
+          result.push(alignedVoice);
+          partCounter++;
+        }
+      }
+    }
+
+    // Add all browser actions
+    result.push(...browserActions);
+
+    // Sort by timestamp, with tiebreaker: instant actions before voice (which has duration)
+    result.sort((a, b) => {
+      const timeA = new Date(a.timestamp).getTime();
+      const timeB = new Date(b.timestamp).getTime();
+
+      if (timeA !== timeB) {
+        return timeA - timeB;
+      }
+
+      // Same timestamp: instant actions (non-voice) come before voice transcripts
+      const aIsVoice = a.type === 'voice_transcript';
+      const bIsVoice = b.type === 'voice_transcript';
+
+      if (aIsVoice && !bIsVoice) return 1;  // a (voice) goes after b (instant)
+      if (!aIsVoice && bIsVoice) return -1; // a (instant) goes before b (voice)
+
+      return 0;
+    });
+
+    return result;
   }
 
   /**
