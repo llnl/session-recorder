@@ -811,7 +811,7 @@ export class SessionRecorder {
   }
 
   /**
-   * Capture a snapshot (screenshot only) for browser events
+   * Capture a snapshot (screenshot + HTML) for browser events
    * Used for visibility, media, fullscreen, print, and download events
    */
   private async _captureBrowserEventSnapshot(
@@ -827,10 +827,53 @@ export class SessionRecorder {
 
       const screenshotPath = `screenshots/${actionId}.png`;
       const fullScreenshotPath = path.join(this.sessionDir, screenshotPath);
+      const htmlPath = `snapshots/${actionId}.html`;
+      const fullHtmlPath = path.join(this.sessionDir, htmlPath);
 
       // Get viewport dimensions
       const viewportSize = page.viewportSize() || { width: 1280, height: 720 };
+      const pageUrl = page.url();
 
+      // Capture HTML snapshot using browser-side code
+      let htmlContent: string | null = null;
+      let resourceOverrides: any[] = [];
+      try {
+        const snapshotResult = await page.evaluate(() => {
+          if (window.__snapshotCapture && typeof window.__snapshotCapture.captureSnapshot === 'function') {
+            return window.__snapshotCapture.captureSnapshot();
+          }
+          // Fallback: just get the raw HTML
+          return {
+            html: document.documentElement.outerHTML,
+            resourceOverrides: []
+          };
+        });
+        htmlContent = snapshotResult.html;
+        resourceOverrides = snapshotResult.resourceOverrides || [];
+      } catch (err: any) {
+        // Snapshot capture might fail on some pages, use fallback
+        if (!err.message?.includes('closed') && !err.message?.includes('Target')) {
+          console.log(`⚠️ [Tab ${tabId}] HTML snapshot capture failed, using fallback: ${err.message}`);
+        }
+        try {
+          htmlContent = await page.content();
+        } catch {
+          // Page might be closed
+        }
+      }
+
+      // Process snapshot resources (CSS, images)
+      if (resourceOverrides.length > 0) {
+        await this._processSnapshotResources(resourceOverrides);
+      }
+
+      // Save HTML snapshot
+      if (htmlContent) {
+        const rewrittenHtml = this._rewriteHTML(htmlContent, pageUrl);
+        fs.writeFileSync(fullHtmlPath, rewrittenHtml, 'utf-8');
+      }
+
+      // Capture screenshot
       await page.screenshot({
         path: fullScreenshotPath,
         type: 'png'
@@ -838,13 +881,14 @@ export class SessionRecorder {
 
       return {
         screenshot: screenshotPath,
-        url: page.url(),
+        html: htmlContent ? htmlPath : undefined,
+        url: pageUrl,
         viewport: viewportSize,
         timestamp: new Date().toISOString()
       };
     } catch (err: any) {
       if (!err.message?.includes('closed') && !err.message?.includes('Target')) {
-        console.log(`⚠️ [Tab ${tabId}] Event screenshot failed: ${err.message}`);
+        console.log(`⚠️ [Tab ${tabId}] Event snapshot failed: ${err.message}`);
       }
       return undefined;
     }

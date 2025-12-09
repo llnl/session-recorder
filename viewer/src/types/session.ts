@@ -113,10 +113,11 @@ export interface VoiceTranscriptAction {
 }
 
 /**
- * Browser event snapshot - screenshot captured at moment of event
+ * Browser event snapshot - screenshot and HTML captured at moment of event
  */
 export interface BrowserEventSnapshot {
   screenshot: string;  // Relative path to screenshot: screenshots/visibility-1.png
+  html?: string;       // Relative path to HTML file: snapshots/visibility-1.html
   url: string;
   viewport: { width: number; height: number };
   timestamp: string;  // ISO 8601 UTC

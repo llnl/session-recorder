@@ -24,12 +24,24 @@ function isNavigationAction(action: AnyAction): action is NavigationAction {
   return action.type === 'navigation';
 }
 
-// Get the snapshot from a browser event (NOT navigation - that has HTML snapshots)
+// Get the snapshot from a browser event
+// Returns null if the browser event has an HTML snapshot (should use iframe instead)
+function getBrowserEventScreenshotOnly(action: AnyAction): BrowserEventSnapshot | null {
+  if (isBrowserEventWithSnapshot(action)) {
+    const snapshot = action.snapshot;
+    // Only return for screenshot-only display if there's no HTML snapshot
+    if (snapshot && !snapshot.html) {
+      return snapshot;
+    }
+  }
+  return null;
+}
+
+// Get browser event snapshot metadata (for display purposes)
 function getBrowserEventSnapshot(action: AnyAction): BrowserEventSnapshot | null {
   if (isBrowserEventWithSnapshot(action)) {
     return action.snapshot || null;
   }
-  // Navigation actions have HTML snapshots, so they should NOT be treated as screenshot-only
   return null;
 }
 
@@ -242,9 +254,11 @@ export const SnapshotViewer = () => {
   }
 
   // Derive browser event screenshot data using useMemo (avoids setState in effects)
+  // Only used for browser events that DON'T have HTML snapshots (screenshot-only fallback)
   const browserEventData = useMemo(() => {
     if (!selectedAction) return null;
-    const eventSnapshot = getBrowserEventSnapshot(selectedAction);
+    // Only return screenshot data if there's no HTML snapshot available
+    const eventSnapshot = getBrowserEventScreenshotOnly(selectedAction);
     if (!eventSnapshot) return null;
 
     const screenshotBlob = resources.get(eventSnapshot.screenshot);
@@ -288,6 +302,16 @@ export const SnapshotViewer = () => {
         return { error: 'No HTML snapshot available for this navigation' };
       }
       return { path: selectedAction.snapshot.html };
+    }
+
+    // Browser events with HTML snapshots (page_visibility, media, download, fullscreen, print)
+    if (isBrowserEventWithSnapshot(selectedAction)) {
+      const snapshot = getBrowserEventSnapshot(selectedAction);
+      if (snapshot?.html) {
+        return { path: snapshot.html };
+      }
+      // No HTML, will fall through to screenshot-only display via browserEventData
+      return null;
     }
 
     if ('before' in selectedAction && 'after' in selectedAction) {
@@ -465,8 +489,16 @@ export const SnapshotViewer = () => {
       }
     : null;
 
+  // Get browser event snapshot metadata (for events with HTML snapshots)
+  const browserEventMetadata = isBrowserEventWithSnapshot(selectedAction)
+    ? getBrowserEventSnapshot(selectedAction)
+    : null;
+
   // Use browser event snapshot metadata, navigation metadata, or recorded action snapshot
-  const displayMetadata = browserEventData?.snapshot || navigationSnapshot || currentSnapshot;
+  const displayMetadata = browserEventData?.snapshot || browserEventMetadata || navigationSnapshot || currentSnapshot;
+
+  // Check if this is a browser event (for displaying event type badge)
+  const isBrowserEvent = isBrowserEventWithSnapshot(selectedAction);
 
   return (
     <div className="snapshot-viewer">
@@ -492,7 +524,7 @@ export const SnapshotViewer = () => {
         )}
 
         {/* Event type indicator for browser events and navigation */}
-        {(hasBrowserEventScreenshot || isNavigation) && (
+        {(isBrowserEvent || isNavigation) && (
           <div className="snapshot-event-type">
             <span className="event-type-badge">
               {getEventTypeName(selectedAction.type, selectedAction)}
