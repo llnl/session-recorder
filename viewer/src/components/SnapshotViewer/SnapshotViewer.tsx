@@ -29,12 +29,12 @@ function getBrowserEventSnapshot(action: AnyAction): BrowserEventSnapshot | null
   if (isBrowserEventWithSnapshot(action)) {
     return action.snapshot || null;
   }
-  if (isNavigationAction(action) && action.screenshot) {
-    // Convert navigation screenshot format to BrowserEventSnapshot format
+  if (isNavigationAction(action) && action.snapshot) {
+    // Convert navigation snapshot to BrowserEventSnapshot format
     return {
-      screenshot: action.screenshot.path,
-      url: action.navigation.toUrl,
-      viewport: { width: 1280, height: 720 }, // Default viewport for navigation
+      screenshot: action.snapshot.screenshot,
+      url: action.snapshot.url || action.navigation.toUrl,
+      viewport: action.snapshot.viewport || { width: 1280, height: 720 },
       timestamp: action.timestamp
     };
   }

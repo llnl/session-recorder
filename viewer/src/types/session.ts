@@ -76,9 +76,12 @@ export interface NavigationAction {
     navigationType: 'initial' | 'link' | 'typed' | 'reload' | 'back_forward' | 'other';
   };
 
-  screenshot?: {
-    path: string;      // Path to screenshot file
-    type: 'png';
+  // Snapshot of the page after navigation
+  snapshot?: {
+    html: string;       // Relative path to HTML file: snapshots/nav-1.html
+    screenshot: string; // Relative path to screenshot: screenshots/nav-1.png
+    url: string;
+    viewport: { width: number; height: number };
   };
 }
 

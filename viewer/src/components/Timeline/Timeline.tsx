@@ -5,10 +5,27 @@
 
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { useSessionStore } from '@/stores/sessionStore';
-import type { VoiceTranscriptAction } from '@/types/session';
+import type { VoiceTranscriptAction, NavigationAction, RecordedAction, AnyAction, PageVisibilityAction, MediaAction, DownloadAction, FullscreenAction, PrintAction } from '@/types/session';
 import './Timeline.css';
 
 const PIXELS_PER_SECOND = 50;
+
+// Helper function to extract screenshot path from any action type
+const getScreenshotPath = (action: AnyAction): string | null => {
+  if (action.type === 'voice_transcript') return null;
+
+  if (action.type === 'navigation') {
+    return (action as NavigationAction).snapshot?.screenshot || null;
+  }
+
+  if (['page_visibility', 'media', 'download', 'fullscreen', 'print'].includes(action.type)) {
+    const eventAction = action as PageVisibilityAction | MediaAction | DownloadAction | FullscreenAction | PrintAction;
+    return eventAction.snapshot?.screenshot || null;
+  }
+
+  // RecordedAction (click, input, etc.)
+  return (action as RecordedAction).before?.screenshot || null;
+};
 
 export const Timeline = () => {
   const sessionData = useSessionStore((state) => state.sessionData);
@@ -362,15 +379,12 @@ export const Timeline = () => {
 
         <div className="timeline-thumbnails" style={{ width: timelineWidth }}>
           {sessionData.actions.map((action, index) => {
-            // Skip voice actions, navigation actions, and browser events (no full thumbnails)
-            if (action.type === 'voice_transcript' || action.type === 'navigation' ||
-                action.type === 'page_visibility' || action.type === 'media' ||
-                action.type === 'download' || action.type === 'fullscreen' ||
-                action.type === 'print') return null;
+            // Skip voice actions (they don't have screenshots)
+            if (action.type === 'voice_transcript') return null;
 
             const x = timestampToX(action.timestamp);
-            const screenshotPath = (action as any).before.screenshot;
-            const screenshotBlob = resources.get(screenshotPath);
+            const screenshotPath = getScreenshotPath(action);
+            const screenshotBlob = screenshotPath ? resources.get(screenshotPath) : null;
             const screenshotUrl = screenshotBlob ? URL.createObjectURL(screenshotBlob) : null;
 
             return (
@@ -404,12 +418,9 @@ export const Timeline = () => {
             <div className="timeline-hover-zoom-preview">
               {(() => {
                 const action = sessionData.actions[hoveredActionIndex];
-                if (action.type === 'voice_transcript' || action.type === 'navigation' ||
-                    action.type === 'page_visibility' || action.type === 'media' ||
-                    action.type === 'download' || action.type === 'fullscreen' ||
-                    action.type === 'print') return null;
-                const screenshotPath = (action as any).before.screenshot;
-                const screenshotBlob = resources.get(screenshotPath);
+                if (action.type === 'voice_transcript') return null;
+                const screenshotPath = getScreenshotPath(action);
+                const screenshotBlob = screenshotPath ? resources.get(screenshotPath) : null;
                 const screenshotUrl = screenshotBlob ? URL.createObjectURL(screenshotBlob) : null;
                 return screenshotUrl ? (
                   <img src={screenshotUrl} alt={`Action ${hoveredActionIndex + 1}`} />
@@ -420,9 +431,25 @@ export const Timeline = () => {
             </div>
             <div className="timeline-hover-zoom-tooltip">
               <div className="timeline-hover-zoom-tooltip-type">
-                {sessionData.actions[hoveredActionIndex].type === 'navigation'
-                  ? 'Navigation'
-                  : sessionData.actions[hoveredActionIndex].type}
+                {(() => {
+                  const action = sessionData.actions[hoveredActionIndex];
+                  switch (action.type) {
+                    case 'navigation':
+                      return (action as NavigationAction).navigation.navigationType === 'initial' ? 'Page Load' : 'Navigation';
+                    case 'page_visibility':
+                      return (action as PageVisibilityAction).visibility.state === 'visible' ? 'Tab Focused' : 'Tab Switched';
+                    case 'media':
+                      return `Media ${(action as MediaAction).media.event}`;
+                    case 'download':
+                      return `Download (${(action as DownloadAction).download.state})`;
+                    case 'fullscreen':
+                      return (action as FullscreenAction).fullscreen.state === 'entered' ? 'Fullscreen' : 'Exit Fullscreen';
+                    case 'print':
+                      return (action as PrintAction).print.event === 'beforeprint' ? 'Print Started' : 'Print Ended';
+                    default:
+                      return action.type;
+                  }
+                })()}
               </div>
               <div className="timeline-hover-zoom-tooltip-time">
                 {((new Date(sessionData.actions[hoveredActionIndex].timestamp).getTime() -
@@ -438,14 +465,23 @@ export const Timeline = () => {
                     </div>
                   );
                 }
-                // Skip browser event types that don't have screenshots
-                if (action.type === 'page_visibility' || action.type === 'media' ||
-                    action.type === 'download' || action.type === 'fullscreen' ||
-                    action.type === 'print') return null;
-                if ((action as any).before?.url) {
+                // Browser event types - show URL from snapshot if available
+                if (['page_visibility', 'media', 'download', 'fullscreen', 'print'].includes(action.type)) {
+                  const eventAction = action as PageVisibilityAction | MediaAction | DownloadAction | FullscreenAction | PrintAction;
+                  if (eventAction.snapshot?.url) {
+                    return (
+                      <div className="timeline-hover-zoom-tooltip-target">
+                        {eventAction.snapshot.url}
+                      </div>
+                    );
+                  }
+                  return null;
+                }
+                // RecordedAction
+                if ((action as RecordedAction).before?.url) {
                   return (
                     <div className="timeline-hover-zoom-tooltip-target">
-                      {(action as any).before.url}
+                      {(action as RecordedAction).before.url}
                     </div>
                   );
                 }
