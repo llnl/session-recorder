@@ -1,9 +1,19 @@
 # TASKS-3: Snapshot Architecture Implementation Tasks
 
-**Related PRD:** [PRD-3.md](./PRD-3.md)
-**Status:** 🟢 Phase 1 Complete | 🟢 Phase 2 Complete | ⚡ Phase 3 Optional
-**Total Estimated Time:** 35 hours (across 3 phases)
-**Completed:** 21 hours (Phase 1 + Phase 2)
+**PRD:** [PRD-3.md](./PRD-3.md)
+**Last Updated:** 2025-12-10
+**Overall Status:** ~60% Complete (Phase 1 & 2 Complete, Phase 3 Optional)
+
+---
+
+## Table of Contents
+
+- [Phase 1: Critical Snapshot Fixes](#phase-1-critical-snapshot-fixes-9-hours--complete)
+- [Phase 2: Resource Management](#phase-2-resource-management-12-hours--complete)
+- [Phase 3: NodeSnapshot Optimization](#phase-3-nodesnapshot-optimization-14-hours--low-priority)
+- [Summary](#summary)
+- [File Reference](#file-reference)
+- [Document Change Log](#document-change-log)
 
 ---
 
@@ -1278,8 +1288,37 @@ This task involves significant refactoring to use Playwright's NodeSnapshot stru
 
 ---
 
+## File Reference
+
+### Browser Components
+
+- [snapshotCapture.ts](../src/browser/snapshotCapture.ts) - DOM snapshot generation with state capture
+- [snapshotRestoration.ts](../src/browser/snapshotRestoration.ts) - Restoration script for viewer iframe
+- [injected.ts](../src/browser/injected.ts) - Browser-side coordinator
+
+### Storage Components
+
+- [resourceStorage.ts](../src/storage/resourceStorage.ts) - SHA1-based resource deduplication
+
+### Node Components
+
+- [SessionRecorder.ts](../src/node/SessionRecorder.ts) - Resource processing integration
+
+### Viewer Components
+
+- [SnapshotViewer.tsx](../viewer/src/components/SnapshotViewer/SnapshotViewer.tsx) - Snapshot rendering with restoration
+- [sessionStore.ts](../viewer/src/stores/sessionStore.ts) - Resource storage map
+
+### Tests
+
+- [snapshotRestoration.test.ts](../test/snapshotRestoration.test.ts) - Restoration script tests
+- [shadowDOM.test.ts](../test/shadowDOM.test.ts) - Shadow DOM integration tests
+
+---
+
 ## Document Change Log
 
-| Version | Date | Changes | Author |
-|---------|------|---------|--------|
-| 1.0 | 2025-12-05 | Initial task breakdown | Claude |
+| Version | Date | Changes |
+|---------|------|---------|
+| 1.0 | 2025-12-05 | Initial task breakdown |
+| 1.1 | 2025-12-10 | Updated to follow template, added Table of Contents and File Reference |

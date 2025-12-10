@@ -1,11 +1,22 @@
 # TASKS-4: Production Polish & Voice Recording Implementation Tasks
 
-**Related PRD:** [PRD-4.md](./PRD-4.md)
-**Status:** 🚧 IN PROGRESS - Phases 1 & 2 Complete (Initiatives 1 & 2 Core)
-**Total Estimated Time:** 78 hours (across 6 phases)
-**Phase 1 Completed:** 2025-12-06 (Initiative 1 Core Backend)
-**Phase 2 Completed:** 2025-12-06 (Initiative 2 Core Viewer)
-**Dependencies:** PRD-3 (Snapshot Architecture) should be complete first
+**PRD:** [PRD-4.md](./PRD-4.md)
+**Last Updated:** 2025-12-10
+**Overall Status:** ~38% Complete (Phases 1 & 2 Complete - 30h/78h)
+
+---
+
+## Table of Contents
+
+- [Phase 1: Voice Recording Backend](#phase-1-voice-recording-backend-16-hours----complete-2025-12-06)
+- [Phase 2: Viewer Integration](#phase-2-viewer-integration-14-hours----complete-2025-12-06)
+- [Phase 3: Testing & Documentation](#phase-3-testing--documentation-for-phases-1-2-4-hours)
+- [Phase 4: MCP Server](#phase-4-mcp-server-12-hours---see-tasks-mcpmd)
+- [Phase 5: Desktop Application](#phase-5-desktop-application-20-hours---see-tasks-desktopmd)
+- [Phase 6: Final Testing & Documentation](#phase-6-final-testing--documentation-12-hours)
+- [Overall Summary](#overall-summary)
+- [File Reference](#file-reference)
+- [Document Change Log](#document-change-log)
 
 ---
 
@@ -793,9 +804,45 @@ Covered in Task 2.3 above.
 
 ---
 
+## File Reference
+
+### Voice Recording Components
+
+- [VoiceRecorder.ts](../src/voice/VoiceRecorder.ts) - Audio capture and Whisper transcription
+- [whisper_transcribe.py](../src/voice/whisper_transcribe.py) - Python Whisper script with GPU auto-detection
+
+### Node Components
+
+- [SessionRecorder.ts](../src/node/SessionRecorder.ts) - Voice action merging and storage
+- [types.ts](../src/node/types.ts) - VoiceTranscriptAction type definitions
+
+### Viewer Components
+
+- [VoiceTranscriptViewer.tsx](../viewer/src/components/VoiceTranscriptViewer/VoiceTranscriptViewer.tsx) - Audio playback with word highlighting
+- [Timeline.tsx](../viewer/src/components/Timeline/Timeline.tsx) - Voice segment indicators
+- [ActionList.tsx](../viewer/src/components/ActionList/ActionList.tsx) - Voice entry display
+- [TabPanel.tsx](../viewer/src/components/TabPanel/TabPanel.tsx) - Voice tab integration
+- [sessionStore.ts](../viewer/src/stores/sessionStore.ts) - Voice tab and audio blob state
+
+### Tests
+
+- [voice-test.ts](../test/voice-test.ts) - End-to-end voice recording tests
+
+### Documentation
+
+- [VOICE_RECORDING.md](../docs/VOICE_RECORDING.md) - Setup and usage guide
+
+### Related Task Files
+
+- [TASKS-MCP.md](./TASKS-MCP.md) - MCP Server implementation tasks
+- [TASKS-DESKTOP.md](./TASKS-DESKTOP.md) - Desktop Application implementation tasks
+
+---
+
 ## Document Change Log
 
-| Version | Date | Changes | Author |
-|---------|------|---------|--------|
-| 1.0 | 2025-12-05 | Initial task breakdown for PRD-4 | Claude |
-| 1.1 | 2025-12-06 | Separated MCP and Desktop to dedicated files | Claude |
+| Version | Date | Changes |
+|---------|------|---------|
+| 1.0 | 2025-12-05 | Initial task breakdown for PRD-4 |
+| 1.1 | 2025-12-06 | Separated MCP and Desktop to dedicated files |
+| 1.2 | 2025-12-10 | Updated to follow template, added Table of Contents and File Reference |

@@ -1,9 +1,23 @@
 # PRD: Refactor Session Viewer to Use Service Worker Architecture
 
-**Status**: Planned
-**Priority**: Medium
-**Complexity**: High
-**Effort**: 2-3 weeks
+**Version:** 1.1
+**Last Updated:** December 2025
+**Status:** ⚡ Planned
+**Priority:** Medium
+**Complexity:** High
+**Effort:** 2-3 weeks
+
+---
+
+## Target Users
+
+| Role | Primary Use Cases |
+|------|-------------------|
+| **Developers** | View snapshots with correct resource loading |
+| **QA Engineers** | Review session recordings with full fidelity |
+| **Viewer Users** | Access all recorded content including Chrome-specific pages |
+
+---
 
 ## Problem Statement
 
@@ -278,3 +292,12 @@ viewer/
 │       └── serviceWorker.ts     # NEW: SW registration
 └── vite.config.ts               # UPDATE: SW config
 ```
+
+---
+
+## Document Change Log
+
+| Version | Date | Changes |
+|---------|------|---------|
+| 1.0 | 2025-12-06 | Initial PRD for Service Worker refactoring |
+| 1.1 | 2025-12-10 | Updated to follow template, added Target Users table |

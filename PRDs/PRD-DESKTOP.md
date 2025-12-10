@@ -1,17 +1,27 @@
 # PRD-DESKTOP: Session Recorder Desktop Application
 
-**Version:** 1.0
-**Date:** 2025-12-06
-**Status:** Planning
-**Depends On:** PRD-4.md (Voice Recording - Complete)
+**Version:** 1.1
+**Last Updated:** December 2025
+**Status:** ⚡ Planning
+**Depends On:** [PRD-4.md](PRD-4.md) (Voice Recording - Complete)
+
+---
+
+## Target Users
+
+| Role | Primary Use Cases |
+|------|-------------------|
+| **QA Testers** | Record test sessions with one-click workflow |
+| **Product Managers** | Create feature walkthroughs with voice narration |
+| **Support Staff** | Document customer issues for escalation |
+| **Designers** | Capture UI/UX feedback sessions |
+| **Non-Technical Users** | Create session recordings without command-line knowledge |
 
 ---
 
 ## Executive Summary
 
 The Session Recorder Desktop Application provides a user-friendly interface for non-technical users (QA testers, product managers, support staff, designers) to record browser sessions with voice narration. Built with Electron for cross-platform support (Windows, macOS, Linux), it offers one-click recording with automatic zip creation and viewer integration.
-
-**Target Users:** Non-developers who need to create session recordings without technical knowledge
 
 ---
 
@@ -741,8 +751,9 @@ publish:
 
 ---
 
-## Document Changelog
+## Document Change Log
 
 | Version | Date | Changes |
 |---------|------|---------|
 | 1.0 | 2025-12-06 | Initial PRD for Desktop Application |
+| 1.1 | 2025-12-10 | Updated to follow template, added Target Users table |

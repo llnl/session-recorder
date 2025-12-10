@@ -1,26 +1,31 @@
-# Session Recorder - POC 2 Tasks
+# Custom Trace Viewer & Enhanced Debugging (POC 2) - Implementation Tasks
 
-Table of Contents:
+**PRD:** [PRD-2.md](PRD-2.md)
+**Last Updated:** 2025-12-10
+**Overall Status:** ~85% Complete (Core features done, polish remaining)
 
-- [Session Recorder - POC 2 Tasks](#session-recorder---poc-2-tasks)
-  - [Phase 1: Console Log Capture (3 hours) ✅ COMPLETE](#phase-1-console-log-capture-3-hours--complete)
-  - [Phase 2: Custom Trace Viewer - Project Setup (3 hours) ✅ COMPLETE](#phase-2-custom-trace-viewer---project-setup-3-hours--complete)
-  - [Phase 3: State Management \& Data Structures (2 hours) ✅ COMPLETE](#phase-3-state-management--data-structures-2-hours--complete)
-  - [Phase 4: Timeline Component (6 hours) ✅ COMPLETE](#phase-4-timeline-component-6-hours--complete)
-  - [Phase 5: Action List Component (4 hours) ✅ COMPLETE](#phase-5-action-list-component-4-hours--complete)
-  - [Phase 6: Snapshot Viewer Component (5 hours)](#phase-6-snapshot-viewer-component-5-hours)
-  - [Phase 7: Tab Panel Components (6 hours)](#phase-7-tab-panel-components-6-hours)
-  - [Phase 8: Layout \& Integration (4 hours)](#phase-8-layout--integration-4-hours)
-  - [Phase 9: Zip Export/Import (3 hours)](#phase-9-zip-exportimport-3-hours)
-  - [Phase 10: Performance Optimization (4 hours)](#phase-10-performance-optimization-4-hours)
-  - [Phase 11: Styling \& Polish (3 hours)](#phase-11-styling--polish-3-hours)
-  - [Phase 12: Testing \& Documentation (3 hours)](#phase-12-testing--documentation-3-hours)
-  - [Estimated Effort](#estimated-effort)
-    - [POC 2 Implementation](#poc-2-implementation)
-    - [Summary](#summary)
-  - [Implementation Priority](#implementation-priority)
+---
 
-## Phase 1: Console Log Capture (3 hours) ✅ COMPLETE
+## Table of Contents
+
+- [FR-1: Console Log Capture](#fr-1-console-log-capture)
+- [FR-2: Custom Trace Viewer](#fr-2-custom-trace-viewer)
+- [FR-3: Auto-Zip Feature](#fr-3-auto-zip-feature)
+- [Known Issues & Blockers](#known-issues--blockers)
+- [Estimated Effort](#estimated-effort)
+- [Implementation Priority](#implementation-priority)
+- [File Reference](#file-reference)
+- [Document Change Log](#document-change-log)
+
+---
+
+## FR-1: Console Log Capture ✅ COMPLETE
+
+> **PRD Reference:** [FR-1: Console Log Capture](PRD-2.md#fr-1-console-log-capture)
+
+### Phase 1: Console Log Capture (3 hours) ✅ COMPLETE
+
+**Implementation:** [consoleCapture.ts](../src/browser/consoleCapture.ts)
 
 **Task 1.1**: Implement browser-side console capture ✅
 
@@ -50,7 +55,17 @@ Table of Contents:
 - [x] Verify JSON Lines format
 - [x] Verify performance impact is minimal
 
-## Phase 2: Custom Trace Viewer - Project Setup (3 hours) ✅ COMPLETE
+---
+
+## FR-2: Custom Trace Viewer ✅ COMPLETE
+
+> **PRD Reference:** [FR-2: Custom Trace Viewer](PRD-2.md#fr-2-custom-trace-viewer)
+
+**Implementation:** [viewer/](../viewer/)
+
+### Phase 2: Custom Trace Viewer - Project Setup (3 hours) ✅ COMPLETE
+
+> [PRD: FR-2.1](PRD-2.md#fr-21-timeline-component)
 
 **Task 2.1**: Initialize React project ✅
 
@@ -313,6 +328,14 @@ Table of Contents:
   - Filter actions, console, network in all tabs
 - [x] Test full integration with build compilation
 
+---
+
+## FR-3: Auto-Zip Feature ✅ COMPLETE
+
+> **PRD Reference:** [FR-3: Auto-Zip Feature](PRD-2.md#fr-3-auto-zip-feature)
+
+**Implementation:** [SessionRecorder.ts](../src/node/SessionRecorder.ts)
+
 **Task 8.5**: Auto-Zip Feature (2 hours) ✅ COMPLETE
 
 - [x] Install archiver package and TypeScript types
@@ -553,74 +576,65 @@ Table of Contents:
 
 ---
 
-## Known Issues & Bug Fixes
+---
 
-**Issue 1: Input Values Not Captured in Snapshots** (CRITICAL)
+## Known Issues & Blockers
 
-- **Problem**: After typing into an input field, the snapshot doesn't show the entered value
-- **Root Cause**: HTML snapshots don't serialize input values to `value` attribute
-- **Impact**: Can't see form state in before/after snapshots
-- **Fix Required**: Update SessionRecorder snapshot capture to:
-  - Iterate through all input/textarea/select elements
-  - Set `value` attribute equal to current `.value` property
-  - Set `checked` attribute for checkboxes/radios
-  - Preserve selected options in dropdowns
-- **Estimated Time**: 2 hours
-- **Priority**: CRITICAL - breaks debugging workflow
+> **Note:** Critical snapshot issues were resolved in [PRD-3.md](PRD-3.md) / [TASKS-3.md](TASKS-3.md).
 
-**Issue 2: Incomplete HTML Snapshots** (HIGH)
+### Resolved Issues ✅
 
-- **Problem**: Missing elements when viewing snapshots (tabs not visible, images missing on scroll)
-- **Root Cause**: Multiple potential issues:
-  - Resources not fully captured or linked correctly
-  - Lazy-loaded content not waited for
-  - Shadow DOM not being serialized
-  - CSS that depends on scroll position or dynamic classes
-  - Components rendered outside snapshot timing
-- **Impact**: Snapshots don't represent actual page state accurately
-- **Fix Required**:
-  - Add delay after action before capturing "after" snapshot (wait for animations/renders)
-  - Ensure all image resources are captured and base64-encoded or linked correctly
-  - Capture computed styles for elements
-  - Wait for fonts, images, and stylesheets to load before snapshot
-  - Handle shadow DOM serialization
-  - Capture scroll position and restore in viewer
-- **Estimated Time**: 4 hours
-- **Priority**: HIGH - affects snapshot accuracy
+| Issue | Resolution | Reference |
+|-------|------------|-----------|
+| Input values not captured | Snapshot restoration script | [TASKS-3.md](TASKS-3.md) |
+| Incomplete HTML snapshots | Playwright architecture | [TASKS-3.md](TASKS-3.md) |
+| Snapshot resource loading | SHA1-based storage | [TASKS-3.md](TASKS-3.md) |
+| Resizable panels | Implemented Sprint 5b | ✅ Complete |
+| Screenshot hover zoom | Implemented Sprint 5b | ✅ Complete |
 
-**Issue 3: Snapshot Resource Loading** (MEDIUM)
-
-- **Problem**: Images and other resources may not load correctly in snapshots
-- **Root Cause**: Resources may be referenced with relative URLs or not captured
-- **Impact**: Incomplete visual representation of page state
-- **Fix Required**:
-  - Ensure all image `src` attributes are captured as data URLs or SHA1 references
-  - Capture CSS background images
-  - Handle iframe content
-  - Capture web fonts
-- **Estimated Time**: 3 hours
-- **Priority**: MEDIUM - visual accuracy
-
-## Future Enhancements (Out of Current Scope)
+### Low Priority (Backlog)
 
 **Multi-Tab/Context Support** (4-6 hours):
 
-- Track browser tab/context ID for each action in session data
-- Group actions by tab/context in Timeline component
-- Render multiple timeline rows (one per tab, similar to Playwright trace viewer)
-- Add tab labels and tab switching UI
-- Update action list to filter by active tab
-- Handle cross-tab interactions and navigation
+- [ ] Track browser tab/context ID for each action
+- [ ] Group actions by tab/context in Timeline
+- [ ] Render multiple timeline rows
+- [ ] Add tab labels and switching UI
 
-**Enhanced Hover Preview**:
+---
 
-- ✅ Moved to Task 11.2 (HIGH PRIORITY): Show enlarged screenshot tooltip on hover
-- Position tooltip to avoid edge clipping
-- Add smooth fade-in/out transitions
-- Show action details in tooltip (type, timestamp)
+## File Reference
 
-**Resizable Panels**:
+### Browser Components
 
-- ✅ Moved to Task 11.2 (HIGH PRIORITY): Drag handles to resize viewer sections
-- Save panel sizes to localStorage
-- Minimum/maximum size constraints
+- [consoleCapture.ts](../src/browser/consoleCapture.ts) - Console log interception
+
+### Viewer Components
+
+- [viewer/](../viewer/) - React trace viewer application
+- [Timeline/](../viewer/src/components/Timeline/) - Timeline with thumbnails
+- [ActionList/](../viewer/src/components/ActionList/) - Virtual scrolling action list
+- [SnapshotViewer/](../viewer/src/components/SnapshotViewer/) - HTML snapshot display
+- [TabPanel/](../viewer/src/components/TabPanel/) - Console, Network, Info tabs
+- [ResizablePanel/](../viewer/src/components/ResizablePanel/) - Resizable layout panels
+
+### Stores & Hooks
+
+- [sessionStore.ts](../viewer/src/stores/sessionStore.ts) - Zustand state management
+- [useFilteredActions.ts](../viewer/src/hooks/useFilteredActions.ts) - Action filtering hook
+- [useFilteredConsole.ts](../viewer/src/hooks/useFilteredConsole.ts) - Console filtering hook
+- [useFilteredNetwork.ts](../viewer/src/hooks/useFilteredNetwork.ts) - Network filtering hook
+
+### Utilities
+
+- [sessionLoader.ts](../viewer/src/utils/sessionLoader.ts) - Session data loading
+- [zipHandler.ts](../viewer/src/utils/zipHandler.ts) - Zip import/export
+
+---
+
+## Document Change Log
+
+| Version | Date | Changes |
+|---------|------|---------|
+| 1.0 | December 2024 | Initial POC 2 tasks |
+| 1.1 | December 2025 | Updated to follow template, added FR sections, moved resolved issues to TASKS-3 |

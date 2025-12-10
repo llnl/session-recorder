@@ -1,27 +1,41 @@
 # Session Editor - Implementation Tasks
 
-**Project:** Session Editor
-**PRD:** [PRD-session-editor.md](./PRD-session-editor.md)
-**Status:** Not Started
+**PRD:** [PRD-session-editor.md](PRD-session-editor.md)
 **Last Updated:** 2025-12-10
+**Overall Status:** 0% Complete (Not Started)
+
+---
+
+## Table of Contents
+
+- [Phase 1: Foundation](#phase-1-foundation) (FR-1, FR-2, FR-4)
+- [Phase 2: Store & Persistence](#phase-2-store--persistence) (FR-4, FR-5)
+- [Phase 3: UI Components](#phase-3-ui-components) (FR-1, FR-2, FR-3)
+- [Phase 4: Integration & Polish](#phase-4-integration--polish) (FR-6)
+- [Estimated Effort](#estimated-effort)
+- [Known Issues & Blockers](#known-issues--blockers)
 
 ---
 
 ## Task Overview
 
-| Phase | Tasks | Status |
-|-------|-------|--------|
-| Phase 1: Foundation | 5 tasks | Not Started |
-| Phase 2: Store & Persistence | 4 tasks | Not Started |
-| Phase 3: UI Components | 8 tasks | Not Started |
-| Phase 4: Integration & Polish | 5 tasks | Not Started |
-| **Total** | **22 tasks** | |
+| Phase | Tasks | PRD References | Status |
+|-------|-------|----------------|--------|
+| Phase 1: Foundation | 5 tasks | FR-1, FR-2, FR-4 | ❌ Not Started |
+| Phase 2: Store & Persistence | 4 tasks | FR-4, FR-5 | ❌ Not Started |
+| Phase 3: UI Components | 8 tasks | FR-1, FR-2, FR-3 | ❌ Not Started |
+| Phase 4: Integration & Polish | 5 tasks | FR-6 | ❌ Not Started |
+| **Total** | **22 tasks** | | |
 
 ---
 
 ## Phase 1: Foundation
 
-### Task 1.1: Create Edit Operation Types
+> **PRD Reference:** [FR-1: Note System](PRD-session-editor.md#fr-1-note-system), [FR-2: Edit System](PRD-session-editor.md#fr-2-edit-system), [FR-4: Persistence System](PRD-session-editor.md#fr-4-persistence-system)
+
+### Task 1.1: Create Edit Operation Types ❌ NOT STARTED
+
+> [PRD: FR-2.1-2.5](PRD-session-editor.md#fr-2-edit-system)
 
 **Priority:** P0 - Critical
 **Estimated Effort:** Small
@@ -789,3 +803,50 @@ A task is complete when:
 - [ ] Feature works as described in acceptance criteria
 - [ ] Edge cases handled
 - [ ] No console errors in browser
+
+---
+
+## Estimated Effort
+
+### Remaining Work
+
+| Phase | Hours | Priority |
+|-------|-------|----------|
+| Phase 1: Foundation | 8h | 🔴 HIGH |
+| Phase 2: Store & Persistence | 12h | 🔴 HIGH |
+| Phase 3: UI Components | 16h | 🟡 MEDIUM |
+| Phase 4: Integration & Polish | 8h | 🟡 MEDIUM |
+| **Total** | **~44h** | |
+
+### Summary
+
+| Category | Hours |
+|----------|-------|
+| Completed | 0h |
+| Remaining | ~44h |
+| **Grand Total** | **~44h** |
+
+---
+
+## Known Issues & Blockers
+
+### Potential Blockers
+
+**1. IndexedDB Compatibility**
+
+- [ ] Verify IndexedDB support across target browsers
+- [ ] Implement fallback for private browsing mode
+
+**2. Virtual Scroll Performance**
+
+- [ ] Test performance with 1000+ actions including notes
+- [ ] Implement height calculation optimization
+
+---
+
+## Document Change Log
+
+| Version | Date | Changes |
+|---------|------|---------|
+| 1.0 | 2025-12-10 | Initial task breakdown document |
+| 1.1 | 2025-12-10 | Updated to follow TASKS template, added PRD references |

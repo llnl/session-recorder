@@ -1,10 +1,21 @@
-# PRD-4: Production Polish & Voice Recording Integration
+# Production Polish & Voice Recording (PRD-4) - Product Requirements Document
 
-**Version:** 4.0
-**Date:** 2025-12-05
-**Status:** 🚧 IN PROGRESS - Initiative 1 & 2 (Core) Complete
-**Latest Update:** 2025-12-06 - Initiative 2 viewer integration fully implemented
-**Depends On:** PRD-3.md (Snapshot Architecture Improvements)
+**Version:** 4.1
+**Last Updated:** December 2025
+**Status:** ✅ Initiative 1 & 2 Complete | ⚠️ Initiative 3 & 4 Pending
+**Depends On:** [PRD-3.md](PRD-3.md) (Snapshot Architecture - Complete)
+
+---
+
+## Target Users
+
+| Role | Primary Use Cases |
+|------|-------------------|
+| **Developers** | Create QA sessions with voice narration, bug reports, tutorials |
+| **QA Testers** | Record test sessions with verbal explanations |
+| **Product Managers** | Record feature walkthroughs with commentary |
+| **Support Staff** | Document customer issues with voice notes |
+| **AI-Assisted Developers** | Control recording via Claude Code, Cline, Continue.dev |
 
 ---
 
@@ -14,14 +25,8 @@ Session Recorder is now functional with comprehensive browser action recording a
 
 1. **✅ Voice Recording in SessionRecorder (COMPLETE):** Direct integration with Python child process for millisecond-precise transcription
 2. **✅ Viewer Voice Integration (COMPLETE):** Timeline, action list, and transcript viewer enhancements
-3. **Desktop Application:** Enable non-developers to easily record sessions
-4. **MCP Server:** Enable developers with AI coding assistants to record sessions
-
-**Target Users:**
-
-- **Developers:** Engineers creating QA sessions, bug reports, tutorials (SessionRecorder)
-- **Non-Developers:** QA testers, product managers, support staff (Desktop App)
-- **AI-Assisted Developers:** Engineers using Claude Code, Cline, Continue.dev (MCP Server)
+3. **Desktop Application:** Enable non-developers to easily record sessions → [PRD-DESKTOP.md](PRD-DESKTOP.md)
+4. **MCP Server:** Enable developers with AI coding assistants to record sessions → [PRD-MCP.md](PRD-MCP.md)
 
 ---
 
@@ -839,8 +844,9 @@ wave>=0.0.2
 
 ---
 
-## Document Changelog
+## Document Change Log
 
 | Version | Date | Changes |
 |---------|------|---------|
 | 4.0 | 2025-12-05 | All 4 initiatives: SessionRecorder voice, Viewer UI, Desktop App, MCP Server |
+| 4.1 | 2025-12-10 | Updated to follow template, added Target Users table, standardized header |

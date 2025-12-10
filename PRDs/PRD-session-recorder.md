@@ -1,8 +1,8 @@
 # Session Recorder - Product Requirements Document
 
-**Version:** 1.0  
-**Last Updated:** December 2025  
-**Status:** Draft
+**Version:** 1.1
+**Last Updated:** December 2025
+**Status:** Approved
 
 ---
 

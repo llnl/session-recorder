@@ -1,9 +1,20 @@
 # PRD-Performance: Performance Optimization & Advanced Features
 
-**Version:** 1.0
-**Date:** 2025-12-05
+**Version:** 1.1
+**Last Updated:** December 2025
 **Status:** 🎯 POST-MVP - Performance Enhancements
-**Depends On:** PRD-4.md (Production Deployment)
+**Depends On:** [PRD-4.md](PRD-4.md) (Production Deployment)
+
+---
+
+## Target Users
+
+| Role | Primary Use Cases |
+|------|-------------------|
+| **Power Users** | Record very long sessions (4+ hours) |
+| **Enterprise Users** | Handle large session files efficiently |
+| **Developers** | Optimize viewer performance for 1000+ actions |
+| **QA Engineers** | Run extended testing sessions without degradation |
 
 ---
 
@@ -466,6 +477,7 @@ interface IncrementalSnapshot {
 
 ## Document Change Log
 
-| Version | Date | Changes | Author |
-|---------|------|---------|--------|
-| 1.0 | 2025-12-05 | Extracted performance requirements from PRD-3 | Claude |
+| Version | Date | Changes |
+|---------|------|---------|
+| 1.0 | 2025-12-05 | Extracted performance requirements from PRD-3 |
+| 1.1 | 2025-12-10 | Updated to follow template, added Target Users table |

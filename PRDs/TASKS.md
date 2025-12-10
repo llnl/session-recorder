@@ -1,6 +1,29 @@
-# Implementation Tasks: Browser Session Recorder
+# Browser Session Recorder (POC 1) - Implementation Tasks
 
-## Phase 1: Project Setup ✅ COMPLETED
+**PRD:** [PRD.md](PRD.md)
+**Last Updated:** 2025-12-10
+**Overall Status:** ✅ 100% Complete (POC 1 Core + Extended Features)
+
+---
+
+## Table of Contents
+
+- [FR-1: Action Capture](#fr-1-action-capture)
+- [FR-2: Snapshot Capture](#fr-2-snapshot-capture)
+- [FR-3: Screenshot Capture](#fr-3-screenshot-capture)
+- [FR-4: Data Storage](#fr-4-data-storage)
+- [Extended Features](#extended-features)
+- [Estimated Effort](#estimated-effort)
+- [File Reference](#file-reference)
+- [Document Change Log](#document-change-log)
+
+---
+
+## FR-1: Action Capture ✅ COMPLETE
+
+> **PRD Reference:** [FR-1: Action Capture](PRD.md#fr-1-action-capture)
+
+### Phase 1: Project Setup ✅ COMPLETED
 
 ### Task 1.1: Initialize project structure
 
@@ -10,7 +33,11 @@
 - [x] Setup `tsconfig.json` for TypeScript compilation
 - [x] Add `.gitignore` for `output/` and `node_modules/`
 
-## Phase 2: Browser-Side Snapshot Capture ✅ COMPLETED
+---
+
+## FR-2: Snapshot Capture ✅ COMPLETE
+
+> **PRD Reference:** [FR-2: Snapshot Capture](PRD.md#fr-2-snapshot-capture)
 
 ### Task 2.1: Create snapshot capture module
 
@@ -36,7 +63,9 @@
 - [x] Output plain HTML string instead of NodeSnapshot arrays
 - [x] Ensure proper HTML entity escaping
 
-## Phase 3: Browser-Side Action Detection ✅ COMPLETED
+### Phase 3: Browser-Side Action Detection ✅ COMPLETED
+
+> [PRD: FR-1.1](PRD.md#fr-11-supported-event-types)
 
 ### Task 3.1: Create action listener module
 
@@ -57,7 +86,13 @@
 - [x] Implement action flow with before/after snapshots
 - [x] Add error handling with marker cleanup
 
-## Phase 4: Node-Side Coordination ✅ COMPLETED
+---
+
+## FR-3: Screenshot Capture ✅ COMPLETE
+
+> **PRD Reference:** [FR-3: Screenshot Capture](PRD.md#fr-3-screenshot-capture)
+
+### Phase 4: Node-Side Coordination ✅ COMPLETED
 
 ### Task 4.1: Create type definitions
 
@@ -95,7 +130,11 @@
 - [x] Save to `screenshots/` directory with proper naming
 - [x] Handle screenshot errors gracefully
 
-## Phase 6: Data Storage ✅ COMPLETED
+---
+
+## FR-4: Data Storage ✅ COMPLETE
+
+> **PRD Reference:** [FR-4: Data Storage](PRD.md#fr-4-data-storage)
 
 ### Task 6.1: Implement session storage
 
@@ -145,9 +184,11 @@
 
 ---
 
-## ADDITIONAL PHASES COMPLETED (Beyond Original Plan)
+## Extended Features
 
-## Phase 9: Resource Capture & URL Rewriting ✅ COMPLETED
+> These features extend beyond the original POC 1 scope and were added during development.
+
+### Phase 9: Resource Capture & URL Rewriting ✅ COMPLETED
 
 ### Task 9.1: Network Resource Capture
 
@@ -188,121 +229,79 @@
 
 ---
 
-## NEXT PHASE: Network Logging (In Progress)
+## Future Enhancements (Backlog)
 
-## Phase 11: Enhanced Network Logging 🚧 IN PROGRESS
+> These features are tracked in later PRDs or remain as future enhancements.
 
-### Task 11.1: Design network log format
-
-- [ ] Define enhanced network entry interface
-- [ ] Choose between minimal vs HAR-compatible format
-- [ ] Plan JSON Lines (.jsonl) file format
-
-### Task 11.2: Implement network logging
-
-- [ ] Create network log file (`session.network`)
-- [ ] Capture network request/response metadata
-- [ ] Include timing breakdown (dns, connect, ttfb, download)
-- [ ] Add resource type detection
-- [ ] Link to captured resource SHA1s
-- [ ] Write entries in real-time (append mode)
-
-### Task 11.3: Update types and interfaces
-
-- [ ] Update `SessionData` interface with network reference
-- [ ] Create `NetworkEntry` interface
-- [ ] Add network statistics to session metadata
-
-### Task 11.4: Viewer integration
-
-- [ ] Add network waterfall view to viewer
-- [ ] Display request/response details
-- [ ] Show timing breakdown visualization
-- [ ] Link network entries to resources
-
-### Task 11.5: Documentation
-
-- [ ] Document network log format
-- [ ] Add examples to README
-- [ ] Update VIEWER.md with network features
-
----
-
-## FUTURE ENHANCEMENTS (Backlog)
-
-### Additional Action Types
-
-- [ ] Navigation events (page URL changes)
-- [ ] Scroll events (with debouncing)
-- [ ] Hover events (with debouncing)
-- [ ] Double-click events
-- [ ] Right-click events
-- [ ] File upload events
-- [ ] Focus/blur events
-- [ ] Drag and drop events
-
-### Advanced Features
-
-- [ ] Session replay functionality
-- [ ] Network request filtering
-- [ ] Console log capture
-- [ ] Performance metrics (Core Web Vitals)
-- [ ] Mobile device emulation support
-- [ ] Multi-tab session recording
-- [ ] Real-time session monitoring
-- [ ] Session export/import (ZIP)
-- [ ] Session comparison tools
+| Feature | Status | PRD Reference |
+|---------|--------|---------------|
+| Network logging | ✅ Complete | [PRD-2.md](PRD-2.md) |
+| Console log capture | ✅ Complete | [PRD-2.md](PRD-2.md) |
+| Custom trace viewer | ✅ Complete | [PRD-2.md](PRD-2.md) |
+| Session export/import (ZIP) | ✅ Complete | [PRD-2.md](PRD-2.md) |
+| Navigation events | ✅ Complete | Implemented |
+| Scroll events | Future | - |
+| Hover events | Future | - |
+| Session replay functionality | Future | - |
+| Multi-tab session recording | Future | - |
 
 ---
 
 ## Estimated Effort
 
-| Phase | Status | Hours |
-|-------|--------|-------|
-| 1. Project Setup | ✅ Done | 1 |
-| 2. Browser Snapshot Capture | ✅ Done | 4 |
-| 3. Browser Action Detection | ✅ Done | 3 |
-| 4. Node Coordination | ✅ Done | 4 |
-| 5. Screenshot Integration | ✅ Done | 2 |
-| 6. Data Storage | ✅ Done | 2 |
-| 7. Testing | ✅ Done | 3 |
-| 8. Documentation | ✅ Done | 1 |
-| 9. Resource Capture & URL Rewriting | ✅ Done | 6 |
-| 10. Express Viewer | ✅ Done | 4 |
-| **11. Network Logging** | 🚧 In Progress | **3** |
-| **Completed Total** | | **30 hours** |
-| **Remaining** | | **3 hours** |
+### Completed Phases ✅
+
+| Phase | Task File | Hours | Status |
+|-------|-----------|-------|--------|
+| Project Setup | This file | 1h | ✅ Complete |
+| Browser Snapshot Capture | This file | 4h | ✅ Complete |
+| Browser Action Detection | This file | 3h | ✅ Complete |
+| Node Coordination | This file | 4h | ✅ Complete |
+| Screenshot Integration | This file | 2h | ✅ Complete |
+| Data Storage | This file | 2h | ✅ Complete |
+| Testing | This file | 3h | ✅ Complete |
+| Documentation | This file | 1h | ✅ Complete |
+| Resource Capture & URL Rewriting | This file | 6h | ✅ Complete |
+| Express Viewer | This file | 4h | ✅ Complete |
+| **Completed Total** | | **30h** | |
+
+### Summary
+
+| Category | Hours |
+|----------|-------|
+| Completed | 30h |
+| Remaining | 0h |
+| **Grand Total** | **30h** |
 
 ---
 
-## Success Criteria
+## File Reference
 
-### Functional Requirements ✅ ALL MET
+### Browser Components
 
-- ✅ Captures user actions (not programmatic)
-- ✅ Before/after snapshots for each action
-- ✅ Before/after screenshots for each action
-- ✅ `data-recorded-el` attribute in before snapshot only
-- ✅ UTC timestamps (ISO 8601)
-- ✅ Preserves form state (values, checked, selected)
-- ✅ Captures Shadow DOM
-- ✅ Valid JSON output
-- ✅ Resources captured with SHA1 deduplication
-- ✅ URL rewriting for offline HTML viewing
-- ✅ Express viewer for session browsing
+- [actionListener.ts](../src/browser/actionListener.ts) - Event capture and detection
+- [snapshotCapture.ts](../src/browser/snapshotCapture.ts) - DOM snapshot generation
+- [injected.ts](../src/browser/injected.ts) - Browser-side coordinator
 
-### Quality Requirements ✅ ALL MET
+### Node Components
 
-- ✅ No browser crashes from recording
-- ✅ Minimal performance impact (<100ms per action)
-- ✅ Clean error handling
-- ✅ Works across Chromium, Firefox, WebKit
-- ✅ Comprehensive documentation
-- ✅ Working test suite
+- [SessionRecorder.ts](../src/node/SessionRecorder.ts) - Main recording orchestrator
+- [types.ts](../src/node/types.ts) - TypeScript interfaces
 
-### New Requirements (Phase 11)
+### Viewer
 
-- [ ] Network requests logged with timing data
-- [ ] URL → Resource mapping persisted
-- [ ] Network waterfall visualization
-- [ ] Request/response metadata accessible
+- [server.ts](../src/viewer/server.ts) - Express viewer server
+
+### Tests
+
+- [simple-test.ts](../test/simple-test.ts) - Basic functionality tests
+- [spa-test.ts](../test/spa-test.ts) - SPA recording tests
+
+---
+
+## Document Change Log
+
+| Version | Date | Changes |
+|---------|------|---------|
+| 1.0 | December 2024 | Initial POC 1 tasks |
+| 1.1 | December 2025 | Updated to follow template, added FR sections, implementation links |

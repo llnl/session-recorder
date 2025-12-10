@@ -1,9 +1,19 @@
 # TASKS-Performance: Performance Optimization Implementation Tasks
 
-**Related PRD:** [PRD-performance.md](./PRD-performance.md)
-**Status:** 🔴 CRITICAL - Sprint 5c required IMMEDIATELY
-**Total Estimated Time:** 23 hours (2 hours CRITICAL + 7 hours core + 14 hours optional)
-**Dependencies:** Multi-tab recording (complete)
+**PRD:** [PRD-performance.md](./PRD-performance.md)
+**Last Updated:** 2025-12-10
+**Overall Status:** ⚠️ Partial (Sprint 5c Quick Wins Done, Core Tasks Pending)
+
+---
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Sprint 5c: Recorder Performance Fix](#sprint-5c-recorder-performance-fix-2-hours----critical)
+- [Sprint 5d: Viewer Performance & Polish](#sprint-5d-viewer-performance--polish-7-hours)
+- [Sprint 7: Advanced Optimization](#sprint-7-advanced-optimization-14-hours---optional-1)
+- [Summary](#summary)
+- [Document Change Log](#document-change-log)
 
 ---
 
@@ -1092,6 +1102,7 @@ describe('Incremental Snapshots', () => {
 
 ## Document Change Log
 
-| Version | Date | Changes | Author |
-|---------|------|---------|--------|
-| 1.0 | 2025-12-05 | Extracted performance tasks from TASKS-3.md | Claude |
+| Version | Date | Changes |
+|---------|------|---------|
+| 1.0 | 2025-12-05 | Extracted performance tasks from TASKS-3.md |
+| 1.1 | 2025-12-10 | Updated to follow template, added Table of Contents |

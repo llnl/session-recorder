@@ -1,26 +1,40 @@
 # Session Editor - Product Requirements Document
 
 **Version:** 1.0
+**Last Updated:** December 2025
 **Status:** Draft
-**Last Updated:** 2025-12-10
 
 ---
 
 ## Executive Summary
 
-Transform the existing Session Recorder Viewer into a full-featured **Session Editor** that allows users to annotate, edit, and curate recorded browser sessions. Users can add notes between actions, edit transcripts and action values, delete unwanted actions, and export modified sessions as new zip files.
+Session Editor transforms the existing Session Recorder Viewer into a full-featured editing tool that allows users to annotate, edit, and curate recorded browser sessions. The system enables adding notes between actions, editing transcripts and action values, deleting unwanted actions, and exporting modified sessions as new zip files. The editor prioritizes non-destructive editing with full undo/redo support to balance flexibility with data integrity.
 
 ---
 
 ## Problem Statement
 
-Currently, the Session Recorder Viewer is read-only. Users cannot:
+The Session Recorder Viewer is currently read-only, limiting its usefulness for documentation and collaboration:
 
-- Add contextual notes or annotations to explain actions
-- Correct transcription errors from voice recordings
-- Remove irrelevant or sensitive actions from recordings
-- Edit incorrect input values captured during recording
-- Curate sessions for sharing or documentation purposes
+- Domain experts cannot add contextual notes or annotations to explain actions
+- QA engineers cannot correct transcription errors from voice recordings
+- Developers cannot remove irrelevant or sensitive actions from recordings before sharing
+- Users cannot edit incorrect input values captured during recording
+- Teams cannot curate sessions for documentation or presentation purposes
+
+A full-featured editor eliminates these limitations by enabling complete session curation while preserving the original recording.
+
+---
+
+## Target Users
+
+| Role | Primary Use Cases |
+|------|-------------------|
+| **QA Engineers** | Add test annotations, correct transcription errors, remove sensitive data |
+| **Developers** | Edit action values, add code-related notes, prepare sessions for bug reports |
+| **Technical Writers** | Annotate sessions for documentation, curate content for guides |
+| **Business Analysts** | Add business context notes, prepare sessions for stakeholder review |
+| **Project Managers** | Review and annotate sessions for acceptance criteria verification |
 
 ---
 
@@ -41,6 +55,62 @@ Currently, the Session Recorder Viewer is read-only. Users cannot:
 - Export creates valid session zip with all modifications applied
 - Undo/redo works for all edit operations
 - No performance degradation with virtual scrolling
+
+---
+
+## Use Cases
+
+### UC-1: Session Annotation
+
+**Actor:** QA Engineer
+**Duration:** 5-30 minutes
+**Scenario:** QA engineer reviews a recorded test session and adds notes between actions to document what was being tested and why certain steps were performed.
+
+**Requirements:**
+
+- Insert notes at any point between actions
+- Notes support markdown formatting
+- Notes appear in timeline and action list
+- Notes included in exports
+
+### UC-2: Transcript Correction
+
+**Actor:** Developer
+**Duration:** 2-10 minutes
+**Scenario:** Developer reviews a session with voice narration and corrects transcription errors before sharing with the team.
+
+**Requirements:**
+
+- Edit voice transcript text
+- Preserve original for undo
+- Changes visible immediately
+- Changes persist to local storage
+
+### UC-3: Session Curation
+
+**Actor:** Technical Writer
+**Duration:** 10-60 minutes
+**Scenario:** Technical writer removes irrelevant actions and sensitive data from a recorded session to prepare it for documentation.
+
+**Requirements:**
+
+- Delete individual actions
+- Bulk delete via timeline selection
+- Confirmation before deletion
+- Undo support for deletions
+
+### UC-4: Session Export
+
+**Actor:** Business Analyst
+**Duration:** 1-5 minutes
+**Scenario:** Business analyst exports an annotated session as a zip file to share with stakeholders who don't have access to the editor.
+
+**Requirements:**
+
+- Export applies all edits
+- Deleted files excluded from export
+- Notes included in exported session.json
+- Descriptive filename for export
 
 ---
 
@@ -237,29 +307,71 @@ Currently, the Session Recorder Viewer is read-only. Users cannot:
 
 ---
 
-## Non-Functional Requirements
+## Technical Requirements
 
-### NFR-1: Performance
+### TR-1: IndexedDB Storage
+
+#### TR-1.1: Database Schema
+
+The editor shall use IndexedDB for persistent storage of edit states.
+
+**Database name:** `session-editor-db`
+**Version:** 1
+
+```typescript
+// Object stores
+sessionEdits: { keyPath: 'sessionId' }  // SessionEditState
+sessionMetadata: { keyPath: 'sessionId' }  // LocalSessionMetadata
+```
+
+#### TR-1.2: Edit State Persistence
+
+Edit states shall be saved immediately on every operation.
+
+**Expected performance:** <50ms per save operation
+
+### TR-2: Operation Processing
+
+#### TR-2.1: Non-Destructive Editing
+
+All edits shall be stored as operations, not modified data.
+
+```typescript
+// Operations applied in order to derive current state
+const editedActions = applyOperations(originalActions, operations);
+```
+
+#### TR-2.2: Undo/Redo Stack
+
+The system shall maintain separate undo and redo stacks.
+
+**History limit:** 100 operations maximum
+
+---
+
+## Quality Attributes
+
+### QA-1: Performance
 
 - Virtual scrolling must handle 1000+ actions without lag
 - Edit operations must complete in <100ms
 - IndexedDB saves must not block UI
 - Export of 100MB session must show progress
 
-### NFR-2: Reliability
+### QA-2: Reliability
 
 - Edits must persist even if browser crashes
 - Corrupted edit state must not prevent session loading
 - Missing files handled gracefully during export
 
-### NFR-3: Usability
+### QA-3: Usability
 
 - All edit actions accessible via hover/click
 - Keyboard shortcuts for undo/redo
 - Clear visual feedback for edit mode
 - Confirmation dialogs for destructive actions
 
-### NFR-4: Compatibility
+### QA-4: Compatibility
 
 - Works in Chrome, Firefox, Edge (modern versions)
 - Graceful degradation if IndexedDB unavailable
@@ -354,7 +466,7 @@ Currently, the Session Recorder Viewer is read-only. Users cannot:
 
 ---
 
-## Data Models
+## Data Schema
 
 ### NoteAction
 
@@ -398,26 +510,28 @@ type EditOperation =
 
 ---
 
-## Out of Scope (V1)
+## Future Considerations
 
-- Real-time collaboration / multi-user editing
-- Cloud sync of edits
-- Merging edits from multiple sources
-- Editing network or console logs
-- Video/audio editing
-- Custom action types beyond notes
-- Drag-and-drop action reordering
+### Not In Scope (v1)
 
----
+| Feature | Rationale |
+|---------|-----------|
+| Real-time collaboration | Complexity for v1, requires backend infrastructure |
+| Cloud sync of edits | Local-first approach for privacy and simplicity |
+| Merging edits from multiple sources | Complex conflict resolution needed |
+| Editing network or console logs | Different data structure, separate feature |
+| Video/audio editing | Requires specialized tools and libraries |
+| Custom action types beyond notes | Notes sufficient for v1 annotation needs |
+| Drag-and-drop action reordering | Timestamps would need recalculation |
 
-## Future Considerations (V2+)
+### Potential v2 Features
 
-- **Tagging system** for actions and notes
-- **Search** within session content
-- **Diff view** comparing original vs edited
-- **Templates** for common note patterns
-- **Batch edit** find/replace across transcripts
-- **Export formats** beyond zip (HTML report, PDF)
+- Tagging system for actions and notes
+- Search within session content
+- Diff view comparing original vs edited
+- Templates for common note patterns
+- Batch edit find/replace across transcripts
+- Export formats beyond zip (HTML report, PDF)
 
 ---
 

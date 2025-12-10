@@ -1,9 +1,21 @@
 # TASKS-DESKTOP: Desktop Application Implementation Tasks
 
-**Related PRD:** [PRD-DESKTOP.md](./PRD-DESKTOP.md)
-**Status:** Not Started
-**Total Estimated Time:** 20 hours
-**Dependencies:** Voice Recording (PRD-4 Phase 1-2) should be complete first
+**PRD:** [PRD-DESKTOP.md](./PRD-DESKTOP.md)
+**Last Updated:** 2025-12-10
+**Overall Status:** ❌ Not Started (0/20h Complete)
+
+---
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Phase 1: Core Electron App](#phase-1-core-electron-app-4-hours)
+- [Phase 2: Recording Integration](#phase-2-recording-integration-5-hours)
+- [Phase 3: UI Polish](#phase-3-ui-polish-4-hours)
+- [Phase 4: System Integration](#phase-4-system-integration-4-hours)
+- [Phase 5: Testing & Distribution](#phase-5-testing--distribution-3-hours)
+- [Summary](#summary)
+- [Document Change Log](#document-change-log)
 
 ---
 
@@ -1497,3 +1509,4 @@ session-recorder-desktop/
 | Version | Date | Changes |
 |---------|------|---------|
 | 1.0 | 2025-12-06 | Initial task breakdown for Desktop Application |
+| 1.1 | 2025-12-10 | Updated to follow template, added Table of Contents |

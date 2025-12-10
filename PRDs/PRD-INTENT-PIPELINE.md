@@ -1,9 +1,21 @@
 # PRD: Session Intent Pipeline & Guided Workflows
 
-**Version:** 2.0
-**Date:** 2025-12-06
-**Status:** Draft
+**Version:** 2.1
+**Last Updated:** December 2025
+**Status:** 📋 Draft
 **Depends On:** Session Recorder Core, Voice Recording, OpenSearch Schema
+
+---
+
+## Target Users
+
+| Role | Primary Use Cases |
+|------|-------------------|
+| **Developers** | Extract features from legacy app walkthroughs with domain experts |
+| **QA Engineers** | Generate automated test suites from manual walkthrough recordings |
+| **Product Managers** | Create presentations from browser-based content walkthroughs |
+| **Designers** | Collect UI design inspiration from multi-site research sessions |
+| **Technical Writers** | Generate feature documentation for AI knowledge bases |
 
 ---
 
@@ -975,3 +987,13 @@ outputs:
     type: design_spec
     format: markdown
 ```
+
+---
+
+## Document Change Log
+
+| Version | Date | Changes |
+|---------|------|---------|
+| 1.0 | 2025-12-06 | Initial concept for intent extraction |
+| 2.0 | 2025-12-06 | Expanded with voice pattern system, templates, and multi-use workflows |
+| 2.1 | 2025-12-10 | Updated to follow template, added Target Users table |

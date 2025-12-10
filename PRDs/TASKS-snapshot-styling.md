@@ -1,9 +1,22 @@
 # TASKS: Snapshot Styling & Font Rendering Issues
 
-**Status:** 🚧 NOT STARTED
+**Last Updated:** 2025-12-10
+**Overall Status:** 🚧 Not Started
 **Priority:** 🔴 HIGH
 **Estimated Time:** 4-6 hours
-**Date:** 2025-12-06
+
+---
+
+## Table of Contents
+
+- [Problem Summary](#problem-summary)
+- [Issues Observed](#issues-observed)
+- [Root Cause Analysis](#root-cause-analysis)
+- [Tasks](#tasks)
+- [Files to Modify](#files-to-modify)
+- [Implementation Order](#implementation-order)
+- [Success Criteria](#success-criteria)
+- [Document Change Log](#document-change-log)
 
 ---
 
@@ -370,6 +383,7 @@ htmlWithBlobUrls = convertCSSUrlsToBlobUrls(htmlWithBlobUrls, resources);
 
 ## Document Change Log
 
-| Version | Date | Changes | Author |
-|---------|------|---------|--------|
-| 1.0 | 2025-12-06 | Initial task breakdown for snapshot styling issues | Claude |
+| Version | Date | Changes |
+|---------|------|---------|
+| 1.0 | 2025-12-06 | Initial task breakdown for snapshot styling issues |
+| 1.1 | 2025-12-10 | Updated to follow template, added Table of Contents |

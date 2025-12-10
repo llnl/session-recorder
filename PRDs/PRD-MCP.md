@@ -1,17 +1,25 @@
 # PRD-MCP: Session Recorder MCP Server
 
-**Version:** 1.0
-**Date:** 2025-12-06
-**Status:** Planning
-**Depends On:** PRD-4.md (Voice Recording - Complete)
+**Version:** 1.1
+**Last Updated:** December 2025
+**Status:** ⚡ Planning
+**Depends On:** [PRD-4.md](PRD-4.md) (Voice Recording - Complete)
+
+---
+
+## Target Users
+
+| Role | Primary Use Cases |
+|------|-------------------|
+| **AI-Assisted Developers** | Control recording via Claude Code, Cline, Continue.dev, Cursor |
+| **Developers** | Create bug reports and tutorials via natural language commands |
+| **QA Engineers** | Automate session recording through AI assistant workflows |
 
 ---
 
 ## Executive Summary
 
 The Session Recorder MCP Server enables developers using AI coding assistants (Claude Code, Cline, Continue.dev, Cursor) to control browser session recording through natural language commands. This provides a seamless workflow for creating bug reports, tutorials, and QA sessions without leaving the AI assistant context.
-
-**Target Users:** Developers using AI coding assistants
 
 ---
 
@@ -638,8 +646,9 @@ export class RecordingManager {
 
 ---
 
-## Document Changelog
+## Document Change Log
 
 | Version | Date | Changes |
 |---------|------|---------|
 | 1.0 | 2025-12-06 | Initial PRD for MCP Server |
+| 1.1 | 2025-12-10 | Updated to follow template, added Target Users table |

@@ -1,9 +1,19 @@
 # TASKS-MCP: MCP Server Implementation Tasks
 
-**Related PRD:** [PRD-MCP.md](./PRD-MCP.md)
-**Status:** Not Started
-**Total Estimated Time:** 12 hours
-**Dependencies:** Voice Recording (PRD-4 Phase 1-2) should be complete first
+**PRD:** [PRD-MCP.md](./PRD-MCP.md)
+**Last Updated:** 2025-12-10
+**Overall Status:** ❌ Not Started (0/12h Complete)
+
+---
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Phase 1: MCP Server Setup](#phase-1-mcp-server-setup-4-hours)
+- [Phase 2: Tool Implementations](#phase-2-tool-implementations-5-hours)
+- [Phase 3: Integration & Testing](#phase-3-integration--testing-3-hours)
+- [Summary](#summary)
+- [Document Change Log](#document-change-log)
 
 ---
 
@@ -1224,3 +1234,4 @@ session-recorder-mcp/
 | Version | Date | Changes |
 |---------|------|---------|
 | 1.0 | 2025-12-06 | Initial task breakdown for MCP Server |
+| 1.1 | 2025-12-10 | Updated to follow template, added Table of Contents |
