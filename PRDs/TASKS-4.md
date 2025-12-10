@@ -582,64 +582,26 @@ Covered in Task 2.3 above.
 
 **Goal:** Ensure voice recording and viewer integration are production-ready
 **Deliverable:** Test suite and documentation for voice features
+**Status:** → Consolidated to [TASKS-TESTING.md](TASKS-TESTING.md)
 
 ### Task 3.1: Voice Recording Tests (2 hours)
 
 **Priority:** 🔴 HIGH
-
-#### Test Scenarios
-
-1. **Unit Tests** (1 hour)
-   - Audio capture initialization
-   - Whisper API integration
-   - Timestamp alignment accuracy
-   - Transcript storage format
-
-2. **Integration Tests** (1 hour)
-   - End-to-end voice recording flow
-   - Audio file creation and storage
-   - Transcript generation and alignment
-   - Error handling (no microphone, API failure)
+**Status:** → Moved to [TASKS-TESTING.md](TASKS-TESTING.md#voice-recording-tests-from-tasks-4md-phase-3)
 
 ---
 
 ### Task 3.2: Viewer Voice Integration Tests (1 hour)
 
 **Priority:** 🔴 HIGH
-
-#### Test Scenarios
-
-1. **Timeline Tests** (30 minutes)
-   - Voice segments render correctly
-   - Duration proportional to actual speech
-   - Click navigation to voice entries
-   - Hover tooltips display properly
-
-2. **Action List Tests** (30 minutes)
-   - Voice transcripts intermixed with browser actions
-   - Correct timestamp ordering
-   - Voice entry styling and icons
-   - Selection and playback controls
+**Status:** → Moved to [TASKS-TESTING.md](TASKS-TESTING.md#viewer-voice-integration-tests-from-tasks-4md-phase-3)
 
 ---
 
 ### Task 3.3: Documentation (1 hour)
 
 **Priority:** 🟡 MEDIUM
-
-#### Documents to Create
-
-1. **Voice Recording Guide** (30 minutes)
-   - How to enable voice recording
-   - Microphone setup and permissions
-   - Transcription quality tips
-   - Troubleshooting audio issues
-
-2. **Viewer Voice Features Guide** (30 minutes)
-   - Timeline voice indicators
-   - Audio playback controls
-   - Word-level navigation
-   - Transcript export options
+**Status:** ✅ COMPLETE (docs/VOICE_RECORDING.md exists)
 
 ---
 
@@ -699,29 +661,12 @@ Covered in Task 2.3 above.
 
 **Goal:** Comprehensive testing and user documentation
 **Deliverable:** Test suite and user guides
+**Status:** → E2E Tests consolidated to [TASKS-TESTING.md](TASKS-TESTING.md)
 
 ### Task 6.1: End-to-End Testing (4 hours)
 
 **Priority:** MEDIUM
-
-#### Test Scenarios
-
-1. **Desktop App Tests** (2 hours)
-   - Browser-only recording
-   - Voice-only recording
-   - Combined recording
-   - Zip creation and viewer launch
-
-2. **MCP Server Tests** (1 hour)
-   - Tool invocation from Claude Desktop
-   - Recording lifecycle management
-   - Error handling
-
-3. **Viewer Tests** (1 hour)
-   - Load session with voice
-   - Timeline voice indicators
-   - Action list voice entries
-   - Audio playback
+**Status:** → Moved to [TASKS-TESTING.md](TASKS-TESTING.md#e2e-tests-from-tasks-4md-phase-6)
 
 ---
 
@@ -731,17 +676,17 @@ Covered in Task 2.3 above.
 
 #### Documents to Create
 
-1. **Desktop App User Guide** (2 hours)
-   - Installation instructions per platform
-   - Recording workflow with screenshots
-   - Settings configuration
-   - Troubleshooting common issues
+- [ ] **Desktop App User Guide** (2 hours)
+  - [ ] Installation instructions per platform
+  - [ ] Recording workflow with screenshots
+  - [ ] Settings configuration
+  - [ ] Troubleshooting common issues
 
-2. **MCP Server Setup Guide** (2 hours)
-   - Installation and dependencies
-   - Claude Desktop configuration
-   - Usage examples and prompts
-   - Troubleshooting
+- [ ] **MCP Server Setup Guide** (2 hours)
+  - [ ] Installation and dependencies
+  - [ ] Claude Desktop configuration
+  - [ ] Usage examples and prompts
+  - [ ] Troubleshooting
 
 ---
 
@@ -751,16 +696,16 @@ Covered in Task 2.3 above.
 
 #### Guides
 
-1. **Desktop App Deployment** (2 hours)
-   - Build instructions for each platform
-   - Code signing (Windows, macOS)
-   - Distribution channels
-   - Auto-update setup (optional)
+- [ ] **Desktop App Deployment** (2 hours)
+  - [ ] Build instructions for each platform
+  - [ ] Code signing (Windows, macOS)
+  - [ ] Distribution channels
+  - [ ] Auto-update setup (optional)
 
-2. **MCP Server Deployment** (2 hours)
-   - npm publishing
-   - Configuration for different environments
-   - Version management
+- [ ] **MCP Server Deployment** (2 hours)
+  - [ ] npm publishing
+  - [ ] Configuration for different environments
+  - [ ] Version management
 
 ---
 
@@ -836,6 +781,7 @@ Covered in Task 2.3 above.
 
 - [TASKS-MCP.md](./TASKS-MCP.md) - MCP Server implementation tasks
 - [TASKS-DESKTOP.md](./TASKS-DESKTOP.md) - Desktop Application implementation tasks
+- [TASKS-TESTING.md](./TASKS-TESTING.md) - Consolidated testing checklist
 
 ---
 
@@ -846,3 +792,4 @@ Covered in Task 2.3 above.
 | 1.0 | 2025-12-05 | Initial task breakdown for PRD-4 |
 | 1.1 | 2025-12-06 | Separated MCP and Desktop to dedicated files |
 | 1.2 | 2025-12-10 | Updated to follow template, added Table of Contents and File Reference |
+| 1.3 | 2025-12-10 | Consolidated Phase 3 & 6 tests to TASKS-TESTING.md |

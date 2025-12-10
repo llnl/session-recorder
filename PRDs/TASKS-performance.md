@@ -42,9 +42,10 @@ This document breaks down performance optimization objectives into actionable ta
 - ✅ Removed volumechange from media events - reduces event noise
 
 **Still TODO for full implementation:**
-- Task 5c.1: ResourceCaptureQueue (priority queue with concurrency limits)
-- Task 5c.2: Non-blocking response handler (fire-and-forget pattern)
-- Task 5c.3: Background SHA1 hashing with setImmediate
+
+- [ ] Task 5c.1: ResourceCaptureQueue (priority queue with concurrency limits)
+- [ ] Task 5c.2: Non-blocking response handler (fire-and-forget pattern)
+- [ ] Task 5c.3: Background SHA1 hashing with setImmediate
 
 ### Problem Analysis
 

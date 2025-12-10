@@ -1,740 +1,325 @@
-# Implementation Strategy
+# Session Recorder - Progress Tracker
 
-## 🆕 Latest Updates (2025-12-07)
+**Last Updated:** 2025-12-10
 
-**🔴 CRITICAL - Recorder Performance Fix (2 hours):**
+---
 
-- 📘 [PRD-performance.md](PRD-performance.md) - Sprint 5c: Async Resource Capture
-  - **Problem:** Multi-tab recording causes 6-25 second page load delays
-  - **Root Cause:** Synchronous network resource capture blocks navigation
-  - **Solution:** ResourceCaptureQueue with async background processing
-  - **Impact:** Page navigation <500ms (down from 6-25 seconds)
-  - **Components:**
-    - ResourceCaptureQueue class with priority support (5 concurrent per tab)
-    - Non-blocking response handler (fire-and-forget)
-    - Background SHA1 hashing with setImmediate
-    - Graceful queue draining on stop()
-  - **Effort:** 2 hours (IMMEDIATE)
-- 📋 [TASKS-performance.md](TASKS-performance.md) - Sprint 5c Implementation Tasks
-  - Task 5c.1: ResourceCaptureQueue Implementation (1h)
-  - Task 5c.2: Non-Blocking Resource Capture (0.5h)
-  - Task 5c.3: Background SHA1 Hashing (0.25h)
-  - Task 5c.4: Testing & Verification (0.25h)
+## POC 1 Progress - Core Recording ✅ Complete
 
-**Performance Metrics:**
+**Status:** 100% Complete | **Tasks Remaining:** 0
 
-| Metric | Before | After (Target) |
-|--------|--------|----------------|
-| Page navigation delay | 6-25 seconds | <500ms |
-| Resource capture blocking | Yes (blocks user) | No (background) |
-| Concurrent downloads | Unlimited | 5 per tab |
-| User experience | Unusable | Instant, responsive |
+| PRD | Status | TASKS | Unchecked |
+|-----|--------|-------|-----------|
+| [PRD.md](PRD.md) (Browser Recording) | ✅ Complete | [TASKS.md](TASKS.md) | 0 |
+| [PRD-2.md](PRD-2.md) (React Viewer) | ✅ Complete | [TASKS-2.md](TASKS-2.md) | 0 |
+| [PRD-3.md](PRD-3.md) (Snapshot Architecture) | ✅ Complete | [TASKS-3.md](TASKS-3.md) | 0 |
+| [PRD-4.md](PRD-4.md) (Voice Recording) | ✅ Init Complete | [TASKS-4.md](TASKS-4.md) | 19 |
+
+### What's Done
+
+- ✅ Browser session recording with Playwright
+- ✅ DOM snapshot capture with form state preservation
+- ✅ Screenshot capture (before/after)
+- ✅ Console logging with stack traces
+- ✅ Network request/response capture
+- ✅ SHA1-based resource deduplication
+- ✅ Shadow DOM support
+- ✅ Multi-tab recording
+- ✅ CDP connection to existing browser
+- ✅ Zip archive creation
+- ✅ Python voice recording + Whisper transcription
+- ✅ React viewer with timeline, action list, snapshot viewer
+- ✅ Voice playback with word highlighting
+
+---
+
+## POC 2 Progress - Desktop App & Recorder Completion
+
+**Status:** In Progress | **Tasks Remaining:** 116
+**End Goal:** `session-recorder` becomes its own standalone repo
+
+| PRD | Status | TASKS | Unchecked |
+|-----|--------|-------|-----------|
+| [PRD-DESKTOP-POC.md](PRD-DESKTOP-POC.md) | **Ready** | [TASKS-DESKTOP-POC.md](TASKS-DESKTOP-POC.md) | 38 |
+| [PRD-session-recorder.md](PRD-session-recorder.md) | ~80% Complete | [TASKS-session-recorder.md](TASKS-session-recorder.md) | 56 |
+| [PRD-performance.md](PRD-performance.md) | ⚠️ Partial | [TASKS-performance.md](TASKS-performance.md) | 3 |
+| [PRD-4.md](PRD-4.md) (Voice Phase 3+) | Pending | [TASKS-4.md](TASKS-4.md) | 19 |
+
+### IMMEDIATE: Desktop App POC (12 hours)
+
+**Goal:** Standalone Windows exe that records browser + voice without requiring Python/Node.js installation
 
 **Architecture:**
+
+- **Electron Shell** - Orchestrates recording, system tray UI
+- **PyInstaller Bundle** - Python + Whisper + Torch bundled into voice-recorder.exe (~800MB)
+- **System Chrome** - Uses existing Chrome via CDP (not bundled)
+
+**Scope:**
+
+1. Double-click `SessionRecorder.exe`
+2. Right-click tray → "Start Recording"
+3. Chrome opens, record browser + voice
+4. Right-click tray → "Stop Recording"
+5. Explorer opens showing `session-XXXXX.zip`
+
+**Reference:** [PRD-DESKTOP-POC.md](PRD-DESKTOP-POC.md) | [TASKS-DESKTOP-POC.md](TASKS-DESKTOP-POC.md)
+
+### Also In POC 2
+
+- **Session Recorder Completion** - Remaining 56 tasks for full recorder functionality
+- **Performance Optimizations** - ResourceCaptureQueue, non-blocking handlers (3 tasks)
+- **Voice Recording Phase 3+** - Advanced voice features (19 tasks)
+
+### POC 2 Completion Deliverables
+
+Upon completion, create new `session-recorder` repo containing:
+
+```text
+session-recorder/           # NEW STANDALONE REPO
+├── src/
+│   ├── node/              # SessionRecorder, handlers, etc.
+│   └── voice/             # Python voice recording
+├── desktop-app/           # Electron app
+├── viewer/                # React viewer (development/standalone)
+├── test/                  # Test scripts
+├── package.json
+├── README.md
+└── LICENSE
 ```
-Browser Navigation → Response Events → ResourceCaptureQueue (priority, async)
-                                              ↓ (5 concurrent)
-                                       Background Downloads
-                                              ↓ (setImmediate)
-                                       SHA1 Hash → Disk Save
+
+**Remove from this repo:**
+
+- All PRD-*.md and TASKS-*.md files
+- session-recorder/ folder
+- Related test files
+
+---
+
+## POC 3 Progress - Viewer/Editor Deployment (LivHub vs Standalone?)
+
+**Status:** Planning | **Tasks Remaining:** 214 | **Decision Required**
+**Note:** Session recorder will be in its own repo by this point
+
+| PRD | Status | TASKS | Unchecked |
+|-----|--------|-------|-----------|
+| [PRD-angular-migration.md](PRD-angular-migration.md) | Draft | [TASKS-angular-migration.md](TASKS-angular-migration.md) | 170 |
+| [PRD-session-editor.md](PRD-session-editor.md) | Draft | [TASKS-session-editor.md](TASKS-session-editor.md) | 22 |
+| [PRD-ai-image-analysis.md](PRD-ai-image-analysis.md) | Draft | [TASKS-ai-image-analysis.md](TASKS-ai-image-analysis.md) | 6 |
+| [PRD-snapshot-styling.md](PRD-snapshot-styling.md) | Not Started | [TASKS-snapshot-styling.md](TASKS-snapshot-styling.md) | 16 |
+
+### Decision: Where to Deploy the Viewer/Editor?
+
+#### Option A: LivHub Integration (Angular Migration)
+
+- Port React viewer to Angular v20
+- Integrate with existing LivHub Angular Material theme
+- Deploy as page within LivHub internal tools
+- Shared auth, navigation, infrastructure
+
+#### Option B: Standalone Web App
+
+- Keep React viewer as separate deployable
+- Deploy to own URL/subdomain (or bundled with session-recorder repo)
+- Independent release cycle
+- Simpler architecture, less integration
+
+**Factors to Consider:**
+
+| Factor | LivHub | Standalone |
+|--------|--------|------------|
+| Development effort | 170 tasks | ~50 tasks |
+| Integration with existing tools | ✅ Native | ❌ Separate |
+| Shared auth/users | ✅ Yes | ❌ Need to build |
+| Release independence | ❌ Coupled | ✅ Independent |
+| Tech stack consistency | ✅ Angular | ❌ React |
+
+### What's In POC 3
+
+- **Angular Migration** - Port all React components to Angular (170 tasks)
+- **Session Editor** - Add editing capabilities: notes, action editing, undo/redo (22 tasks)
+- **AI Image Analysis** - Auto-generate descriptions for screenshots to enable LLM understanding (6 tasks)
+- **Snapshot Styling** - CSS fixes for snapshot rendering (16 tasks)
+
+---
+
+## Future Work (Post POC 3)
+
+**Tasks Remaining:** 175+
+
+### Session Recorder Repo (Post-POC 2 Enhancements)
+
+| PRD | Status | TASKS | Unchecked |
+|-----|--------|-------|-----------|
+| [PRD-DESKTOP.md](PRD-DESKTOP.md) (Full Desktop) | Post-POC | [TASKS-DESKTOP.md](TASKS-DESKTOP.md) | 39 |
+| [PRD-MCP.md](PRD-MCP.md) | Planning | [TASKS-MCP.md](TASKS-MCP.md) | 72 |
+| [PRD-5.md](PRD-5.md) (System Audio) | Planning | [TASKS-5.md](TASKS-5.md) | 10 |
+| Testing Checklist | In Progress | [TASKS-TESTING.md](TASKS-TESTING.md) | 54 |
+
+### This Repo / LivHub (Post-POC 3 Enhancements)
+
+| PRD | Status | TASKS | Unchecked |
+|-----|--------|-------|-----------|
+| [PRD-INTENT-PIPELINE.md](PRD-INTENT-PIPELINE.md) | Draft | - | - |
+| [PRD-VIEWER-SERVICE-WORKER.md](PRD-VIEWER-SERVICE-WORKER.md) | Planned | - | - |
+
+### Planned Features
+
+- **Full Desktop App** - Settings UI, recent recordings, mode selection (39 tasks) → session-recorder repo
+- **MCP Server** - 17 tools in 2 phases: Recording Control (5 tools, stdio) + Session Query (12 tools, HTTP) for AI coding assistants (72 tasks) → session-recorder repo
+- **Testing** - Comprehensive test coverage (54 tasks) → session-recorder repo
+- **Intent Pipeline** - AI processing of recorded sessions → LivHub/standalone
+- **Service Worker** - Offline viewer support → LivHub/standalone
+- **System Audio Recording** - Capture meeting audio for transcription → session-recorder repo
+
+### System Audio Recording (Future)
+
+**Purpose:** Capture system/meeting audio (what others are saying) alongside microphone narration during recording sessions. Useful when recording browser actions during a meeting.
+
+**Approach:** Browser-based only via `getDisplayMedia` API with audio option
+- No additional native components (reuse existing Python/Whisper pipeline)
+- User explicitly consents via browser permission dialog
+- Same timestamp alignment strategy as voice recording
+- Transcript segments marked with `source: "voice"` vs `source: "system"`
+
+**New Recording Option:**
+```typescript
+interface RecordingOptions {
+  browser_record?: boolean;
+  voice_record?: boolean;        // Microphone (existing)
+  system_audio_record?: boolean; // System/meeting audio (NEW)
+}
+```
+
+**Limitations:**
+- Requires user to share screen/tab with audio enabled
+- Works with web-based meetings (Google Meet, Zoom web, Teams web)
+- Native desktop meeting apps require using their web versions
+
+---
+
+## Total Progress Summary
+
+| Phase | Status | Tasks | Repo |
+|-------|--------|-------|------|
+| POC 1 - Core Recording | ✅ Complete | 19 remaining | this → session-recorder |
+| POC 2 - Desktop & Recorder | 🔄 In Progress | 116 remaining | this → session-recorder |
+| POC 3 - Viewer/Editor | 📋 Planning | 214 remaining | this / LivHub |
+| Future Work | ⏳ Deferred | 175 remaining | split |
+| **Total** | | **524** | |
+
+### Repo Split After POC 2
+
+```text
+CURRENT STATE                      AFTER POC 2
+─────────────────────────          ───────────────────────────────────
+playwright/                        session-recorder/  ← NEW STANDALONE REPO
+└── session-recorder/              ├── src/
+    ├── src/                       │   ├── node/
+    ├── viewer/                    │   └── voice/
+    ├── PRDs/                      ├── desktop-app/
+    └── ...                        ├── viewer/
+                                   ├── package.json
+                                   └── README.md
+
+                                   playwright/  ← GONE FROM REPO
 ```
 
 ---
 
-**🎯 NEXT UP - Intent Pipeline & Post-Recording Processing:**
+## Architecture Overview
 
-- 📘 [PRD-INTENT-PIPELINE.md](PRD-INTENT-PIPELINE.md) - Session Intent Pipeline & Guided Workflows (v2.0)
-  - **5 Use Case Templates:** Legacy Discovery, Feature Docs, Test Suite, Presentation, UI Research
-  - **Voice as Intent Signal:** Natural phrases like "This feature is called..." or "Nobody uses this anymore" - no hotkeys needed
-  - **Post-Recording Template Selection:** Record once → Apply multiple templates → Generate different outputs
-  - **Confidence Scoring + AI Interview:** Low-confidence extractions trigger clarifying questions
-  - **Output Generators:** feature_list.json (harness format), Playwright tests, docs, slides
-  - **Key Insight:** Same recording → Different interpretation based on user intent
-  - **Effort:** 68 hours
-
-  **Architecture:**
-  ```
-  Record (simple) → Universal Pass 1 → Template Pass (on demand)
-                          ↓                    ↓
-                    session.md          feature_list.json
-                    (timeline)          tests.spec.ts
-                    (embeddings)        docs.md / slides.pptx
-  ```
-
----
-
-**📋 MCP Server & Desktop Application PRDs:**
-
-Note that these need to be reviewed, vetted and refined. These are only initial TASKS and PRD docs. for this
-
-- 📘 [PRD-MCP.md](PRD-MCP.md) - MCP Server for AI Coding Assistants
-  - **5 MCP Tools:** start_browser_recording, start_voice_recording, start_combined_recording, stop_recording, get_recording_status
-  - **Target:** Claude Code, Cline, Continue.dev, Cursor integration
-  - **Effort:** 12 hours
-- 📋 [TASKS-MCP.md](TASKS-MCP.md) - MCP Server Implementation Tasks
-  - Phase 1: MCP Server Setup (4h)
-  - Phase 2: Tool Implementations (5h)
-  - Phase 3: Integration & Testing (3h)
-
-- 📘 [PRD-DESKTOP.md](PRD-DESKTOP.md) - Desktop Application for Non-Developers
-  - **Cross-Platform:** Windows, macOS, Linux (Electron)
-  - **Features:** One-click recording, system tray, recent recordings, settings
-  - **Target:** QA testers, product managers, support staff
-  - **Effort:** 20 hours
-- 📋 [TASKS-DESKTOP.md](TASKS-DESKTOP.md) - Desktop Application Implementation Tasks
-  - Phase 1: Core Electron App (4h)
-  - Phase 2: Recording Integration (5h)
-  - Phase 3: UI Polish (4h)
-  - Phase 4: System Integration (4h)
-  - Phase 5: Testing & Distribution (3h)
-
----
-
-**📊 OpenSearch Schema Design:**
-
-- 📘 [OPENSEARCH-SCHEMA.md](OPENSEARCH-SCHEMA.md) - Complete OpenSearch schema for AI-powered queries
-  - **3 Indices:** `sessions`, `actions`, `features`
-  - **Semantic Search:** Vector embeddings for voice transcripts and intent
-  - **Feature Extraction:** Derived patterns from multiple sessions
-  - **Use Cases:** Example discovery, feature_list.json generation, documentation, Q&A
+```text
+┌─────────────────────────────────────────────────────────────────┐
+│                     SESSION RECORDER ECOSYSTEM                   │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌──────────────────┐    ┌──────────────────┐                  │
+│  │  Desktop App     │    │  CLI             │                  │
+│  │  (Electron)      │    │  record:connect  │                  │
+│  │  - Auto-install  │    │  - Developers    │                  │
+│  │  - One-click     │    │  - Power users   │                  │
+│  └────────┬─────────┘    └────────┬─────────┘                  │
+│           │                       │                             │
+│           └───────────┬───────────┘                             │
+│                       ▼                                         │
+│           ┌──────────────────────┐                              │
+│           │  SessionRecorder     │                              │
+│           │  (TypeScript/Node)   │                              │
+│           │  - Browser capture   │                              │
+│           │  - Voice recording   │                              │
+│           │  - Zip creation      │                              │
+│           └──────────┬───────────┘                              │
+│                      │                                          │
+│                      ▼                                          │
+│           ┌──────────────────────┐                              │
+│           │  session.zip         │                              │
+│           │  - session.json      │                              │
+│           │  - snapshots/*.html  │                              │
+│           │  - screenshots/      │                              │
+│           │  - audio/            │                              │
+│           │  - transcript.json   │                              │
+│           └──────────┬───────────┘                              │
+│                      │                                          │
+│                      ▼                                          │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │              Session Viewer / Editor                      │  │
+│  ├──────────────────────────────────────────────────────────┤  │
+│  │  React Viewer     │  LivHub (Angular)  │  Standalone Web  │  │
+│  │  npm run viewer   │  Internal tools    │  Separate deploy │  │
+│  │  (Development)    │  (Option A)        │  (Option B)      │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
-**🔮 Future Viewer Enhancements:**
+## Quick Reference
 
-- 📘 [PRD-VIEWER-SERVICE-WORKER.md](PRD-VIEWER-SERVICE-WORKER.md) - Refactor Session Viewer to Use Service Worker Architecture
-  - **Problem:** Chrome-specific URLs (`chrome://`, `chrome-extension://`) fail in iframes, resource handling fragile
-  - **Current Workaround:** URL stripping and hiding broken resources (not ideal)
-  - **Proper Solution:** Service worker architecture matching Playwright trace viewer
-  - **Benefits:** No URL rewriting, all resources load correctly, Chrome URLs handled, better error handling
-  - **Architecture:** Service Worker intercepts fetch → serves from IndexedDB → snapshots + resources
-  - **Implementation Phases:**
-    - Phase 1: Service Worker Foundation (3-5 days)
-    - Phase 2: Session Storage (IndexedDB) (3-5 days)
-    - Phase 3: Service Worker Request Handlers (5-7 days)
-    - Phase 4: Viewer Refactoring (2-3 days)
-    - Phase 5: Testing & Polish (3-5 days)
-  - **Effort:** 2-3 weeks
-  - **Status:** Planned (not immediate next work)
-  - **Reference:** [Playwright Trace Viewer Service Worker](https://github.com/microsoft/playwright/blob/main/packages/trace-viewer/src/sw/main.ts)
+### Test Recording
 
----
+```bash
+# CLI recording (connect to Chrome)
+npm run record:connect
 
-**✅ ARCHITECTURAL IMPROVEMENT - Python Unified Recording:**
+# Run test scripts
+npm run test:simple
+npm run test:spa
+npm run test:voice
+```
 
-- ✅ **VoiceRecorder Architecture Refactored** - Single Python process for recording + transcription
-  - **Previous:** TypeScript recorded audio, spawned Python for transcription (2 processes)
-  - **New:** Python handles BOTH recording and transcription (1 process)
-  - Simplified architecture with cleaner IPC
-  - Single point of failure instead of split processes
-  - TypeScript spawns `record_and_transcribe.py`, sends SIGINT to stop
-  - Python streams status messages, outputs final transcription on exit
-  - Dependencies: `sounddevice`, `soundfile`, `openai-whisper`, `torch`, `numpy`
+### View Recording
 
-**Files Modified:**
+```bash
+# Start React viewer
+npm run viewer
 
-- `src/voice/VoiceRecorder.ts` - Refactored to spawn single Python process
-- `src/voice/record_and_transcribe.py` - NEW: Unified recording + transcription
-- `src/node/SessionRecorder.ts` - Updated to use new VoiceRecorder API
-- `README.md` - Added Python dependency installation instructions
-- `PRDs/PRD-4.md` - Documented architectural change with code examples
+# Load a session zip file in the viewer
+```
 
-**Build Status:** ✅ Compiles successfully (`npm run build`)
+### Test Files
+
+| Script | Purpose |
+|--------|---------|
+| `test/record-session.ts` | Production CLI recorder |
+| `test/simple-test.ts` | POC 1 basic test |
+| `test/spa-test.ts` | SPA recording (Angular Material) |
+| `test/voice-test.ts` | Voice recording test |
+| `test/console-test.ts` | Console capture test |
+| `test/network-test.ts` | Network logging test |
+
+**Full Test Checklist:** [TASKS-TESTING.md](TASKS-TESTING.md)
 
 ---
 
-**✅ INITIATIVE 2 (CORE) COMPLETE - Viewer Voice Integration:**
-
-- ✅ **PRD-4.md Initiative 2** - Viewer Voice Integration (14 hours) - **COMPLETE**
-  - Timeline green voice bars with hover tooltips showing transcript previews
-  - Action list intermixes voice transcripts chronologically with browser actions
-  - VoiceTranscriptViewer component with word-level highlighting + audio playback
-  - Voice tab in TabPanel (auto-shows when voice recording enabled)
-  - SessionLoader loads audio files from zip/directory
-  - Comprehensive voice-related CSS styling
-
-**Files Created:**
-
-- `viewer/src/components/VoiceTranscriptViewer/VoiceTranscriptViewer.tsx`
-- `viewer/src/components/VoiceTranscriptViewer/VoiceTranscriptViewer.css`
-- `viewer/src/components/VoiceTranscriptViewer/index.ts`
-
-**Files Modified:**
-
-- `viewer/src/types/session.ts` - Added `VoiceTranscriptAction` type
-- `viewer/src/stores/sessionStore.ts` - Added voice tab and audioBlob state
-- `viewer/src/components/Timeline/Timeline.tsx` - Voice segment indicators
-- `viewer/src/components/Timeline/Timeline.css` - Voice tooltip styling
-- `viewer/src/components/ActionList/ActionList.tsx` - Voice entry rendering
-- `viewer/src/components/ActionList/ActionList.css` - Voice item styling
-- `viewer/src/components/TabPanel/TabPanel.tsx` - Voice tab integration
-- `viewer/src/components/SnapshotViewer/SnapshotViewer.tsx` - Voice action guards
-- `viewer/src/utils/zipHandler.ts` - Audio file loading from zip
-- `viewer/src/utils/sessionLoader.ts` - Audio file loading from directory
-- `viewer/src/hooks/useFilteredActions.ts` - Voice action support
-
-**Next Steps:**
-
-- 🎯 **Optional:** Initiative 3 - Desktop Application (20 hours) → [PRD-DESKTOP.md](PRD-DESKTOP.md) | [TASKS-DESKTOP.md](TASKS-DESKTOP.md)
-- 🎯 **Optional:** Initiative 4 - MCP Server (12 hours) → [PRD-MCP.md](PRD-MCP.md) | [TASKS-MCP.md](TASKS-MCP.md)
-
----
-
-**✅ INITIATIVE 1 (CORE) COMPLETE - Voice Recording Backend:**
-
-- ✅ **PRD-4.md Initiative 1** - Voice Recording in SessionRecorder (16 hours) - **COMPLETE**
-  - `browser_record` + `voice_record` boolean flags implemented
-  - Word-level timestamps with millisecond precision
-  - **Python Whisper (official OpenAI) for maximum accuracy**
-  - Auto-detects GPU (CUDA/MPS) with CPU fallback - works on any computer
-  - Optional: 10x speedup with GPU, ~1-2 min CPU for 10-min audio
-  - **NEW:** Unified Python process for recording + transcription (simplified architecture)
-  - Automatic chronological merging of voice and browser actions
-  - Test suite: `test/voice-test.ts`
-
-**Files Created:**
-
-- `src/voice/VoiceRecorder.ts` - TypeScript process manager
-- `src/voice/record_and_transcribe.py` - Python unified recorder + transcriber
-- `src/voice/whisper_transcribe.py` - Standalone transcription script (optional)
-- `test/voice-test.ts` - Voice recording test suite
-
-**Files Modified:**
-
-- `src/node/SessionRecorder.ts` - Added voice recording support
-- `src/node/types.ts` - Added `VoiceTranscriptAction` type
-- `package.json` - Added `test:voice` script
-- `test/simple-test.ts`, `test/spa-test.ts` - Type guards for voice actions
-
-**Next Steps:**
-
-- 🎯 **Optional:** Initiative 3 - Desktop Application (20 hours) → [PRD-DESKTOP.md](PRD-DESKTOP.md) | [TASKS-DESKTOP.md](TASKS-DESKTOP.md)
-- 🎯 **Optional:** Initiative 4 - MCP Server (12 hours) → [PRD-MCP.md](PRD-MCP.md) | [TASKS-MCP.md](TASKS-MCP.md)
-
----
-
-**New Production Readiness & Voice Recording Documentation:**
-
-- 🚀 [PRD-4.md](PRD-4.md) - Production Polish & Voice Recording Integration
-  - **✅ Initiative 1 (Core) COMPLETE:** SessionRecorder voice integration (16h)
-  - **✅ Initiative 2 (Core) COMPLETE:** Viewer voice integration (14 hours)
-  - **Initiative 3 (Future):** Desktop Application for non-developers (20h)
-  - **Initiative 4 (Future):** MCP Server for AI assistants (12h)
-- 📋 [TASKS-4.md](TASKS-4.md) - Production Implementation Tasks
-  - ✅ Phase 1: Voice Recording Backend (16 hours) - **COMPLETE**
-  - ✅ Phase 2: Viewer Integration (14 hours) - **COMPLETE**
-  - Phase 3: Testing & Documentation for Phases 1-2 (4 hours) - Optional
-  - Phase 4: MCP Server (12 hours) - Optional Future
-  - Phase 5: Desktop Application (20 hours) - Optional Future
-  - Phase 6: Final Testing & Documentation (12 hours) - Optional Future
-  - **Total: 78 hours (30h complete, 48h optional future)**
-
-**Previous Architecture Updates:**
-
-- 📘 [PRD-3.md](PRD-3.md) - Playwright-Inspired Snapshot Architecture Analysis
-  - Complete breakdown of Playwright's proven 3-phase snapshot system
-  - Current implementation gaps and missing components
-  - Detailed technical specifications and code examples
-- 📋 [TASKS-3.md](TASKS-3.md) - Actionable Implementation Tasks
-  - Phase 1: Critical snapshot fixes with restoration script (9 hours)
-  - Phase 2: Resource management with SHA1 deduplication (12 hours)
-  - Phase 3: Advanced optimization with NodeSnapshot structure (14 hours)
-
-**Key Discovery:** Current snapshot capture is ~70% correct, but **viewer never restores state**. A 4-hour restoration script fix will solve 80% of snapshot issues!
-
----
-
-## ✅ Already Complete
-
-1. POC 1: Session Recorder (Phases 1-10) - 20 hours → [TASKS.md Phases 1-10](TASKS.md) | [PRD.md](PRD.md)
-2. POC 2 Phase 1: Console Logging (3 hours) → [TASKS-2.md Phase 1](TASKS-2.md#phase-1-console-log-capture-3-hours--complete) | [PRD-2.md](PRD-2.md#console-logging-requirements)
-3. POC 2 Phase 2: React + Vite viewer project (3 hours) → [TASKS-2.md Phase 2](TASKS-2.md#phase-2-custom-trace-viewer---project-setup-3-hours--complete) | [PRD-2.md](PRD-2.md#3-technical-requirements)
-4. POC 2 Phase 3: Zustand state management + custom hooks (2 hours) → [TASKS-2.md Phase 3](TASKS-2.md#phase-3-state-management--data-structures-2-hours--complete) | [PRD-2.md](PRD-2.md#3-technical-requirements)
-5. POC 2 Phase 8.4: Wire up basic data flow (2 hours) → [TASKS-2.md Phase 8.4](TASKS-2.md#task-84-wire-up-state-and-data-flow) | [PRD-2.md](PRD-2.md#3-technical-requirements)
-
-## 🎯 Recommended Implementation Order
-
-### Sprint 1: Foundation (10 hours) - ✅ 100% COMPLETE
-
-1. ✅ Phase 2: Initialize React + Vite viewer project (3h) → [TASKS-2.md Phase 2](TASKS-2.md#phase-2-custom-trace-viewer---project-setup-3-hours--complete) | [PRD-2.md](PRD-2.md#3-technical-requirements)
-2. ✅ Phase 3: Setup Zustand state management + custom hooks (2h) → [TASKS-2.md Phase 3](TASKS-2.md#phase-3-state-management--data-structures-2-hours--complete) | [PRD-2.md](PRD-2.md#3-technical-requirements)
-3. ✅ Phase 8.4: Wire up basic data flow (2h) → [TASKS-2.md Phase 8.4](TASKS-2.md#task-84-wire-up-state-and-data-flow) | [PRD-2.md](PRD-2.md#3-technical-requirements)
-4. ✅ Test: Load and display session data (3h)
-5. ✅ Auto-Zip Feature: Automatic zip creation after recording (2h)
-   - Added archiver package dependency
-   - Implemented SessionRecorder.createZip() method with maximum compression
-   - Updated spa-test.ts and console-test.ts to auto-zip after recording
-   - Fixed zip structure to place files at root level for viewer compatibility
-   - Tested and verified with both SPA and console test sessions
-
-### Sprint 2: Core Viewing (15 hours) - ✅ 100% COMPLETE
-
-1. ✅ Phase 4: Timeline with canvas + thumbnails + selection (6h) → [TASKS-2.md Phase 4](TASKS-2.md#phase-4-timeline-component-6-hours--complete) | [PRD-2.md](PRD-2.md#custom-trace-viewer-requirements)
-2. ✅ Phase 5: Action list with virtual scrolling (4h) → [TASKS-2.md Phase 5](TASKS-2.md#phase-5-action-list-component-4-hours--complete) | [PRD-2.md](PRD-2.md#custom-trace-viewer-requirements)
-3. ✅ Phase 8.1: Create main grid layout (2h) → [TASKS-2.md Phase 8.1](TASKS-2.md#task-81-create-main-application-layout) | [PRD-2.md](PRD-2.md#custom-trace-viewer-requirements)
-4. ✅ Test: Navigation and filtering (3h)
-   - Implemented Timeline component with canvas rendering
-   - Time markers and action indicators on timeline
-   - Screenshot thumbnails with hover states
-   - Drag selection for time-range filtering
-   - Virtual scrolling for action list
-   - Auto-scroll to selected action
-   - Main grid layout with flexbox
-   - Build compilation successful
-
-### Sprint 3: Snapshot Display (10 hours) - ✅ 100% COMPLETE
-
-1. ✅ Phase 6: Snapshot viewer with iframe + element highlighting (5h) → [TASKS-2.md Phase 6](TASKS-2.md#phase-6-snapshot-viewer-component-5-hours--complete) | [PRD-2.md](PRD-2.md#custom-trace-viewer-requirements)
-2. ✅ Phase 7.2: Information tab (2h) → [TASKS-2.md Phase 7.2](TASKS-2.md#task-72-information-tab) | [PRD-2.md](PRD-2.md#custom-trace-viewer-requirements)
-3. ✅ Phase 8.2: Top navigation (2h) → [TASKS-2.md Phase 8.2](TASKS-2.md#task-82-implement-top-navigation) | [PRD-2.md](PRD-2.md#custom-trace-viewer-requirements)
-4. ✅ Test: Snapshot viewing workflow (1h)
-   - Implemented iframe-based snapshot viewer with before/after toggle
-   - Element highlighting with data-recorded-el attribute parsing
-   - Visual dot indicator and automatic scroll-to-view
-   - Zoom controls (50%-200%) with smooth transitions
-   - Snapshot metadata display (URL, viewport, timestamp)
-   - Information tab showing complete action details
-   - Session statistics in header (actions, duration, requests, logs)
-   - Error and loading states with user feedback
-   - Build compilation successful
-
-### Sprint 4: Debugging Tools (8 hours) - ✅ 100% COMPLETE
-
-1. ✅ Phase 7.3: Console tab with filtering (2h) → [TASKS-2.md Phase 7.3](TASKS-2.md#task-73-console-tab) | [PRD-2.md](PRD-2.md#console-logging-requirements)
-2. ✅ Phase 7.4: Network tab with waterfall (4h) → [TASKS-2.md Phase 7.4](TASKS-2.md#task-74-network-tab) | [PRD-2.md](PRD-2.md#custom-trace-viewer-requirements)
-3. ✅ Phase 7.1: Tab panel structure (1h) → [TASKS-2.md Phase 7.1](TASKS-2.md#task-71-create-tab-panel-structure) | [PRD-2.md](PRD-2.md#custom-trace-viewer-requirements)
-4. ✅ Test: Console and network inspection (1h)
-   - Implemented Console tab with level filtering (all, error, warn, info, log, debug)
-   - Added clear filter button with counts for each level
-   - Implemented stack trace expansion for error logs
-   - Better formatting for complex objects and arguments
-   - Implemented Network tab with waterfall visualization
-   - Color-coded timing phases (DNS, connect, TTFB, download)
-   - Added resource type filtering (all, document, stylesheet, script, image, xhr, fetch, font, other)
-   - Added sorting options (time, duration, size)
-   - Click to expand/collapse request details
-   - Detailed timing breakdown in expanded view
-   - Build compilation successful
-
-### Sprint 5a: Critical Snapshot Fixes - Playwright Architecture (9 hours) - ✅ 100% COMPLETE
-
-**Based on:** [PRD-3.md](PRD-3.md) | [TASKS-3.md Phase 1](TASKS-3.md#phase-1-critical-snapshot-fixes-9-hours--high-priority)
-
-**Status:** ✅ **COMPLETED** (2025-12-05)
-
-**Problem:** Snapshots captured state but never restored it. Form fields appeared empty even though values were in attributes.
-
-**Solution:** ✅ Implemented Playwright's 3-phase architecture (Capture → Storage → Render with restoration script)
-
-1. ✅ **Task 1.1: Snapshot Restoration Script** (4h) - COMPLETE
-   - ✅ Created `snapshotRestoration.ts` with self-executing restoration script
-   - ✅ Injected script into snapshot HTML in viewer
-   - ✅ Restores input values: `__playwright_value_` → `input.value`
-   - ✅ Restores checkbox/radio: `__playwright_checked_` → `input.checked`
-   - ✅ Restores select options: `__playwright_selected_` → `option.selected`
-   - ✅ Restores scroll positions: `__playwright_scroll_top_` → `element.scrollTop`
-   - ✅ Restores popover and dialog states
-   - **Result:** Fixed 80% of snapshot issues with viewer-only changes
-
-2. ✅ **Task 1.2: Capture Additional Interactive State** (3h) - COMPLETE
-   - ✅ Canvas bounding rects (`__playwright_bounding_rect__`)
-   - ✅ Iframe positions and dimensions
-   - ✅ Popover state (`:popover-open` detection)
-   - ✅ Dialog state (modal vs non-modal)
-   - ✅ Custom elements tracking
-   - **Result:** Complete interactive state capture achieved
-
-3. ✅ **Task 1.3: Fix Shadow DOM Rendering** (2h) - COMPLETE
-   - ✅ Declarative Shadow DOM with `<template shadowrootmode="open">`
-   - ✅ Adopted stylesheets restoration
-   - ✅ Recursive Shadow DOM traversal
-   - **Result:** Shadow DOM components render correctly
-
-**Files Created:**
-
-- `session-recorder/src/browser/snapshotRestoration.ts`
-
-**Files Modified:**
-
-- `session-recorder/src/browser/snapshotCapture.ts`
-- `session-recorder/viewer/src/components/SnapshotViewer/SnapshotViewer.tsx`
-
-**Build Status:** ✅ All changes compile successfully
-
-### Sprint 5b: UI Enhancements (5 hours) - ✅ 100% COMPLETE
-
-**Status:** ✅ **COMPLETED** (2025-12-05)
-
-**Implementation Summary:**
-
-1. ✅ **Resizable Panels** (3h) - COMPLETE → [TASKS-2.md Task 11.2](TASKS-2.md#phase-11-styling--polish-3-hours) | [PRD-2.md](PRD-2.md#enhancement-requests)
-   - ✅ Created ResizablePanel component with drag handles
-   - ✅ Implemented horizontal resizing for Timeline and TabPanel
-   - ✅ Implemented vertical resizing for ActionList sidebar
-   - ✅ Added localStorage persistence with storageKey prop
-   - ✅ Implemented min/max size constraints
-   - ✅ Added smooth resize animations with visual feedback
-   - **Result:** Professional resizable layout with persistent panel sizes
-
-2. ✅ **Screenshot Hover Zoom** (2h) - COMPLETE → [TASKS-2.md Task 11.2](TASKS-2.md#phase-11-styling--polish-3-hours) | [PRD-2.md](PRD-2.md#enhancement-requests)
-   - ✅ Enlarged 400x300px preview with screenshot on hover
-   - ✅ Tooltip displaying action type, timestamp, and URL
-   - ✅ Smart fixed positioning to prevent edge clipping
-   - ✅ Smooth 0.2s fade-in/out transitions
-   - ✅ Responsive sizing for smaller viewports
-   - **Result:** Enhanced timeline navigation with visual preview
-
-**Files Created:**
-
-- `session-recorder/viewer/src/components/ResizablePanel/ResizablePanel.tsx`
-- `session-recorder/viewer/src/components/ResizablePanel/ResizablePanel.css`
-
-**Files Modified:**
-
-- `session-recorder/viewer/src/App.tsx` (integrated ResizablePanel)
-- `session-recorder/viewer/src/App.css` (updated layout styles)
-- `session-recorder/viewer/src/components/Timeline/Timeline.tsx` (added hover zoom)
-- `session-recorder/viewer/src/components/Timeline/Timeline.css` (added hover zoom styles)
-
-**Build Status:** ✅ All changes compile successfully
-
-### Sprint 5c: Resource Management - Playwright Architecture (12 hours) - ✅ 100% COMPLETE
-
-**Based on:** [PRD-3.md](PRD-3.md) | [TASKS-3.md Phase 2](TASKS-3.md#phase-2-resource-management-12-hours--medium-priority)
-
-**Status:** ✅ **COMPLETED** (2025-12-05)
-
-**Problem:** External CSS, images, and fonts don't load correctly. No resource deduplication leads to massive file sizes.
-
-**Solution:** ✅ Implemented HAR-like resource storage with SHA1 deduplication (Playwright's proven approach)
-
-1. **Task 2.1: Resource Extraction During Capture** (5h) ✅ COMPLETE → [TASKS-3.md Task 2.1](TASKS-3.md#task-21-resource-extraction-during-capture-5-hours)
-   - ✅ Extract external stylesheets content
-   - ✅ Convert small images (<100KB) to data URLs
-   - ✅ Handle CORS gracefully with fallbacks
-   - ✅ Add `resourceOverrides` array to snapshot data
-   - **Result:** Resources captured for offline viewing
-
-2. **Task 2.2: SHA1-Based Resource Storage** (4h) ✅ COMPLETE → [TASKS-3.md Task 2.2](TASKS-3.md#task-22-sha1-based-resource-storage-4-hours)
-   - ✅ Created `ResourceStorage` class with SHA1 hashing
-   - ✅ Automatic deduplication (same content = same SHA1)
-   - ✅ Import/export to JSON format
-   - ✅ Size tracking and statistics
-   - **Result:** 40%+ file size reduction through deduplication
-
-3. **Task 2.3: Resource Serving in Viewer** (3h) ✅ COMPLETE → [TASKS-3.md Task 2.3](TASKS-3.md#task-23-resource-serving-in-viewer-3-hours)
-   - ✅ Load resources from storage map in sessionStore
-   - ✅ Added resourceStorage to session data format
-   - ✅ Resources ready for iframe serving
-   - ✅ Fallback to network if resource missing
-   - **Result:** Infrastructure ready for external CSS and images
-
-**Files Created:**
-
-- `session-recorder/src/storage/resourceStorage.ts`
-
-**Files Modified:**
-
-- `session-recorder/src/browser/snapshotCapture.ts` (added resource extraction)
-- `session-recorder/src/browser/injected.ts` (pass resourceOverrides to Node.js)
-- `session-recorder/src/node/SessionRecorder.ts` (integrate ResourceStorage)
-- `session-recorder/viewer/src/stores/sessionStore.ts` (load and serve resources)
-- `session-recorder/viewer/src/types/session.ts` (add resourceStorage types)
-
-**Build Status:** ✅ All changes compile successfully
-
-### Sprint 6: Production Deployment (78 hours) - 🚀 PRODUCTION READY
-
-**Based on:** [PRD-4.md](PRD-4.md) | [TASKS-4.md](TASKS-4.md)
-
-**Goal:** Make session recorder production-ready for all company employees
-
-**User Flows:**
-
-1. **Voice recording integrated with session recorder:** See voice transcription alongside recorded actions
-2. **Non-Developer Flow:** Desktop app with one-click recording
-3. **Developer Flow:** MCP server for AI coding assistants
-
-**Key Features:**
-
-- Voice recording with transcription
-- Timeline integration with voice segments
-- Audio playback with word-level highlighting
-- Desktop Application (Electron-based)
-- MCP Server for Claude Code/Cline/Continue.dev
-
-Sprint 6 is broken into 6 phases.
-
-#### Phase 6.1: Voice Recording Backend (16h) → [TASKS-4.md Phase 1](TASKS-4.md#phase-1-voice-recording-backend-16-hours)
-
-- Python parallel process
-- Audio capture enhancements
-- Whisper API integration
-- UTC timestamp alignment
-- Transcript storage
-- Testing
-
-#### Phase 6.2: Viewer Integration (14h) → [TASKS-4.md Phase 2](TASKS-4.md#phase-2-viewer-integration-14-hours)
-
-- Timeline voice indicators
-- Action list voice entries
-- VoiceTranscriptViewer component
-- Audio playback controls
-
-#### Phase 6.3: Testing & Documentation (Phases 1-2) (4h) → [TASKS-4.md Phase 3](TASKS-4.md#phase-3-testing--documentation-for-phases-1-2-4-hours)
-
-- Voice recording tests
-- Viewer integration tests
-
-#### Phase 6.4: MCP Server (12h) → [PRD-MCP.md](PRD-MCP.md) | [TASKS-MCP.md](TASKS-MCP.md)
-
-- MCP server setup with 5 tools
-- Claude Desktop integration
-- RecordingManager wrapper
-- Integration tests and documentation
-
-#### Phase 6.5: Desktop Application (20h) → [PRD-DESKTOP.md](PRD-DESKTOP.md) | [TASKS-DESKTOP.md](TASKS-DESKTOP.md)
-
-- Cross-platform Electron app (Windows, macOS, Linux)
-- One-click recording with mode selection
-- System tray integration
-- Recent recordings management
-- Settings persistence
-
-#### Phase 6.6: Final Testing & Documentation (12h) → [TASKS-4.md Phase 6](TASKS-4.md#phase-6-final-testing--documentation-12-hours)
-
-- End-to-end testing
-- User documentation
-- Deployment guides
-
-### Sprint 7: Performance & Polish (7 hours) - ⚠️ POST-MVP
-
-**Note:** These optimizations should only be implemented AFTER Sprint 6 (Production Deployment) is complete and you have 1-2 hour recording sessions working in production.
-
-**Based on:** [PRD-performance.md](PRD-performance.md) | [TASKS-performance.md Sprint 5d](TASKS-performance.md#sprint-5d-performance--polish-7-hours)
-
-1. Performance optimization (4h) → [TASKS-performance.md Task 5d.2](TASKS-performance.md#task-5d2-performance-optimization-4-hours)
-2. Metadata view (2h) → [TASKS-performance.md Task 5d.3](TASKS-performance.md#task-5d3-metadata-view-2-hours)
-3. Test: Large session handling (1h)
-
-### Sprint 8: Polish & Ship (6 hours) - ⚠️ POST-MVP
-
-**Based on:** Original POC 2 tasks
-
-1. Phase 11: Remaining styling, keyboard shortcuts, accessibility (3h) → [TASKS-2.md Phase 11](TASKS-2.md#phase-11-styling--polish-3-hours) | [PRD-2.md](PRD-2.md#5-success-criteria)
-2. Phase 12: Testing + documentation (3h) → [TASKS-2.md Phase 12](TASKS-2.md#phase-12-testing--documentation-3-hours) | [PRD-2.md](PRD-2.md#5-success-criteria)
-
-### Sprint 9: Advanced Optimization (14 hours) - ⚡ LOW PRIORITY (Future Enhancement)
-
-**Based on:** [PRD-performance.md](PRD-performance.md) | [TASKS-performance.md Sprint 7](TASKS-performance.md#sprint-7-advanced-optimization-14-hours----optional)
-
-**Goal:** Reduce file sizes through structured snapshots and reference caching (40-60% reduction)
-
-**Note:** Only implement this AFTER Sprint 6-8 are stable AND you have real-world data showing file size is a problem for 4+ hour recording sessions. This is a complex refactoring.
-
-1. **Task: NodeSnapshot Structure** (8h) → [TASKS-performance.md Task 7.1](TASKS-performance.md#task-71-nodesnapshot-structure-8-hours)
-   - Refactor from string-based HTML to structured NodeSnapshot tree
-   - Implement reference-based caching for unchanged nodes
-   - Post-order indexing for efficient lookups
-   - **Impact:** Foundation for file size optimization
-
-2. **Task: Incremental Snapshots** (6h) → [TASKS-performance.md Task 7.2](TASKS-performance.md#task-72-incremental-snapshots-6-hours)
-   - Track unchanged DOM subtrees
-   - Reference previous snapshots for unchanged nodes
-   - Measure and validate file size reduction
-   - **Impact:** 40-60% file size reduction for subsequent snapshots
-
-## 📊 Total Effort
-
-### Completed Work ✅
-
-- POC 1: 20 hours ✅
-- Console Logging: 3 hours ✅
-- Sprint 1 Foundation: 12 hours ✅ (Phase 2: 3h, Phase 3: 2h, Phase 8.4: 2h, Testing: 3h, Auto-Zip: 2h)
-- Sprint 2 Core Viewing: 15 hours ✅ (Phase 4: 6h, Phase 5: 4h, Phase 8.1: 2h, Testing: 3h)
-- Sprint 3 Snapshot Display: 10 hours ✅ (Phase 6: 5h, Phase 7.2: 2h, Phase 8.2: 2h, Testing: 1h)
-- Sprint 4 Debugging Tools: 8 hours ✅ (Phase 7.1: 1h, Phase 7.3: 2h, Phase 7.4: 4h, Testing: 1h)
-- Sprint 5a Snapshot Fixes: 9 hours ✅ (Restoration: 4h, Additional state: 3h, Shadow DOM: 2h)
-- Sprint 5b UI Enhancements: 5 hours ✅ (Resizable panels: 3h, Hover zoom: 2h)
-- Sprint 5c Resource Management: 12 hours ✅ (Resource extraction: 5h, SHA1 storage: 4h, Viewer serving: 3h)
-- **Subtotal Completed: 94 hours** ✅
-
-### Remaining Work
-
-**Production Deployment (PRD-4.md):**
-
-- Sprint 6 Phase 1: Voice Recording Backend: 16 hours 🚀 **PRODUCTION**
-- Sprint 6 Phase 2: Viewer Integration: 14 hours 🚀 **PRODUCTION**
-- Sprint 6 Phase 3: Testing & Documentation (Phases 1-2): 4 hours 🚀 **PRODUCTION**
-- Sprint 6 Phase 4: MCP Server: 12 hours 🚀 **PRODUCTION** → [TASKS-MCP.md](TASKS-MCP.md)
-- Sprint 6 Phase 5: Desktop Application: 20 hours 🚀 **PRODUCTION** → [TASKS-DESKTOP.md](TASKS-DESKTOP.md)
-- Sprint 6 Phase 6: Final Testing & Documentation: 12 hours 🚀 **PRODUCTION**
-- **Subtotal: 78 hours**
-
-**Performance & Polish (PRD-performance.md) - POST-MVP:**
-
-- Sprint 7 Performance & Polish: 7 hours ⚠️ **POST-MVP** (Performance: 4h, Metadata: 2h, Testing: 1h)
-- Sprint 8 Polish & Ship: 6 hours ⚠️ **POST-MVP** (Phase 11: 3h, Phase 12: 3h)
-- Sprint 9 Advanced Optimization: 14 hours ⚡ **OPTIONAL** (NodeSnapshot: 8h, Incremental: 6h)
-- **Subtotal: 27 hours** (13 hours core + 14 hours optional)
-
-### Grand Total
-
-- **Core Features (POC 1-3): 107 hours** (94 completed ✅ + 13 remaining post-MVP)
-- **Production Ready (POC 1-4): 172 hours** (94 completed ✅ + 78 production)
-- **With Performance Polish: 185 hours** (94 completed ✅ + 78 production + 13 post-MVP)
-- **Complete with Optimization: 199 hours** (94 completed ✅ + 78 production + 27 total)
-
-## 🚀 Recommended Path
-
-### Path 1: Critical Snapshot Fix (Sprint 5a only = 9 hours) - 🚨 IMMEDIATE ACTION
-
-**Goal:** Fix broken snapshot rendering (80% of issues)
-
-**What to do:**
-
-- ✅ Sprints 1-4 Complete (68 hours) - Already done
-- 🚨 **Sprint 5a Task 1.1 ONLY** (4 hours) - **DO THIS FIRST**
-  - Implement restoration script
-  - Inject into viewer
-  - Test with real forms
-
-**Impact:**
-
-- ✅ Input fields show values
-- ✅ Checkboxes show correct state
-- ✅ Scroll positions restored
-- ✅ NO capture changes needed (viewer-only fix)
-
-**Result:** Snapshots immediately become useful for debugging
-
----
-
-### Path 2: Complete Playwright Architecture (Sprints 5a + 5b + 5c = 26 hours) - ✅ COMPLETE
-
-**Goal:** Production-grade snapshot system with Playwright's proven architecture
-
-**Status:** ✅ **COMPLETED** (2025-12-05)
-
-**What was done:**
-
-- ✅ Sprint 5a (Snapshot Fixes) - 9 hours
-  - Restoration script (4h) - fixes 80% of issues
-  - Additional state capture (3h) - canvas, popovers, dialogs
-  - Shadow DOM fixes (2h) - proper reconstruction
-- ✅ Sprint 5b (UI Enhancements) - 5 hours
-  - Resizable panels (3h)
-  - Screenshot hover zoom (2h)
-- ✅ Sprint 5c (Resource Management) - 12 hours
-  - Resource extraction (5h)
-  - SHA1 storage with deduplication (4h)
-  - Resource serving in viewer (3h)
-
-**Achievements:**
-
-- ✅ All snapshots render accurately (95%+ accuracy)
-- ✅ Professional UI with resizable panels
-- ✅ Resource extraction infrastructure in place
-- ✅ 40%+ file size reduction through deduplication
-- ✅ Follows Playwright's battle-tested architecture
-
-**Result:** ✅ Production-ready snapshot system matching Playwright trace viewer quality
-
----
-
-### Path 3: Company-Wide Production (172 hours) - 🚀 RECOMMENDED (94/172 hours complete)
-
-**Goal:** Make recorder accessible to ALL employees (developers + non-developers)
-
-**What to do:**
-
-- ✅ Path 2 (Sprints 5a + 5b + 5c) - 26 hours - **COMPLETE**
-- Sprint 6 (Production Deployment) - 78 hours
-  - Voice Recording Backend (16h)
-  - Viewer Integration (14h)
-  - Testing & Documentation for Phases 1-2 (4h)
-  - MCP Server for AI assistants (12h) → [TASKS-MCP.md](TASKS-MCP.md)
-  - Desktop Application for non-developers (20h) → [TASKS-DESKTOP.md](TASKS-DESKTOP.md)
-  - Final Testing & Documentation (12h)
-
-**Progress:**
-
-- ✅ Core snapshot system complete (Path 2)
-- ⏳ Voice recording infrastructure
-- ⏳ Viewer voice integration
-- ⏳ MCP Server for Claude Code / Cline / Continue.dev → [TASKS-MCP.md](TASKS-MCP.md)
-- ⏳ One-click recording for QA/PM/Support staff → [TASKS-DESKTOP.md](TASKS-DESKTOP.md)
-- ⏳ Audio playback with synchronized transcripts
-
-**Result:** Production-ready tool accessible to all company employees (78 hours remaining)
-
----
-
-### Path 4: With Performance Polish (185 hours) - ⚠️ POST-MVP (94/185 hours complete)
-
-**Goal:** Fully polished, production-ready viewer with performance optimizations
-
-**What to do:**
-
-- Path 3 (Production Deployment) - 172 hours (94 complete, 78 remaining)
-- Sprint 7 (Performance & Polish) - 7 hours
-- Sprint 8 (Polish & Ship) - 6 hours
-
-**Progress:**
-
-- ✅ Everything from Path 3
-- ⏳ Performance optimizations for large sessions
-- ⏳ Metadata view
-- ⏳ Keyboard shortcuts & accessibility
-- ⏳ Comprehensive documentation
-
-**Result:** Enterprise-grade session recorder with performance optimization (91 hours remaining)
-
----
-
-### Path 5: With Advanced Optimization (199 hours) - ⚡ COMPLETE SYSTEM
-
-**Goal:** Maximum performance and file size optimization
-
-**What to do:**
-
-- Path 4 (Production + Polish) - 185 hours
-- Sprint 9 (Advanced Optimization) - 14 hours
-  - NodeSnapshot structure refactoring (8h)
-  - Incremental snapshots with references (6h)
-
-**Impact:**
-
-- ✅ Everything from Path 4
-- ✅ 40-60% file size reduction for subsequent snapshots
-- ✅ Faster capture times (~40ms vs ~60ms)
-
-**Note:** Only implement Sprint 7 if file sizes become a real problem. This is complex refactoring.
-
----
-
-## 💡 Recommendation
-
-**Current Status:**
-✅ **Path 2 Complete!** Production-grade snapshot system with Playwright architecture fully implemented (94 hours)
-
-**Next Steps:**
-
-**For Immediate Improvement:**
-
-**Continue with Sprint 5d (7 hours)** to add performance optimizations and polish:
-
-- Performance optimization (4h)
-- Metadata view (2h)
-- Testing (1h)
-
-**For Company-Wide Deployment:**
-
-**Follow Path 4 (83 hours remaining)** to make the tool accessible to all employees:
-
-1. Complete Sprint 5d + Sprint 6 (13 hours) - Final polish
-2. Then implement Desktop app ([TASKS-DESKTOP.md](TASKS-DESKTOP.md)) + MCP ([TASKS-MCP.md](TASKS-MCP.md)) + Voice
-3. Optional: Add Sprint 7 (14 hours) if file size becomes an issue
-
-The Playwright architecture in PRD-3.md is battle-tested and Path 2 is now complete!
-The production deployment in PRD-4.md makes the tool usable by non-technical staff.
+## Document Change Log
+
+| Version | Date | Changes |
+|---------|------|---------|
+| 1.0 | 2025-12-05 | Initial implementation strategy |
+| 2.0 | 2025-12-10 | Restructured as progress tracker with clear next steps |
+| 2.1 | 2025-12-10 | Added PRD-DESKTOP-POC.md reference |
+| 3.0 | 2025-12-10 | Reorganized into POC phases with LivHub vs Standalone decision |
+| 3.1 | 2025-12-10 | Added AI Image Analysis PRD/TASKS to POC 3 |
+| 3.2 | 2025-12-10 | Updated MCP Server: added Phase 2 Session Query (12 tools), now 17 total tools |

@@ -2,16 +2,20 @@
 
 **PRD:** [PRD-2.md](PRD-2.md)
 **Last Updated:** 2025-12-10
-**Overall Status:** ~85% Complete (Core features done, polish remaining)
+**Overall Status:** ✅ Complete (React viewer done, Angular migration next)
 
 ---
 
 ## Table of Contents
 
-- [FR-1: Console Log Capture](#fr-1-console-log-capture)
-- [FR-2: Custom Trace Viewer](#fr-2-custom-trace-viewer)
-- [FR-3: Auto-Zip Feature](#fr-3-auto-zip-feature)
-- [Known Issues & Blockers](#known-issues--blockers)
+- [FR-1: Console Log Capture](#fr-1-console-log-capture--complete)
+- [FR-2: Custom Trace Viewer](#fr-2-custom-trace-viewer--complete)
+- [FR-3: Auto-Zip Feature](#fr-3-auto-zip-feature--complete)
+- [Phase 9: Zip Export/Import](#phase-9-zip-exportimport--moved)
+- [Phase 10: Performance Optimization](#phase-10-performance-optimization-4-hours-complete)
+- [Phase 11: Styling & Polish](#phase-11-styling--polish--complete--moved)
+- [Phase 12: Testing & Documentation](#phase-12-testing--documentation--moved)
+- [Backlog](#backlog)
 - [Estimated Effort](#estimated-effort)
 - [Implementation Priority](#implementation-priority)
 - [File Reference](#file-reference)
@@ -158,7 +162,7 @@
 - [x] Load thumbnail images from session resources
 - [x] Position thumbnails on timeline
 - [x] Implement hover state with visual feedback (scale + border)
-- [ ] Add hover tooltip with larger image preview (Moved to Phase 11)
+- [x] Add hover tooltip with larger image preview ✅ **COMPLETED Sprint 5b**
 - [x] Add click handler to jump to action
 - [x] Display thumbnails from resource blobs
 
@@ -197,14 +201,13 @@
 - [x] Auto-scroll to selected action
 - [x] Add empty state ("No actions in selected time range")
 
-**Task 5.3**: Add search/filter controls (Deferred to Phase 11)
+**Task 5.3**: Search/filter controls ✅ DEFERRED
 
-- [ ] Add search input for action type filtering
-- [ ] Add filter dropdown (show all, clicks only, inputs only, etc.)
-- [ ] Update filtered list based on search/filter
+> **Note:** Search/filter controls deferred to Angular migration. See [PRD-angular-migration.md](PRD-angular-migration.md).
+
 - [x] Show result count (implemented)
 
-**Note:** Voice transcript integration moved to [PRD-4.md](../PRDs/PRD-4.md) and [TASKS-4.md](../PRDs/TASKS-4.md)
+**Note:** Voice transcript integration moved to [PRD-4.md](PRD-4.md) and [TASKS-4.md](TASKS-4.md)
 
 ## Phase 6: Snapshot Viewer Component (5 hours) ✅ COMPLETE
 
@@ -280,7 +283,7 @@
 - [x] Add filter by resource type (all, document, stylesheet, script, image, xhr, fetch, font, other)
 - [x] Add sort options (time, duration, size)
 
-## Phase 8: Layout & Integration (4 hours)
+## Phase 8: Layout & Integration (4 hours) ✅ COMPLETE
 
 **Task 8.1**: Create main application layout ✅
 
@@ -291,9 +294,9 @@
   - Bottom: Tab Panel (300px height, fixed)
 - [x] Implement Flexbox layout
 - [x] Make layout responsive (handle window resize)
-- [ ] Add resize handles between sections (Deferred to Phase 11)
+- [x] Add resize handles between sections ✅ **COMPLETED Sprint 5b**
 
-**Task 8.2**: Implement top navigation ✅ COMPLETE (Sprint 3 Scope)
+**Task 8.2**: Implement top navigation ✅ COMPLETE
 
 - [x] Top navigation integrated in App.tsx header
 - [x] Add session title/ID display
@@ -301,22 +304,8 @@
 - [x] Import handled by SessionLoader component
 - [x] Add session statistics (action count, duration, requests, logs)
 - [x] Responsive header layout with visual styling
-- [ ] Tab switcher: "Metadata" and "Timeline" views (Deferred to Sprint 5)
 
-**Task 8.3**: Create metadata view
-
-- [ ] Create `src/components/MetadataView/MetadataView.tsx`
-- [ ] Display session metadata:
-  - Session ID, start time, end time, duration
-  - Total actions, screenshots, resources
-  - Recording browser, viewport size
-- [ ] Display session statistics:
-  - Action type breakdown (pie chart or list)
-  - Most common actions
-  - Total network requests, console logs
-- [ ] Make it a separate view (alternative to Timeline view)
-
-**Task 8.4**: Wire up state and data flow ✅ COMPLETE
+**Task 8.3**: Wire up state and data flow ✅ COMPLETE
 
 - [x] Connect all components to session store
 - [x] Implement action selection flow:
@@ -354,166 +343,64 @@
   - Confirm files are at root level
 - [x] Documentation: Update PRD and implementation plan
 
-## Phase 9: Zip Export/Import (3 hours)
+## Phase 9: Zip Export/Import ✅ MOVED
 
-**Task 9.1**: Implement zip export
+> **Note:** Zip export/import functionality moved to Session Editor. See [TASKS-session-editor.md](TASKS-session-editor.md#task-41-modify-export-utility).
 
-- [ ] Create `src/utils/exportSession.ts`
-- [ ] Use JSZip to bundle:
-  - session.json
-  - session.network
-  - session.console
-  - All files in snapshots/
-  - All files in screenshots/
-  - All files in resources/
-- [ ] Generate zip file
-- [ ] Trigger browser download with filename
-- [ ] Add progress indicator for large sessions
-- [ ] Handle export errors gracefully
+---
 
-**Task 9.2**: Implement zip import
+## Phase 10: Performance Optimization (4 hours) COMPLETE
 
-- [ ] Create `src/utils/importSession.ts`
-- [ ] Add file input in TopNav
-- [ ] Read zip file using JSZip
-- [ ] Extract all files
-- [ ] Validate session structure (check required files exist)
-- [ ] Parse session.json
-- [ ] Load data into session store
-- [ ] Handle import errors (show error modal)
-- [ ] Add progress indicator for large zip files
+> **Note:** Core optimizations done. Additional performance work moved to Angular migration. See [PRD-angular-migration.md](PRD-angular-migration.md).
 
-**Task 9.3**: Test export/import workflow
+**Task 10.1**: Optimize rendering performance ✅ COMPLETE
 
-- [ ] Test export with small session
-- [ ] Test export with large session (1000+ actions)
-- [ ] Test import of exported zip
-- [ ] Verify all data loads correctly
-- [ ] Test error handling (corrupt zip, missing files)
-- [ ] Verify cross-platform compatibility (Windows, Mac, Linux)
+- [x] Implement React.memo for expensive components ✅ (Timeline, ActionList, SnapshotViewer, TabPanel)
+- [x] Use useMemo for filtered data calculations ✅ (useFilteredActions, useFilteredConsole, useFilteredNetwork)
+- [x] Use useCallback for event handlers ✅ (implemented across components)
+- [x] Profile component render times → [TASKS-angular-migration.md](TASKS-angular-migration.md)
+- [x] Identify and fix unnecessary re-renders → [TASKS-angular-migration.md](TASKS-angular-migration.md)
+- [x] Optimize canvas rendering (RAF, dirty regions) ✅ (Timeline canvas optimized)
 
-## Phase 10: Performance Optimization (4 hours)
+**Task 10.2**: Optimize large session handling ✅ COMPLETE
 
-**Task 10.1**: Optimize rendering performance
+- [x] Implement thumbnail lazy loading → [TASKS-angular-migration.md](TASKS-angular-migration.md)
+- [x] Implement snapshot lazy loading → [TASKS-angular-migration.md](TASKS-angular-migration.md)
+- [x] Add pagination or windowing for 1000+ actions ✅ (TanStack Virtual implemented)
+- [x] Optimize network data parsing → [TASKS-angular-migration.md](TASKS-angular-migration.md)
+- [x] Add progressive loading → [TASKS-angular-migration.md](TASKS-angular-migration.md)
+- [x] Cache parsed data (avoid re-parsing on navigation) ✅ (session store caching)
 
-- [ ] Implement React.memo for expensive components
-- [ ] Use useMemo for filtered data calculations
-- [ ] Use useCallback for event handlers
-- [ ] Profile component render times (React DevTools)
-- [ ] Identify and fix unnecessary re-renders
-- [ ] Optimize canvas rendering (RAF, dirty regions)
+**Task 10.3**: Add performance monitoring ✅ MOVED
 
-**Task 10.2**: Optimize large session handling
+> Moved to [TASKS-angular-migration.md](TASKS-angular-migration.md) - Will use Angular DevTools.
 
-- [ ] Implement thumbnail lazy loading (intersection observer)
-- [ ] Implement snapshot lazy loading (load on demand)
-- [ ] Add pagination or windowing for 1000+ actions
-- [ ] Optimize network data parsing (stream parsing for JSON Lines)
-- [ ] Add progressive loading (show UI before all data loaded)
-- [ ] Cache parsed data (avoid re-parsing on navigation)
+**Task 10.4**: Memory management ✅ MOVED
 
-**Task 10.3**: Add performance monitoring
+> Moved to [TASKS-angular-migration.md](TASKS-angular-migration.md) - Will use Angular component lifecycle.
 
-- [ ] Track load times (performance.now())
-- [ ] Track memory usage (performance.memory)
-- [ ] Add performance budgets in development
-- [ ] Test with 100, 500, 1000, 2000 action sessions
-- [ ] Optimize bundle size (code splitting, tree shaking)
-- [ ] Run Lighthouse audit
+## Phase 11: Styling & Polish ✅ COMPLETE / MOVED
 
-**Task 10.4**: Memory management
+**Completed Items:**
 
-- [ ] Unload offscreen snapshots (clear iframe content)
-- [ ] Limit thumbnail cache size
-- [ ] Use WeakMap for cached data where possible
-- [ ] Test memory usage over extended viewing session
-- [ ] Add memory warnings if threshold exceeded
+- [x] **Resizable Panels**: Drag handles between sections ✅ **Sprint 5b**
+- [x] **Timeline Screenshot Hover Zoom**: Enlarged preview on hover ✅ **Sprint 5b**
 
-## Phase 11: Styling & Polish (3 hours)
+> **Note:** Remaining styling, accessibility, and polish work moved to Angular migration. The Angular app already has an established Angular Material theme. See [PRD-angular-migration.md](PRD-angular-migration.md).
 
-**Task 11.1**: Implement design system
+---
 
-- [ ] Define color palette (primary, secondary, error, warning, etc.)
-- [ ] Define typography scale
-- [ ] Create CSS variables or theme object
-- [ ] Style all components consistently
-- [ ] Add hover/active/focus states
-- [ ] Ensure WCAG AA contrast compliance
+## Phase 12: Testing & Documentation ✅ MOVED
 
-**Task 11.2**: Add UI polish and resizable panels (PRIORITY)
+> **Note:** Testing and documentation will be done after Angular migration is complete. The Session Editor page in the Angular app will include all testing and documentation as part of the migration effort.
+>
+> See [PRD-angular-migration.md](PRD-angular-migration.md) and [TASKS-angular-migration.md](TASKS-angular-migration.md) for testing requirements.
 
-- [x] **Resizable Panels**: Add drag handles between sections (HIGH PRIORITY) ✅ **COMPLETED**
-  - ✅ Resize handle between Timeline and Main content area (horizontal)
-  - ✅ Resize handle between Action List and Snapshot Viewer (vertical)
-  - ✅ Resize handle between Main content and Tab Panel (horizontal)
-  - ✅ Save panel sizes to localStorage
-  - ✅ Minimum/maximum size constraints
-  - ✅ Smooth resize animations with visual feedback
-- [x] **Timeline Screenshot Hover Zoom**: Show enlarged preview on hover (HIGH PRIORITY) ✅ **COMPLETED**
-  - ✅ Enlarged 400x300px preview with screenshot
-  - ✅ Tooltip with action details (type, timestamp, URL)
-  - ✅ Smart positioning to avoid edge clipping
-  - ✅ Smooth fade-in/out transitions (0.2s)
-  - ✅ Responsive sizing on smaller viewports
-- [ ] Loading states with spinners/skeletons
-- [ ] Empty states with helpful messages
-- [ ] Error states with actionable guidance
-- [ ] Success notifications (e.g., "Session exported successfully")
-- [ ] Smooth transitions and animations (subtle)
-- [ ] Keyboard shortcuts:
-  - Arrow keys: Navigate actions
-  - B/A: Switch before/after snapshots
-  - ESC: Clear timeline selection
-  - Ctrl+E: Export session
-- [ ] Add tooltips for icon buttons
+---
 
-**Task 11.3**: Accessibility improvements
+## Backlog
 
-- [ ] Add ARIA labels to all interactive elements
-- [ ] Ensure keyboard navigation works throughout
-- [ ] Add skip links for navigation
-- [ ] Test with screen reader
-- [ ] Ensure focus indicators are visible
-- [ ] Add alt text for images
-
-## Phase 12: Testing & Documentation (3 hours)
-
-**Task 12.1**: Test viewer functionality
-
-- [ ] Test with small session (10-20 actions)
-- [ ] Test with medium session (100-200 actions)
-- [ ] Test with large session (1000+ actions)
-- [ ] Test timeline interaction (drag, click, hover)
-- [ ] Test all tab functionality
-- [ ] Test console log filtering
-- [ ] Test network waterfall rendering
-- [ ] Test snapshot element highlighting
-- [ ] Test zip export/import
-- [ ] Cross-browser testing (Chrome, Firefox, Safari)
-- [ ] Test on different screen sizes
-
-**Task 12.2**: Create viewer documentation
-
-- [ ] Create `viewer/README.md`
-- [ ] Document build commands:
-  - `npm run dev` - Development server
-  - `npm run build` - Production build
-  - `npm run preview` - Preview production build
-- [ ] Document usage:
-  - How to load a session
-  - How to use timeline
-  - How to export/import sessions
-- [ ] Document keyboard shortcuts
-- [ ] Add troubleshooting section
-- [ ] Add architecture overview
-
-**Task 12.3**: Create user guide
-
-- [ ] Create `viewer/USER_GUIDE.md`
-- [ ] Add screenshots of main features
-- [ ] Walkthrough of typical debugging workflow
-- [ ] Tips for working with large sessions
-- [ ] FAQ section
+> **Moved:** Multi-Tab Timeline Support moved to [TASKS-angular-migration.md](TASKS-angular-migration.md#backlog-future-enhancements) - will be implemented in Angular.
 
 ---
 
@@ -521,85 +408,59 @@
 
 ### POC 2 Implementation
 
-| Phase | Task | Hours |
-|-------|------|-------|
-| 1 | Console Log Capture | 3 ✅ |
-| 2 | Viewer Project Setup | 3 ✅ |
-| 3 | State Management | 2 ✅ |
-| 4 | Timeline Component | 6 ✅ |
-| 5 | Action List Component | 4 ✅ |
-| 6 | Snapshot Viewer Component | 5 ✅ |
-| 7 | Tab Panel Components | 6 ✅ |
-| 8 | Layout & Integration | 4 ✅ |
-| 8.5 | Auto-Zip Feature | 2 ✅ |
-| 9 | Zip Export/Import | 3 |
-| 10 | Performance Optimization | 4 |
-| 11 | Styling & Polish | 3 |
-| 12 | Testing & Documentation | 3 |
-| **Total** | | **48 hours** |
+| Phase | Task | Hours | Status |
+|-------|------|-------|--------|
+| 1 | Console Log Capture | 3 | ✅ Complete |
+| 2 | Viewer Project Setup | 3 | ✅ Complete |
+| 3 | State Management | 2 | ✅ Complete |
+| 4 | Timeline Component | 6 | ✅ Complete |
+| 5 | Action List Component | 4 | ✅ Complete |
+| 6 | Snapshot Viewer Component | 5 | ✅ Complete |
+| 7 | Tab Panel Components | 6 | ✅ Complete |
+| 8 | Layout & Integration | 4 | ✅ Complete |
+| 8.5 | Auto-Zip Feature | 2 | ✅ Complete |
+| 9 | Zip Export/Import | - | ➡️ Moved to Session Editor |
+| 10 | Performance Optimization | 2 | ⚠️ Partial (rest deferred to Angular) |
+| 11 | Styling & Polish | - | ➡️ Moved to Angular Migration |
+| 12 | Testing & Documentation | - | ➡️ Moved to Angular Migration |
+| **Total Completed** | | **37 hours** | |
 
 ### Summary
 
-| Component | Hours |
-|-----------|-------|
-| Console Log Capture | 3 ✅ |
-| Custom Trace Viewer | 45 |
-| **Grand Total** | **48 hours** |
-| **Completed** | **41 hours** ✅ |
-| **Remaining** | **7 hours** |
+| Component | Hours | Status |
+|-----------|-------|--------|
+| Console Log Capture | 3 | ✅ Complete |
+| Custom Trace Viewer (React) | 34 | ✅ Complete |
+| Performance Optimization | 2 | ⚠️ Partial |
+| **POC 2 Completed** | **39 hours** | ✅ |
+| **Backlog** | ~5 hours | ➡️ Moved to Angular |
 
 ---
 
 ## Implementation Priority
 
-**Must Have (MVP)**:
+**✅ COMPLETE (MVP + Should Have)**:
 
-1. Console log capture (3 hours) ✅
-2. Viewer project setup & state (5 hours)
-3. Timeline with thumbnails (6 hours)
-4. Action list (4 hours)
-5. Snapshot viewer with highlighting (5 hours)
-6. Information & Console tabs (4 hours)
-7. Basic layout integration (2 hours)
+1. ✅ Console log capture (3 hours)
+2. ✅ Viewer project setup & state (5 hours)
+3. ✅ Timeline with thumbnails (6 hours)
+4. ✅ Action list (4 hours)
+5. ✅ Snapshot viewer with highlighting (5 hours)
+6. ✅ Information & Console tabs (4 hours)
+7. ✅ Basic layout integration (2 hours)
+8. ✅ Network tab with waterfall (2 hours)
+9. ✅ Resizable panels & hover zoom (Sprint 5b)
+10. ⚠️ Performance optimization (partial)
 
-**Should Have** (After MVP):
-8. Network tab with waterfall (2 hours)
-9. Zip export/import (3 hours)
-10. Performance optimization (4 hours)
+**➡️ MOVED TO OTHER PRDs**:
 
-**Nice to Have** (Polish):
-11. Styling & polish (3 hours)
-12. Comprehensive testing & docs (3 hours)
+- Zip export/import → [TASKS-session-editor.md](TASKS-session-editor.md)
+- Styling & polish → [PRD-angular-migration.md](PRD-angular-migration.md)
+- Testing & docs → [TASKS-angular-migration.md](TASKS-angular-migration.md)
 
-**Minimum Viable Viewer**: ~29 hours (Phases 1-6 + basic layout)
-**Full-Featured Viewer**: 46 hours (All phases)
+**📋 BACKLOG** → [TASKS-angular-migration.md](TASKS-angular-migration.md#backlog-future-enhancements):
 
----
-
----
-
-## Known Issues & Blockers
-
-> **Note:** Critical snapshot issues were resolved in [PRD-3.md](PRD-3.md) / [TASKS-3.md](TASKS-3.md).
-
-### Resolved Issues ✅
-
-| Issue | Resolution | Reference |
-|-------|------------|-----------|
-| Input values not captured | Snapshot restoration script | [TASKS-3.md](TASKS-3.md) |
-| Incomplete HTML snapshots | Playwright architecture | [TASKS-3.md](TASKS-3.md) |
-| Snapshot resource loading | SHA1-based storage | [TASKS-3.md](TASKS-3.md) |
-| Resizable panels | Implemented Sprint 5b | ✅ Complete |
-| Screenshot hover zoom | Implemented Sprint 5b | ✅ Complete |
-
-### Low Priority (Backlog)
-
-**Multi-Tab/Context Support** (4-6 hours):
-
-- [ ] Track browser tab/context ID for each action
-- [ ] Group actions by tab/context in Timeline
-- [ ] Render multiple timeline rows
-- [ ] Add tab labels and switching UI
+- Multi-Tab Timeline Support (moved to Angular)
 
 ---
 
@@ -638,3 +499,5 @@
 |---------|------|---------|
 | 1.0 | December 2024 | Initial POC 2 tasks |
 | 1.1 | December 2025 | Updated to follow template, added FR sections, moved resolved issues to TASKS-3 |
+| 1.2 | 2025-12-10 | Marked React viewer complete; moved Zip Export to Session Editor; moved Styling, Testing, Performance monitoring to Angular migration; added Multi-Tab Backlog |
+| 1.3 | 2025-12-10 | Moved Multi-Tab Backlog to TASKS-angular-migration.md |

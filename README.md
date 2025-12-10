@@ -4,7 +4,7 @@ A Playwright-based session recorder that captures **USER** actions (manual click
 
 ## Implementing next step
 
-Implement the following items below. Once complete, Update the TASKS and PRD accordingly to state what is completed, as well as the @session-recorder/PRDs/NEXT.md
+Implement the following items below. Once complete, Update the TASKS and PRD accordingly to state what is completed, as well as the @session-recorder/PRDs/PROGRESS.md
 
 ## Overview
 

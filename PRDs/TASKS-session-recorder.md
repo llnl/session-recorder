@@ -311,13 +311,6 @@
 - [ ] Export to Confluence format
 - [ ] Include screenshots in exports
 
-### FR-5.5: Video Export ❌ NOT STARTED
-
-- [ ] Generate MP4 video from screenshots
-- [ ] Sync audio with video
-- [ ] Configurable frame rate
-- [ ] Include action overlays
-
 ---
 
 ## Technical Requirements

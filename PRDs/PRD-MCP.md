@@ -1,9 +1,9 @@
 # PRD-MCP: Session Recorder MCP Server
 
-**Version:** 1.1
+**Version:** 2.0
 **Last Updated:** December 2025
 **Status:** ⚡ Planning
-**Depends On:** [PRD-4.md](PRD-4.md) (Voice Recording - Complete)
+**Depends On:** [PRD-4.md](PRD-4.md) (Voice Recording), [PRD-session-editor.md](PRD-session-editor.md) (Description Button)
 
 ---
 
@@ -11,9 +11,25 @@
 
 | Role | Primary Use Cases |
 |------|-------------------|
-| **AI-Assisted Developers** | Control recording via Claude Code, Cline, Continue.dev, Cursor |
-| **Developers** | Create bug reports and tutorials via natural language commands |
-| **QA Engineers** | Automate session recording through AI assistant workflows |
+| **AI-Assisted Developers** | Control recording via Claude Code, generate app specs from recordings |
+| **Developers** | Create bug reports and documentation via natural language commands |
+| **QA Engineers** | Automate session recording, generate regression tests from recordings |
+| **Technical Writers** | Extract documentation from recorded walkthroughs |
+| **Business Analysts** | Generate requirements from domain expert recordings |
+
+---
+
+## MCP Server Phases
+
+The MCP server has two complementary phases:
+
+| Phase | Purpose | Tools | Transport |
+|-------|---------|-------|-----------|
+| **Phase 1: Recording Control** | Start/stop browser & voice recording | 5 tools | stdio |
+| **Phase 2: Session Query** | Search & analyze session.zip files | 12 tools | HTTP |
+
+**Phase 1** enables AI to control recording sessions.
+**Phase 2** enables AI to query and understand recorded sessions for documentation, testing, and bug reports.
 
 ---
 
@@ -646,9 +662,427 @@ export class RecordingManager {
 
 ---
 
+---
+
+# Phase 2: Session Query MCP Server
+
+## Executive Summary
+
+Phase 2 adds 12 MCP tools that enable AI assistants to search and analyze recorded sessions. Instead of storing session data in databases, the MCP server queries session.zip files at runtime, returning text-based data optimized for AI context windows.
+
+---
+
+## Prerequisites
+
+### PR-1: Screenshot Description Button (Session Editor)
+
+**Must implement first** - Add ability to describe each screenshot in the Session Editor.
+
+**Why this matters**: AI can understand what's in screenshots without seeing images. This enables text-only MCP without sending large binary data.
+
+```typescript
+interface RecordedAction {
+  // ... existing fields
+  description?: string;  // Human-written description of what's shown
+}
+```
+
+### PR-2: Notes System (Session Editor PRD)
+
+Notes between actions provide additional context for AI. Already planned in PRD-session-editor.md.
+
+---
+
+## Data Flow (Phase 2)
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         ENRICHMENT PHASE                                 │
+│                                                                          │
+│   1. Record Session        2. Review & Describe        3. Export         │
+│   ─────────────────       ───────────────────────     ─────────────      │
+│                                                                          │
+│   session.zip             Session Editor               enriched.zip      │
+│   ├─ actions[]            ├─ [Describe] button        ├─ actions[]       │
+│   ├─ voice transcript     │   for each screenshot     │   + descriptions │
+│   └─ screenshots/         └─ Add notes between        ├─ notes[]         │
+│                               actions                  └─ transcript      │
+│                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         SEARCH PHASE (MCP / TypeScript API)              │
+│                                                                          │
+│   MCP Tools (Claude Code):          TypeScript API (Code Mode):          │
+│   • session_search("login")         const api = new SessionAPI(path);    │
+│   • session_get_range(5, 12)        await api.search("login");           │
+│   • session_get_urls()              await api.getRange(5, 12);           │
+│   • session_get_errors()            await api.getUrls();                 │
+│                                                                          │
+│   AI generates from TEXT DATA:                                           │
+│   • app_spec.txt                                                         │
+│   • feature_list.json                                                    │
+│   • Playwright tests                                                     │
+│   • Bug reports                                                          │
+│                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Use Cases (Phase 2)
+
+### UC-Q1: Legacy Application Documentation
+
+**Actor:** Developer with domain expert
+**Duration:** 30-120 minutes recording, 5-10 minutes AI analysis
+**Scenario:** Domain expert records a walkthrough of a legacy ERP system while narrating. Developer uses AI to generate app_spec.txt.
+
+**MCP Workflow:**
+1. `session_load` - Load the session, get overview
+2. `session_get_summary` - Understand structure
+3. `session_get_urls` - Map application pages
+4. `session_search("important")` - Find key features mentioned
+5. `session_get_range` - Extract each feature's actions
+6. AI generates app_spec.txt from collected text
+
+### UC-Q2: QA Bug Report
+
+**Actor:** QA Engineer
+**Duration:** 2-15 minutes recording, 2-5 minutes AI analysis
+**Scenario:** QA records a bug reproduction, narrating expected vs actual behavior. AI generates structured bug report.
+
+**MCP Workflow:**
+1. `session_load` - Load the session
+2. `session_get_errors` - Find console/network errors
+3. `session_get_timeline` - Get action sequence
+4. `session_search("error OR fail")` - Find QA's error mentions
+5. AI generates bug report with steps, expected, actual, evidence
+
+### UC-Q3: Regression Test Generation
+
+**Actor:** QA Engineer
+**Duration:** 5-30 minutes recording, 5-10 minutes AI analysis
+**Scenario:** QA records a test flow with assertions narrated. AI generates Playwright tests.
+
+**MCP Workflow:**
+1. `session_load` - Load the session
+2. `session_get_timeline` - Get action sequence with voice
+3. `session_get_action` - Get element selectors for each action
+4. `session_search("should OR verify OR expect")` - Find assertion hints
+5. AI generates Playwright test code
+
+---
+
+## Phase 2 MCP Tools Specification
+
+### Tool Q1: `session_load`
+
+**Purpose:** Load a session.zip into memory for querying
+
+**Context cost:** ~200 tokens
+
+```typescript
+session_load(path: string): {
+  sessionId: string;
+  duration: number;           // ms
+  actionCount: number;
+  hasVoice: boolean;
+  hasDescriptions: boolean;
+  hasNotes: boolean;
+  urls: string[];             // Unique URLs (max 20)
+  summary: {
+    clicks: number;
+    inputs: number;
+    navigations: number;
+    voiceSegments: number;
+  };
+}
+```
+
+### Tool Q2: `session_search`
+
+**Purpose:** Full-text search across all text content
+
+**Context cost:** ~50-500 tokens
+
+```typescript
+session_search(sessionId: string, query: string, options?: {
+  searchIn?: ('transcript' | 'descriptions' | 'notes' | 'values' | 'urls')[];
+  limit?: number;             // Default 10, max 50
+  includeContext?: boolean;   // Default true
+}): SearchResult[]
+```
+
+### Tool Q3: `session_get_summary`
+
+**Purpose:** Get high-level overview with content previews
+
+**Context cost:** ~300-500 tokens
+
+```typescript
+session_get_summary(sessionId: string): {
+  sessionId: string;
+  duration: number;
+  totalActions: number;
+  byType: Record<ActionType, number>;
+  urls: { url: string; actionCount: number; }[];
+  hasVoice: boolean;
+  hasDescriptions: boolean;
+  hasNotes: boolean;
+  errorCount: number;
+  transcriptPreview: string;  // First 500 chars
+  featuresDetected: string[]; // Keyword-based
+}
+```
+
+### Tool Q4: `session_get_actions`
+
+**Purpose:** Get filtered list of actions with summaries
+
+**Context cost:** ~20 tokens per action
+
+```typescript
+session_get_actions(sessionId: string, options?: {
+  types?: ActionType[];
+  url?: string;
+  startIndex?: number;
+  limit?: number;             // Default 20, max 100
+}): { total: number; returned: number; actions: ActionSummary[]; }
+```
+
+### Tool Q5: `session_get_action`
+
+**Purpose:** Get full details of single action
+
+**Context cost:** ~100-300 tokens
+
+```typescript
+session_get_action(sessionId: string, actionId: string): ActionDetail
+```
+
+### Tool Q6: `session_get_range`
+
+**Purpose:** Get sequence of actions with combined context
+
+**Context cost:** ~50 tokens per action + voice/notes
+
+```typescript
+session_get_range(sessionId: string, startId: string, endId: string): {
+  actions: ActionDetail[];
+  combinedTranscript: string;
+  combinedNotes: string[];
+  descriptions: string[];
+  urls: string[];
+  duration: number;
+}
+```
+
+### Tool Q7: `session_get_urls`
+
+**Purpose:** Get URL navigation structure
+
+**Context cost:** ~30 tokens per URL
+
+```typescript
+session_get_urls(sessionId: string): UrlFlow[]
+```
+
+### Tool Q8: `session_get_errors`
+
+**Purpose:** Find all errors (console + network)
+
+**Context cost:** ~50-200 tokens
+
+```typescript
+session_get_errors(sessionId: string): {
+  console: ConsoleError[];
+  network: NetworkError[];
+  total: number;
+}
+```
+
+### Tool Q9: `session_get_timeline`
+
+**Purpose:** Get chronological interleaved timeline
+
+**Context cost:** ~30 tokens per entry
+
+```typescript
+session_get_timeline(sessionId: string, options?: {
+  startTime?: string;
+  endTime?: string;
+  limit?: number;             // Default 50, max 200
+  offset?: number;
+}): { total: number; entries: TimelineEntry[]; }
+```
+
+### Tool Q10: `session_get_context`
+
+**Purpose:** Get context window around specific action
+
+**Context cost:** ~200-400 tokens
+
+```typescript
+session_get_context(sessionId: string, actionId: string, options?: {
+  before?: number;            // Default 3
+  after?: number;             // Default 3
+}): {
+  target: ActionDetail;
+  before: ActionSummary[];
+  after: ActionSummary[];
+  voiceContext: string;
+  noteContext: string[];
+}
+```
+
+### Tool Q11: `session_search_network`
+
+**Purpose:** Search network requests
+
+**Context cost:** ~30 tokens per request
+
+```typescript
+session_search_network(sessionId: string, options?: {
+  urlPattern?: string;
+  method?: string;
+  status?: number;
+  contentType?: string;
+  limit?: number;             // Default 20
+}): NetworkEntry[]
+```
+
+### Tool Q12: `session_search_console`
+
+**Purpose:** Search console logs
+
+**Context cost:** ~30 tokens per entry
+
+```typescript
+session_search_console(sessionId: string, options?: {
+  level?: 'error' | 'warn' | 'log' | 'info';
+  pattern?: string;
+  limit?: number;             // Default 20
+}): ConsoleEntry[]
+```
+
+---
+
+## Context Budget Summary (Phase 2)
+
+| Tool | Typical | Max | Use Case |
+|------|---------|-----|----------|
+| `session_load` | 150 | 300 | Start here |
+| `session_search` | 200 | 1000 | Find relevant parts |
+| `session_get_summary` | 400 | 600 | Understand structure |
+| `session_get_actions` | 400 | 2000 | Browse action list |
+| `session_get_action` | 200 | 400 | Deep dive one action |
+| `session_get_range` | 500 | 2000 | Extract feature/flow |
+| `session_get_urls` | 200 | 500 | Map navigation |
+| `session_get_errors` | 150 | 500 | Bug investigation |
+| `session_get_timeline` | 500 | 2000 | Understand full flow |
+| `session_get_context` | 300 | 600 | Understand one moment |
+| `session_search_network` | 300 | 800 | API debugging |
+| `session_search_console` | 200 | 600 | Debug logging |
+
+**Typical 5-feature app analysis:** ~3000-5000 tokens total
+
+---
+
+## Code Mode (TypeScript API)
+
+In addition to MCP tools, provide a TypeScript API for programmatic access:
+
+```typescript
+import { SessionAPI } from '@session-recorder/api';
+
+const session = await SessionAPI.load('/path/to/session.zip');
+const summary = await session.getSummary();
+const results = await session.search('login');
+await session.unload();
+```
+
+**Use cases:** CI/CD integration, batch processing, unit testing, non-MCP clients
+
+---
+
+## Phase 2 Architecture
+
+### Integration with Viewer
+
+Phase 2 MCP server is integrated with the viewer's Express server (HTTP transport).
+
+```
+session-recorder/
+├── viewer/
+│   ├── src/
+│   │   ├── server/                   # MCP server (Phase 2)
+│   │   │   ├── mcp.ts                # MCP protocol handler
+│   │   │   ├── sessionStore.ts       # Session cache
+│   │   │   └── tools/
+│   │   │       ├── session.ts        # load, unload
+│   │   │       ├── search.ts         # search tools
+│   │   │       ├── navigation.ts     # get_actions, get_urls
+│   │   │       └── errors.ts         # error tools
+│   │   └── api/                      # TypeScript API
+│   │       ├── SessionAPI.ts
+│   │       └── types.ts
+│   └── package.json
+```
+
+### Claude Code Configuration (Phase 2)
+
+```json
+{
+  "mcpServers": {
+    "session-query": {
+      "url": "http://localhost:3000/mcp",
+      "transport": "http"
+    }
+  }
+}
+```
+
+---
+
+## Phase 2 Implementation
+
+### P2-Phase 1: Prerequisites (Session Editor)
+
+| Task | File | Description |
+|------|------|-------------|
+| Add description field | `types/session.ts` | Add `description?: string` to actions |
+| Describe button UI | `viewer/src/components/ActionList.tsx` | Button to add description |
+| Description modal | `viewer/src/components/DescriptionModal.tsx` | Edit description |
+| Persist descriptions | `viewer/src/services/editOperations.ts` | Save as edit operation |
+| Export with descriptions | `viewer/src/services/zipHandler.ts` | Include in export |
+
+### P2-Phase 2: MCP Server Integration
+
+| Task | File | Description |
+|------|------|-------------|
+| MCP endpoint | `viewer/src/server/mcp.ts` | Express route for MCP |
+| Session store | `viewer/src/server/sessionStore.ts` | In-memory session cache |
+| Tool: session_load | `viewer/src/server/tools/session.ts` | Load zip into memory |
+| Tool: session_search | `viewer/src/server/tools/search.ts` | Full-text search |
+| Tool: session_get_* | `viewer/src/server/tools/navigation.ts` | Navigation tools |
+| Tool: session_get_errors | `viewer/src/server/tools/errors.ts` | Error extraction |
+
+### P2-Phase 3: Testing & Docs
+
+| Task | Description |
+|------|-------------|
+| Test with sample session | Record session, describe, export, query via MCP |
+| MCP client config | Document how to add to Claude Code |
+| Usage examples | Document common AI workflows |
+
+---
+
 ## Document Change Log
 
 | Version | Date | Changes |
 |---------|------|---------|
-| 1.0 | 2025-12-06 | Initial PRD for MCP Server |
+| 1.0 | 2025-12-06 | Initial PRD for MCP Server (Recording Control) |
 | 1.1 | 2025-12-10 | Updated to follow template, added Target Users table |
+| 2.0 | 2025-12-10 | Added Phase 2: Session Query MCP Server (12 tools) |

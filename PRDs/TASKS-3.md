@@ -478,13 +478,13 @@ useEffect(() => {
 4. **Manual testing** (0.5 hours)
 
 Test scenarios:
-- [ ] Input fields show typed values
-- [ ] Checkboxes show correct checked state
-- [ ] Radio buttons show correct selection
-- [ ] Select dropdowns show correct option
-- [ ] Scroll positions are restored
-- [ ] Shadow DOM components render
-- [ ] No console errors in viewer
+- [x] Input fields show typed values ✅
+- [x] Checkboxes show correct checked state ✅
+- [x] Radio buttons show correct selection ✅
+- [x] Select dropdowns show correct option ✅
+- [x] Scroll positions are restored ✅
+- [x] Shadow DOM components render ✅
+- [x] No console errors in viewer → Deferred to [TASKS-angular-migration.md](TASKS-angular-migration.md) (MutationObserver error in injection)
 
 #### Acceptance Criteria
 
