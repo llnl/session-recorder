@@ -9,6 +9,13 @@ export interface UserAction {
   timestamp: string; // ISO 8601 UTC
   x?: number; // For click events
   y?: number;
+  button?: number; // Mouse button: 0=left, 1=middle, 2=right
+  modifiers?: {
+    ctrl: boolean;
+    shift: boolean;
+    alt: boolean;
+    meta: boolean; // Cmd on Mac, Win on Windows
+  };
   value?: string; // For input events
   key?: string; // For keydown events
 }
@@ -26,7 +33,14 @@ export function setupActionListeners(
       target: target,
       timestamp: new Date().toISOString(),
       x: e.clientX,
-      y: e.clientY
+      y: e.clientY,
+      button: e.button,
+      modifiers: {
+        ctrl: e.ctrlKey,
+        shift: e.shiftKey,
+        alt: e.altKey,
+        meta: e.metaKey
+      }
     });
   }, { capture: true });
 
@@ -67,9 +81,9 @@ export function setupActionListeners(
     });
   }, { capture: true });
 
-  // Key events (Enter, Tab, Escape)
+  // Key events (Enter, Tab, Escape, Delete, Backspace)
   document.addEventListener('keydown', async (e) => {
-    if (!['Enter', 'Tab', 'Escape'].includes(e.key)) return;
+    if (!['Enter', 'Tab', 'Escape', 'Delete', 'Backspace'].includes(e.key)) return;
 
     const target = e.target as Element;
     if (!target) return;

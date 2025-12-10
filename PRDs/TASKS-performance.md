@@ -21,13 +21,28 @@ This document breaks down performance optimization objectives into actionable ta
 **Deliverable:** Instant page navigation with background async resource capture
 **Priority:** IMMEDIATE - Recording is currently unusable
 
+### Partial Progress (2025-12-09)
+
+**Quick wins implemented:**
+- ✅ Converted all `fs.writeFileSync` to async `fsPromises.writeFile` in hot paths
+- ✅ Converted `fs.appendFileSync` to async for network/console logs (fire-and-forget)
+- ✅ Parallel resource processing with `Promise.all` in `_processSnapshotResources`
+- ✅ Reduced network timeout from 8s→3s fallback, 10s→5s networkidle
+- ✅ Removed visibility change events (tab switching) - eliminates snapshot overhead
+- ✅ Removed volumechange from media events - reduces event noise
+
+**Still TODO for full implementation:**
+- Task 5c.1: ResourceCaptureQueue (priority queue with concurrency limits)
+- Task 5c.2: Non-blocking response handler (fire-and-forget pattern)
+- Task 5c.3: Background SHA1 hashing with setImmediate
+
 ### Problem Analysis
 
 **Current bottleneck in `SessionRecorder._handleNetworkResponse()` (lines 790-869):**
 - Line 854: `buffer = await response.body()` - Blocks waiting for full download
 - Line 857: `this._calculateSha1(buffer)` - CPU-intensive, blocks event loop
-- Line 865: `this.onContentBlob()` - Synchronous disk I/O
-- Lines 868-880: CSS rewriting adds additional processing
+- ~~Line 865: `this.onContentBlob()` - Synchronous disk I/O~~ ✅ FIXED - Now async
+- ~~Lines 868-880: CSS rewriting adds additional processing~~ ✅ FIXED - Now async
 
 **Impact with multi-tab:**
 - 3 tabs × 100 resources each = 300 total resources

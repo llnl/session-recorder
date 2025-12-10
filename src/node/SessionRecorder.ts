@@ -4,10 +4,11 @@
 
 import { Page, BrowserContext } from '@playwright/test';
 import * as fs from 'fs';
+import { promises as fsPromises } from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
 import archiver from 'archiver';
-import { SessionData, RecordedAction, NavigationAction, HarEntry, SnapshotterBlob, NetworkEntry, ConsoleEntry, VoiceTranscriptAction, PageVisibilityAction, MediaAction, DownloadAction, FullscreenAction, PrintAction, AnyAction, BrowserEventSnapshot } from './types';
+import { SessionData, RecordedAction, NavigationAction, HarEntry, SnapshotterBlob, NetworkEntry, ConsoleEntry, VoiceTranscriptAction, MediaAction, DownloadAction, FullscreenAction, PrintAction, AnyAction, BrowserEventSnapshot } from './types';
 import { ResourceStorage } from '../storage/resourceStorage';
 import { VoiceRecorder } from '../voice/VoiceRecorder';
 
@@ -36,7 +37,7 @@ interface TrackedPage {
   previousUrl: string;  // For tracking navigation events
   isInitialLoad: boolean;  // True until first navigation event recorded
   pendingNavigation?: NodeJS.Timeout;  // Debounce timer for navigation events
-  visibilityState?: 'visible' | 'hidden';  // Last known visibility state
+
 }
 
 export class SessionRecorder {
@@ -403,19 +404,10 @@ export class SessionRecorder {
         (function() {
           console.log('Setting up browser event listeners...');
 
-          // Page visibility changes (tab switches)
-          document.addEventListener('visibilitychange', function() {
-            if (typeof window.__recordVisibilityChange === 'function') {
-              window.__recordVisibilityChange({
-                state: document.visibilityState
-              });
-            }
-          });
-
-          // Media events (video/audio)
+          // Media events (video/audio) - play, pause, ended, seeked (no volumechange)
           function setupMediaListeners(mediaElement) {
             const mediaType = mediaElement.tagName.toLowerCase();
-            const events = ['play', 'pause', 'ended', 'seeked', 'volumechange'];
+            const events = ['play', 'pause', 'ended', 'seeked'];
 
             events.forEach(function(eventName) {
               mediaElement.addEventListener(eventName, function() {
@@ -524,41 +516,6 @@ export class SessionRecorder {
     try {
       await page.exposeFunction('__recordConsoleLog', async (entry: ConsoleEntry) => {
         this._handleConsoleLog(entry);
-      });
-    } catch (e: any) {
-      if (!e.message?.includes('already been registered')) throw e;
-    }
-
-    // Expose function for visibility changes
-    try {
-      await page.exposeFunction('__recordVisibilityChange', async (data: { state: string; previousState?: string }) => {
-        const tracked = this.pages.get(tabId);
-        if (tracked) {
-          const prevState = tracked.visibilityState;
-          tracked.visibilityState = data.state as 'visible' | 'hidden';
-
-          const actionId = `visibility-${this.sessionData.actions.length + 1}`;
-
-          // Only capture screenshot when switching TO this tab (visible state)
-          // When switching away (hidden), the page content would be blank/white
-          const snapshot = data.state === 'visible'
-            ? await this._captureBrowserEventSnapshot(page, actionId, tabId)
-            : undefined;
-
-          const action: PageVisibilityAction = {
-            id: actionId,
-            timestamp: new Date().toISOString(),
-            type: 'page_visibility',
-            tabId,
-            visibility: {
-              state: data.state as 'visible' | 'hidden',
-              previousState: prevState
-            },
-            snapshot
-          };
-          this.sessionData.actions.push(action);
-          console.log(`👁️ [Tab ${tabId}] Visibility: ${data.state}${snapshot ? ' (screenshot captured)' : ''}`);
-        }
       });
     } catch (e: any) {
       if (!e.message?.includes('already been registered')) throw e;
@@ -706,8 +663,8 @@ export class SessionRecorder {
       // Wait for network to be idle (page fully loaded)
       // Use Promise.race to timeout if networkidle takes too long
       await Promise.race([
-        page.waitForLoadState('networkidle', { timeout: 10000 }),
-        new Promise(resolve => setTimeout(resolve, 8000)) // Fallback after 8s
+        page.waitForLoadState('networkidle', { timeout: 5000 }),
+        new Promise(resolve => setTimeout(resolve, 3000)) // Fallback after 3s
       ]).catch(() => {});
 
       // Verify page is still on the same URL after waiting
@@ -752,11 +709,11 @@ export class SessionRecorder {
         await this._processSnapshotResources(resourceOverrides);
       }
 
-      // Save HTML snapshot
+      // Save HTML snapshot (async for performance)
       if (htmlContent) {
         const rewrittenHtml = this._rewriteHTML(htmlContent, toUrl);
         const snapshotPath = path.join(this.sessionDir, 'snapshots', `${actionId}.html`);
-        fs.writeFileSync(snapshotPath, rewrittenHtml, 'utf-8');
+        await fsPromises.writeFile(snapshotPath, rewrittenHtml, 'utf-8');
       }
 
       // Capture screenshot
@@ -867,10 +824,10 @@ export class SessionRecorder {
         await this._processSnapshotResources(resourceOverrides);
       }
 
-      // Save HTML snapshot
+      // Save HTML snapshot (async for performance)
       if (htmlContent) {
         const rewrittenHtml = this._rewriteHTML(htmlContent, pageUrl);
-        fs.writeFileSync(fullHtmlPath, rewrittenHtml, 'utf-8');
+        await fsPromises.writeFile(fullHtmlPath, rewrittenHtml, 'utf-8');
       }
 
       // Capture screenshot
@@ -916,13 +873,13 @@ export class SessionRecorder {
     // Rewrite HTML to reference local resources
     const rewrittenHtml = this._rewriteHTML(data.beforeHtml, data.beforeUrl);
 
-    // Save BEFORE HTML snapshot as separate file
+    // Save BEFORE HTML snapshot as separate file (async for performance)
     const beforeSnapshotPath = path.join(
       this.sessionDir,
       'snapshots',
       `${actionId}-before.html`
     );
-    fs.writeFileSync(beforeSnapshotPath, rewrittenHtml, 'utf-8');
+    await fsPromises.writeFile(beforeSnapshotPath, rewrittenHtml, 'utf-8');
 
     // Take BEFORE screenshot
     const beforeScreenshotPath = path.join(
@@ -962,6 +919,8 @@ export class SessionRecorder {
         type: data.action.type,
         x: data.action.x,
         y: data.action.y,
+        button: data.action.button,
+        modifiers: data.action.modifiers,
         value: data.action.value,
         key: data.action.key,
         timestamp: data.action.timestamp
@@ -996,13 +955,13 @@ export class SessionRecorder {
     // Rewrite HTML to reference local resources
     const rewrittenHtml = this._rewriteHTML(data.afterHtml, data.afterUrl);
 
-    // Save AFTER HTML snapshot as separate file
+    // Save AFTER HTML snapshot as separate file (async for performance)
     const afterSnapshotPath = path.join(
       this.sessionDir,
       'snapshots',
       `${actionId}-after.html`
     );
-    fs.writeFileSync(afterSnapshotPath, rewrittenHtml, 'utf-8');
+    await fsPromises.writeFile(afterSnapshotPath, rewrittenHtml, 'utf-8');
 
     // Take AFTER screenshot
     const afterScreenshotPath = path.join(
@@ -1452,9 +1411,11 @@ export class SessionRecorder {
   /**
    * Process resources extracted from snapshot capture (CSS, images)
    * Stores them using ResourceStorage with SHA1 deduplication
+   * Uses Promise.all for parallel processing
    */
   private async _processSnapshotResources(resourceOverrides: any[]): Promise<void> {
-    for (const resource of resourceOverrides) {
+    // Process all resources in parallel for better performance
+    const writePromises = resourceOverrides.map(async (resource) => {
       try {
         // Store resource using ResourceStorage (with SHA1 deduplication)
         const sha1 = await this.resourceStorage.storeResource(
@@ -1468,7 +1429,7 @@ export class SessionRecorder {
         this.urlToResourceMap.set(resource.url, filename);
         this.allResources.add(sha1);
 
-        // Write resource to disk
+        // Write resource to disk (async)
         const resourcePath = path.join(this.resourcesDir, filename);
         const storedResource = this.resourceStorage.getResource(sha1);
         if (storedResource) {
@@ -1480,13 +1441,15 @@ export class SessionRecorder {
             ? Buffer.from(storedResource.content, 'utf8')
             : Buffer.from(storedResource.content, 'base64');
 
-          fs.writeFileSync(resourcePath, buffer);
+          await fsPromises.writeFile(resourcePath, buffer);
           console.log(`📦 Stored snapshot resource: ${filename} (${resource.size} bytes) - ${resource.contentType}`);
         }
       } catch (error) {
         console.warn(`[SessionRecorder] Failed to process snapshot resource ${resource.url}:`, error);
       }
-    }
+    });
+
+    await Promise.all(writePromises);
   }
 
   /**
@@ -1569,12 +1532,12 @@ export class SessionRecorder {
             // Save via onContentBlob (mimics HarTracer delegate pattern)
             this.onContentBlob(filename, buffer);
 
-            // If CSS, also rewrite and save rewritten version
+            // If CSS, also rewrite and save rewritten version (async)
             if (contentType.includes('text/css')) {
               const cssContent = buffer.toString('utf-8');
               const rewrittenCSS = this._rewriteCSS(cssContent, url);
               const rewrittenBuffer = Buffer.from(rewrittenCSS, 'utf-8');
-              fs.writeFileSync(path.join(this.resourcesDir, filename), rewrittenBuffer);
+              fsPromises.writeFile(path.join(this.resourcesDir, filename), rewrittenBuffer).catch(() => {});
             }
 
             console.log(`📦 Captured resource: ${filename} (${buffer.length} bytes) - ${contentType}`);
@@ -1599,8 +1562,8 @@ export class SessionRecorder {
         error: status >= 400 ? statusText : undefined
       };
 
-      // Write network entry to log file (JSON Lines format)
-      fs.appendFileSync(this.networkLogPath, JSON.stringify(networkEntry) + '\n', 'utf-8');
+      // Write network entry to log file (JSON Lines format) - async, fire-and-forget
+      fsPromises.appendFile(this.networkLogPath, JSON.stringify(networkEntry) + '\n', 'utf-8').catch(() => {});
       this.networkRequestCount++;
 
     } catch (err) {
@@ -1612,13 +1575,9 @@ export class SessionRecorder {
    * Handle console logs from the browser
    */
   private _handleConsoleLog(entry: ConsoleEntry): void {
-    try {
-      // Write console entry to log file (JSON Lines format)
-      fs.appendFileSync(this.consoleLogPath, JSON.stringify(entry) + '\n', 'utf-8');
-      this.consoleLogCount++;
-    } catch (err) {
-      console.error('Failed to write console log:', err);
-    }
+    // Write console entry to log file (JSON Lines format) - async, fire-and-forget
+    fsPromises.appendFile(this.consoleLogPath, JSON.stringify(entry) + '\n', 'utf-8').catch(() => {});
+    this.consoleLogCount++;
   }
 
   /**
@@ -1632,7 +1591,8 @@ export class SessionRecorder {
     this.allResources.add(sha1);
 
     const resourcePath = path.join(this.resourcesDir, sha1);
-    fs.writeFileSync(resourcePath, buffer);
+    // Async write, fire-and-forget for performance
+    fsPromises.writeFile(resourcePath, buffer).catch(() => {});
 
     // Track in session data
     if (this.sessionData.resources) {

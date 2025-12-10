@@ -218,6 +218,13 @@ export interface ActionDetails {
   type: string;
   x?: number;
   y?: number;
+  button?: number; // Mouse button: 0=left, 1=middle, 2=right
+  modifiers?: {
+    ctrl: boolean;
+    shift: boolean;
+    alt: boolean;
+    meta: boolean;
+  };
   value?: string;
   key?: string;
   timestamp: string;

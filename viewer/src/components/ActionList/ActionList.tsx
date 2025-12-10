@@ -204,6 +204,28 @@ export const ActionList = () => {
     }
   };
 
+  const getClickDetails = (action: RecordedAction) => {
+    const parts: string[] = [];
+
+    // Button type
+    if (action.action.button === 1) {
+      parts.push('Middle');
+    } else if (action.action.button === 2) {
+      parts.push('Right');
+    }
+
+    // Modifiers
+    if (action.action.modifiers) {
+      const mods = action.action.modifiers;
+      if (mods.ctrl) parts.push('Ctrl');
+      if (mods.shift) parts.push('Shift');
+      if (mods.alt) parts.push('Alt');
+      if (mods.meta) parts.push('Cmd');
+    }
+
+    return parts.length > 0 ? parts.join('+') + ' click' : null;
+  };
+
   if (!sessionData) {
     return (
       <div className="action-list">
@@ -452,6 +474,12 @@ export const ActionList = () => {
                   {browserAction.action.key && (
                     <div className="action-list-item-details">
                       <span className="action-list-item-key">Key: {browserAction.action.key}</span>
+                    </div>
+                  )}
+
+                  {browserAction.action.type === 'click' && getClickDetails(browserAction) && (
+                    <div className="action-list-item-details">
+                      <span className="action-list-item-modifiers">{getClickDetails(browserAction)}</span>
                     </div>
                   )}
 

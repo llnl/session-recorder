@@ -345,6 +345,25 @@ export const Timeline = () => {
     setTimelineSelection(null);
   };
 
+  // Auto-scroll to selected action
+  useEffect(() => {
+    if (selectedActionIndex === null || !sessionData || !containerRef.current) return;
+
+    const action = sessionData.actions[selectedActionIndex];
+    if (!action) return;
+
+    const x = timestampToX(action.timestamp);
+    const container = containerRef.current;
+    const containerWidth = container.clientWidth;
+
+    // Scroll to center the action in the container
+    const scrollTarget = x - containerWidth / 2;
+    container.scrollTo({
+      left: Math.max(0, scrollTarget),
+      behavior: 'smooth',
+    });
+  }, [selectedActionIndex, sessionData, timestampToX]);
+
   if (!sessionData) {
     return (
       <div className="timeline">

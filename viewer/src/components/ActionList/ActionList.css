@@ -113,6 +113,14 @@
   color: #a0a3a8;
 }
 
+.action-list-item-modifiers {
+  font-weight: 600;
+  color: #f59e0b;
+  background-color: rgba(245, 158, 11, 0.1);
+  padding: 0.125rem 0.375rem;
+  border-radius: 3px;
+}
+
 .action-list-item-url {
   font-size: 0.7rem;
   color: #6b7280;
