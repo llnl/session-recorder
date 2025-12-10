@@ -27,9 +27,9 @@ Unlike Playwright's built-in tracing which captures programmatic API calls, this
 ## Installation
 
 ```bash
-cd session-recorder
-npm install
-npm run build
+npm run session-recorder:install:windows
+# OR for mac/linux
+npm run session-recorder:install:linux
 ```
 
 ### Voice Recording Setup (Optional)
@@ -39,13 +39,9 @@ If you want to enable voice recording and transcription:
 ### Quick Install
 
 ```bash
-cd src/voice
-python -m venv .venv
-.venv\Scripts\activate  # Windows
-# or
-source .venv/bin/activate  # macOS/Linux
-
-pip install -r requirements.txt
+npm run session-recorder:install:windows
+# OR for mac/linux
+npm run session-recorder:install:linux
 ```
 
 **Note**: Voice recording requires Python 3.8+ and the packages listed above. The recorder uses:
@@ -86,8 +82,7 @@ await browser.close();
 ## Running the Test
 
 ```bash
-npm run build
-npm test
+npm run record:connect
 ```
 
 Then interact with the test page and press Enter to stop recording.
