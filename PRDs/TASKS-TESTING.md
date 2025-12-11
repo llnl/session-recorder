@@ -265,9 +265,16 @@
   - [ ] Action list voice entries
   - [ ] Audio playback
 
-### Known Issues to Fix
+### Known Issues - Fixed
 
-- [ ] MutationObserver error in snapshot injection (console error, non-blocking) → Deferred to [TASKS-angular-migration.md](TASKS-angular-migration.md)
+- [x] MutationObserver error in snapshot injection - Fixed by waiting for `document.body` before observing
+- [x] Duplicate React keys (nav-211, nav-226) - Fixed by using dedicated `nextNavId` counter
+
+### Known Issues - Expected Behavior (Non-blocking)
+
+- [ ] Blob URL ERR_FILE_NOT_FOUND - Resources need investigation
+- [x] CORS SecurityError when capturing Google Fonts CSS - Expected, logged as warning
+- [x] Tainted canvas for cross-origin images - Expected, logged as warning
 
 ---
 

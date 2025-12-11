@@ -1,6 +1,6 @@
 # Session Recorder - Progress Tracker
 
-**Last Updated:** 2025-12-10
+**Last Updated:** 2025-12-11
 
 ---
 
@@ -35,7 +35,7 @@
 
 ## POC 2 Progress - Desktop App & Recorder Completion
 
-**Status:** In Progress | **Tasks Remaining:** 116
+**Status:** In Progress | **Tasks Remaining:** 177
 **End Goal:** `session-recorder` becomes its own standalone repo
 
 | PRD | Status | TASKS | Unchecked |
@@ -44,6 +44,8 @@
 | [PRD-session-recorder.md](PRD-session-recorder.md) | ~80% Complete | [TASKS-session-recorder.md](TASKS-session-recorder.md) | 56 |
 | [PRD-performance.md](PRD-performance.md) | ⚠️ Partial | [TASKS-performance.md](TASKS-performance.md) | 3 |
 | [PRD-4.md](PRD-4.md) (Voice Phase 3+) | Pending | [TASKS-4.md](TASKS-4.md) | 19 |
+| [PRD-markdown-export.md](PRD-markdown-export.md) | **Ready** | [TASKS-markdown-export.md](TASKS-markdown-export.md) | 56 |
+| Voice Transcript Merging | Not Started | [TASKS-voice-merge.md](TASKS-voice-merge.md) | 5 |
 
 ### IMMEDIATE: Desktop App POC (12 hours)
 
@@ -70,6 +72,7 @@
 - **Session Recorder Completion** - Remaining 56 tasks for full recorder functionality
 - **Performance Optimizations** - ResourceCaptureQueue, non-blocking handlers (3 tasks)
 - **Voice Recording Phase 3+** - Advanced voice features (19 tasks)
+- **Markdown Export** - Auto-generate human-readable markdown from session JSON (~14h, 56 tasks)
 
 ### POC 2 Completion Deliverables
 
@@ -152,9 +155,9 @@ session-recorder/           # NEW STANDALONE REPO
 | PRD | Status | TASKS | Unchecked |
 |-----|--------|-------|-----------|
 | [PRD-DESKTOP.md](PRD-DESKTOP.md) (Full Desktop) | Post-POC | [TASKS-DESKTOP.md](TASKS-DESKTOP.md) | 39 |
-| [PRD-MCP.md](PRD-MCP.md) | Planning | [TASKS-MCP.md](TASKS-MCP.md) | 72 |
+| [PRD-MCP.md](PRD-MCP.md) | ✅ Complete (18 tools) | [TASKS-MCP.md](TASKS-MCP.md) | 0 |
 | [PRD-5.md](PRD-5.md) (System Audio) | Planning | [TASKS-5.md](TASKS-5.md) | 10 |
-| Testing Checklist | In Progress | [TASKS-TESTING.md](TASKS-TESTING.md) | 54 |
+| Testing Checklist | In Progress | [TASKS-TESTING.md](TASKS-TESTING.md) | 27 |
 
 ### This Repo / LivHub (Post-POC 3 Enhancements)
 
@@ -166,8 +169,8 @@ session-recorder/           # NEW STANDALONE REPO
 ### Planned Features
 
 - **Full Desktop App** - Settings UI, recent recordings, mode selection (39 tasks) → session-recorder repo
-- **MCP Server** - 17 tools in 2 phases: Recording Control (5 tools, stdio) + Session Query (12 tools, HTTP) for AI coding assistants (72 tasks) → session-recorder repo
-- **Testing** - Comprehensive test coverage (54 tasks) → session-recorder repo
+- **MCP Server** - ✅ Complete: 18 tools (5 Recording Control + 13 Session Query) in `mcp-server/` → session-recorder repo
+- **Testing** - Comprehensive test coverage (27 tasks) → session-recorder repo
 - **Intent Pipeline** - AI processing of recorded sessions → LivHub/standalone
 - **Service Worker** - Offline viewer support → LivHub/standalone
 - **System Audio Recording** - Capture meeting audio for transcription → session-recorder repo
@@ -323,3 +326,9 @@ npm run viewer
 | 3.0 | 2025-12-10 | Reorganized into POC phases with LivHub vs Standalone decision |
 | 3.1 | 2025-12-10 | Added AI Image Analysis PRD/TASKS to POC 3 |
 | 3.2 | 2025-12-10 | Updated MCP Server: added Phase 2 Session Query (12 tools), now 17 total tools |
+| 3.3 | 2025-12-11 | MCP Server Phase 2 implemented: 13 tools in mcp-server/ using @modelcontextprotocol/sdk |
+| 3.4 | 2025-12-11 | Fixed MutationObserver error (document.body null) and duplicate nav-XXX keys in SessionRecorder |
+| 3.5 | 2025-12-11 | MCP Server Phase 1 (Recording Control) complete: 5 new tools added, 18 total |
+| 3.6 | 2025-12-11 | Removed headless option from MCP recording tools - browser always visible during recording |
+| 3.7 | 2025-12-11 | Added Markdown Export PRD/TASKS - auto-generate human-readable markdown from session JSON |
+| 3.8 | 2025-12-11 | Updated TASKS-markdown-export.md to match template: added TR sections, fixed TOC anchors |

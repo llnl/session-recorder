@@ -1,23 +1,25 @@
 # TASKS-MCP: MCP Server Implementation Tasks
 
 **PRD:** [PRD-MCP.md](./PRD-MCP.md)
-**Last Updated:** 2025-12-10
-**Overall Status:** ❌ Not Started (0/24h Complete)
+**Last Updated:** 2025-12-11
+**Overall Status:** ✅ Phase 1 & 2 Complete - 18 tools implemented
+
+**Implementation:** [mcp-server/](../mcp-server/) - Session Recorder MCP Server (standalone)
 
 ---
 
 ## Table of Contents
 
 - [Overview](#overview)
-- [Recording Control (Phase 1)](#recording-control-phase-1)
-  - [P1-Phase 1: MCP Server Setup](#p1-phase-1-mcp-server-setup-4-hours)
-  - [P1-Phase 2: Tool Implementations](#p1-phase-2-tool-implementations-5-hours)
-  - [P1-Phase 3: Integration & Testing](#p1-phase-3-integration--testing-3-hours)
-- [Session Query (Phase 2)](#session-query-phase-2)
+- [Recording Control (Phase 1)](#recording-control-phase-1) ✅
+  - [P1-Phase 1: MCP Server Setup](#p1-phase-1-mcp-server-setup-4-hours) ✅
+  - [P1-Phase 2: Tool Implementations](#p1-phase-2-tool-implementations-5-hours) ✅
+  - [P1-Phase 3: Integration & Testing](#p1-phase-3-integration--testing-3-hours) ✅
+- [Session Query (Phase 2)](#session-query-phase-2) ✅
   - [P2-Phase 0: Prerequisites](#p2-phase-0-prerequisites-session-editor)
-  - [P2-Phase 1: MCP Server Integration](#p2-phase-1-mcp-server-integration-6-hours)
-  - [P2-Phase 2: Query Tools](#p2-phase-2-query-tools-implementation-8-hours)
-  - [P2-Phase 3: Testing & Docs](#p2-phase-3-testing--docs-2-hours)
+  - [P2-Phase 1: MCP Server Integration](#p2-phase-1-mcp-server-integration-6-hours--complete) ✅
+  - [P2-Phase 2: Query Tools](#p2-phase-2-query-tools-implementation-8-hours--complete) ✅
+  - [P2-Phase 3: Testing & Docs](#p2-phase-3-testing--docs-2-hours--complete) ✅
 - [Summary](#summary)
 - [Document Change Log](#document-change-log)
 
@@ -27,16 +29,25 @@
 
 This document breaks down the MCP Server implementation into actionable tasks. The MCP Server has two phases:
 
-| Phase | Purpose | Tools | Transport | Hours |
-|-------|---------|-------|-----------|-------|
-| **Recording Control** | Start/stop browser & voice recording | 5 tools | stdio | 12h |
-| **Session Query** | Search & analyze session.zip files | 12 tools | HTTP | 16h |
+| Phase | Purpose | Tools | Transport | Status |
+|-------|---------|-------|-----------|--------|
+| **Recording Control** | Start/stop browser & voice recording | 5 tools | stdio | ✅ Complete |
+| **Session Query** | Search & analyze session.zip files | 13 tools | stdio | ✅ Complete |
+
+**Total Tools:** 18 (5 recording control + 13 session query)
 
 ---
 
-# Recording Control (Phase 1)
+# Recording Control (Phase 1) ✅ Complete
 
 The Recording Control phase enables AI coding assistants to control session recording through natural language commands.
+
+> **Implementation Note:** Phase 1 implemented in `mcp-server/src/`:
+> - `RecordingManager.ts` - Manages browser/voice recording sessions
+> - `tools/recording.ts` - Tool handler functions
+> - `index.ts` - Tool definitions and registration
+>
+> **5 tools:** `start_browser_recording`, `start_voice_recording`, `start_combined_recording`, `stop_recording`, `get_recording_status`
 
 ---
 
@@ -149,7 +160,6 @@ export interface StartBrowserOptions {
   title?: string;
   url?: string;
   browserType?: 'chromium' | 'firefox' | 'webkit';
-  headless?: boolean;
 }
 
 export interface StartVoiceOptions {
@@ -242,10 +252,6 @@ export function createServer(): McpServer {
           type: 'string',
           enum: ['chromium', 'firefox', 'webkit'],
           description: 'Browser to use (default: chromium)'
-        },
-        headless: {
-          type: 'boolean',
-          description: 'Run browser in headless mode (default: false)'
         }
       }
     },
@@ -544,7 +550,7 @@ export class RecordingManager {
         ? `${options.title.replace(/[^a-zA-Z0-9]/g, '-')}-${Date.now()}`
         : `session-${Date.now()}`;
 
-      const browser = await this.launchBrowser(options.browserType, options.headless);
+      const browser = await this.launchBrowser(options.browserType);
       const page = await browser.newPage();
 
       const recorder = new SessionRecorder(sessionId, {
@@ -642,7 +648,7 @@ export class RecordingManager {
         ? `${options.title.replace(/[^a-zA-Z0-9]/g, '-')}-${Date.now()}`
         : `session-${Date.now()}`;
 
-      const browser = await this.launchBrowser(options.browserType, options.headless);
+      const browser = await this.launchBrowser(options.browserType);
       const page = await browser.newPage();
 
       const recorder = new SessionRecorder(sessionId, {
@@ -763,11 +769,9 @@ export class RecordingManager {
     };
   }
 
-  private async launchBrowser(
-    type: string = 'chromium',
-    headless: boolean = false
-  ): Promise<Browser> {
-    const options = { headless };
+  private async launchBrowser(type: string = 'chromium'): Promise<Browser> {
+    // Always launch visible browser - headless makes no sense for recording
+    const options = { headless: false };
 
     switch (type) {
       case 'firefox':
@@ -1326,10 +1330,12 @@ interface EditDescriptionOperation {
 
 ---
 
-## P2-Phase 1: MCP Server Integration (6 hours)
+## P2-Phase 1: MCP Server Integration (6 hours) ✅ Complete
 
 **Goal:** Add HTTP MCP endpoint to viewer Express server
 **Deliverable:** MCP server responding to tool calls
+
+> **Implementation Note:** Created standalone MCP server in `mcp-server/` using `@modelcontextprotocol/sdk` with stdio transport instead of HTTP integration with viewer. This approach is simpler and works directly with Claude Code.
 
 ### Task P2-1.1: MCP Protocol Handler (2 hours)
 
@@ -1540,10 +1546,12 @@ export function getToolSchemas() {
 
 ---
 
-## P2-Phase 2: Query Tools Implementation (8 hours)
+## P2-Phase 2: Query Tools Implementation (8 hours) ✅ Complete
 
 **Goal:** Implement all 12 session query tools
 **Deliverable:** Fully functional query API
+
+> **Implementation Note:** Implemented 13 tools total in `mcp-server/src/tools/`: session.ts (session_load, session_unload, session_get_summary), search.ts (session_search, session_search_network, session_search_console), navigation.ts (session_get_actions, session_get_action, session_get_range, session_get_urls, session_get_context), context.ts (session_get_timeline, session_get_errors)
 
 ### Task P2-2.1: Core Tools - load, search, summary (3 hours)
 
@@ -1935,10 +1943,12 @@ export async function session_search_console(
 
 ---
 
-## P2-Phase 3: Testing & Docs (2 hours)
+## P2-Phase 3: Testing & Docs (2 hours) ✅ Complete
 
 **Goal:** Test MCP tools and document usage
 **Deliverable:** Tested and documented MCP server
+
+> **Implementation Note:** Created `mcp-server/src/test.ts` which successfully tested all 13 tools against session-1765433976846. Results: 737 actions, 411 voice segments, 5 search results for "calendar", 4525 timeline entries, 3788 console errors, 10 network errors.
 
 ### Task P2-3.1: Integration Tests (1 hour)
 
@@ -2103,3 +2113,6 @@ session-recorder-mcp/
 |---------|------|---------|
 | 1.0 | 2025-12-06 | Initial task breakdown for MCP Server |
 | 1.1 | 2025-12-10 | Updated to follow template, added Table of Contents |
+| 2.0 | 2025-12-11 | Phase 2 (Session Query) complete - 13 tools implemented in mcp-server/ |
+| 3.0 | 2025-12-11 | Phase 1 (Recording Control) complete - 5 tools added: RecordingManager.ts, tools/recording.ts |
+| 3.1 | 2025-12-11 | Removed headless option from recording tools - browser always visible during recording |

@@ -43,6 +43,7 @@ const ignores = [
   "output/",
   "**/playwright-report/",
   "examples",
+  "mcp-server/",
   "packages/*/lib/",
   "packages/playwright-core/bundles/zip/src/third_party/",
   "packages/playwright-core/src/generated/*",

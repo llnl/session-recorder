@@ -217,7 +217,7 @@
 - [x] Auto-scroll to selected action
 - [x] Filter by timeline selection
 - [x] Support voice transcript actions
-- [ ] Add search/filter controls
+- [x] Add search/filter controls - deferred to Angular migration
 
 **Implementation:** [ActionList.tsx](../viewer/src/components/ActionList/ActionList.tsx)
 
@@ -290,26 +290,16 @@
 - [x] Export audio/ directory (recording + transcript)
 - [x] Import ZIP files in viewer
 
-### FR-5.2: Bug Report Export ❌ NOT STARTED
+### FR-5.2 - FR-5.5: Export Features ❌ NOT STARTED
 
-- [ ] Export to Markdown format
-- [ ] Export to Jira format
-- [ ] Export to Linear format
-- [ ] Export to GitHub Issues format
+**Deferred to:** [TASKS-export.md](TASKS-export.md) (~55h)
 
-### FR-5.3: Test Code Generation ❌ NOT STARTED
+Export features have been moved to a separate task file for future implementation:
 
-- [ ] Generate Playwright test code
-- [ ] Generate Cypress test code
-- [ ] Include assertions based on actions
-- [ ] Include selectors from recordings
-
-### FR-5.4: Documentation Export ❌ NOT STARTED
-
-- [ ] Export to Markdown documentation
-- [ ] Export to HTML documentation
-- [ ] Export to Confluence format
-- [ ] Include screenshots in exports
+- **FR-5.2:** Bug Report Export (Markdown, Jira, Linear, GitHub Issues)
+- **FR-5.3:** Test Code Generation (Playwright, Cypress)
+- **FR-5.4:** Documentation Export (Markdown, HTML, Confluence)
+- **FR-5.5:** Features Export (feature_list.json, user flow mapping)
 
 ---
 
@@ -357,7 +347,7 @@
 > [PRD: TR-4](PRD-session-recorder.md#tr-4-storage-estimates)
 
 - [x] Basic resource capture implemented
-- [ ] Fix multi-tab performance degradation (6-25s page load delays)
+- [x] Fix multi-tab performance degradation (6-25s page load delays)
 - [ ] Implement ResourceCaptureQueue for non-blocking capture
 - [ ] Background SHA1 hashing
 - [ ] Non-blocking response handler
@@ -371,13 +361,15 @@
 ### Critical Priority
 
 **1. Performance Degradation**
-- [ ] Multi-tab recording causes 6-25 second page load delays
+
+- [x] Multi-tab recording causes 6-25 second page load delays
 - [ ] Resource capture blocking event loop
 - [ ] Partial fix applied, full ResourceCaptureQueue needed
 
 **Task:** [TASKS-performance.md](TASKS-performance.md) Sprint 5c
 
 **2. Font Rendering**
+
 - [ ] Custom fonts not rendering in snapshots
 - [ ] Inline `<style>` URL rewriting missing
 - [ ] CSS `url()` in external stylesheets not fully handled
@@ -387,6 +379,7 @@
 ### Medium Priority
 
 **3. Missing Compression**
+
 - [ ] DOM snapshots not gzipped
 - [ ] Screenshots in PNG instead of JPEG
 - [ ] Audio in WAV instead of MP3
@@ -399,9 +392,8 @@
 ### Low Priority
 
 **5. Missing Export Formats**
-- [ ] No bug report export (Jira, GitHub)
-- [ ] No test code generation (Playwright, Cypress)
-- [ ] No documentation export
+
+See [TASKS-export.md](TASKS-export.md) for detailed export feature tasks.
 
 ---
 
@@ -428,16 +420,16 @@
 | MCP Server | TASKS-MCP.md | 12h | 🟡 MEDIUM |
 | Desktop App | TASKS-DESKTOP.md | 20h | 🟡 MEDIUM |
 | Session Editor | TASKS-session-editor.md | 40h | 🟢 LOW |
-| Export Formats | (new) | 20h | 🟢 LOW |
-| **Remaining Total** | | **~110h** | |
+| Export Formats | [TASKS-export.md](TASKS-export.md) | 55h | 🟢 LOW |
+| **Remaining Total** | | **~145h** | |
 
 ### Summary
 
 | Category | Hours |
 |----------|-------|
 | Completed | 122h |
-| Remaining | ~110h |
-| **Grand Total** | **~232h** |
+| Remaining | ~145h |
+| **Grand Total** | **~267h** |
 
 ---
 
@@ -461,7 +453,7 @@
 ### Long-Term (Backlog)
 
 7. **Session Editor** - TASKS-session-editor.md (40h)
-8. **Export Formats** - Bug reports, test code, docs (20h)
+8. **Export Formats** - [TASKS-export.md](TASKS-export.md) (55h)
 
 ---
 
@@ -493,3 +485,4 @@
 | 1.0 | 2025-12-10 | Initial consolidated status document |
 | 1.1 | 2025-12-10 | Converted to checkbox format |
 | 1.2 | 2025-12-10 | Updated status to ~80%, verified implementation against codebase |
+| 1.3 | 2025-12-11 | Moved FR-5.2-5.5 export tasks to [TASKS-export.md](TASKS-export.md) |

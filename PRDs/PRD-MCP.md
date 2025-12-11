@@ -1,9 +1,11 @@
 # PRD-MCP: Session Recorder MCP Server
 
-**Version:** 2.0
+**Version:** 2.1
 **Last Updated:** December 2025
-**Status:** ⚡ Planning
+**Status:** ✅ Phase 2 Complete
 **Depends On:** [PRD-4.md](PRD-4.md) (Voice Recording), [PRD-session-editor.md](PRD-session-editor.md) (Description Button)
+
+**Implementation:** [mcp-server/](../mcp-server/) - Standalone MCP server with 13 tools using `@modelcontextprotocol/sdk`
 
 ---
 
@@ -42,6 +44,7 @@ The Session Recorder MCP Server enables developers using AI coding assistants (C
 ## 1. Problem Statement
 
 **Current State:**
+
 - Developers must manually run TypeScript scripts to record sessions
 - No integration with AI coding assistants
 - Context switching between AI assistant and recording setup is disruptive
@@ -49,6 +52,7 @@ The Session Recorder MCP Server enables developers using AI coding assistants (C
 
 **Solution:**
 MCP Server with 5 tools that AI assistants can call to control session recording:
+
 - Start/stop browser recording
 - Start/stop voice recording
 - Start/stop combined recording
@@ -60,12 +64,14 @@ MCP Server with 5 tools that AI assistants can call to control session recording
 ## 2. Goals & Objectives
 
 ### Primary Goals
+
 1. **Zero-friction recording:** Developers say "record my browser session" and it happens
 2. **Full feature parity:** All SessionRecorder features available via MCP tools
 3. **Cross-platform:** Works with any MCP-compatible AI assistant
 4. **Stateful management:** Handle multiple recording sessions intelligently
 
 ### Success Metrics
+
 | Metric | Target |
 |--------|--------|
 | MCP tool response time | <500ms |
@@ -78,7 +84,8 @@ MCP Server with 5 tools that AI assistants can call to control session recording
 ## 3. User Flows
 
 ### Flow 1: Browser-Only Recording
-```
+
+```text
 Developer: "Record my browser session testing the login flow"
 AI: *calls start_browser_recording*
 → Browser opens, developer interacts
@@ -88,7 +95,8 @@ AI: *calls stop_recording*
 ```
 
 ### Flow 2: Combined Recording with Voice
-```
+
+```text
 Developer: "Record my browser and voice while I demo this feature"
 AI: *calls start_combined_recording*
 → Browser opens, microphone active
@@ -166,10 +174,6 @@ session-recorder-mcp/
         type: 'string',
         enum: ['chromium', 'firefox', 'webkit'],
         description: 'Browser to use (default: chromium)'
-      },
-      headless: {
-        type: 'boolean',
-        description: 'Run browser in headless mode (default: false)'
       }
     }
   }
@@ -1086,3 +1090,5 @@ session-recorder/
 | 1.0 | 2025-12-06 | Initial PRD for MCP Server (Recording Control) |
 | 1.1 | 2025-12-10 | Updated to follow template, added Target Users table |
 | 2.0 | 2025-12-10 | Added Phase 2: Session Query MCP Server (12 tools) |
+| 2.1 | 2025-12-11 | Phase 2 implementation complete - 13 tools in mcp-server/ using @modelcontextprotocol/sdk |
+| 2.2 | 2025-12-11 | Removed headless option from recording tools - browser always visible during recording |
