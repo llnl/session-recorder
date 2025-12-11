@@ -13,6 +13,10 @@ export interface VoiceRecordingOptions {
   device?: 'cuda' | 'mps' | 'cpu';
   sampleRate?: number;
   channels?: number;
+  // TR-1: Audio compression options
+  outputFormat?: 'wav' | 'mp3';  // Default: wav (mp3 requires ffmpeg)
+  mp3Bitrate?: string;           // Default: 64k
+  mp3SampleRate?: number;        // Default: 22050
 }
 
 export interface WhisperWord {
@@ -83,7 +87,11 @@ export class VoiceRecorder {
       model: options.model || 'base',
       device: options.device,
       sampleRate: options.sampleRate || 16000,
-      channels: options.channels || 1
+      channels: options.channels || 1,
+      // TR-1: Audio compression defaults
+      outputFormat: options.outputFormat || 'wav',
+      mp3Bitrate: options.mp3Bitrate || '64k',
+      mp3SampleRate: options.mp3SampleRate || 22050
     };
   }
 
@@ -144,6 +152,13 @@ export class VoiceRecorder {
 
     if (this.options.device) {
       args.push('--device', this.options.device);
+    }
+
+    // TR-1: Add MP3 conversion options
+    if (this.options.outputFormat === 'mp3') {
+      args.push('--output-format', 'mp3');
+      args.push('--mp3-bitrate', this.options.mp3Bitrate!);
+      args.push('--mp3-sample-rate', this.options.mp3SampleRate!.toString());
     }
 
     console.log(`🐍 Using Python: ${pythonCmd}`);

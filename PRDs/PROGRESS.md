@@ -30,18 +30,23 @@
 - ✅ Python voice recording + Whisper transcription
 - ✅ React viewer with timeline, action list, snapshot viewer
 - ✅ Voice playback with word highlighting
+- ✅ Gzip compression for DOM snapshots (TR-1)
+- ✅ JPEG screenshots with configurable quality (TR-1)
+- ✅ MP3 audio conversion with configurable bitrate (TR-1)
+- ✅ ResourceCaptureQueue for non-blocking capture (TR-4)
+- ✅ Font/styling fixes for snapshot rendering (FR-2.4)
 
 ---
 
 ## POC 2 Progress - Desktop App & Recorder Completion
 
-**Status:** In Progress | **Tasks Remaining:** 177
+**Status:** In Progress | **Tasks Remaining:** 165
 **End Goal:** `session-recorder` becomes its own standalone repo
 
 | PRD | Status | TASKS | Unchecked |
 |-----|--------|-------|-----------|
 | [PRD-DESKTOP-POC.md](PRD-DESKTOP-POC.md) | **Ready** | [TASKS-DESKTOP-POC.md](TASKS-DESKTOP-POC.md) | 38 |
-| [PRD-session-recorder.md](PRD-session-recorder.md) | ~80% Complete | [TASKS-session-recorder.md](TASKS-session-recorder.md) | 56 |
+| [PRD-session-recorder.md](PRD-session-recorder.md) | ~95% Complete | [TASKS-session-recorder.md](TASKS-session-recorder.md) | 44 |
 | [PRD-performance.md](PRD-performance.md) | ⚠️ Partial | [TASKS-performance.md](TASKS-performance.md) | 3 |
 | [PRD-4.md](PRD-4.md) (Voice Phase 3+) | Pending | [TASKS-4.md](TASKS-4.md) | 19 |
 | [PRD-markdown-export.md](PRD-markdown-export.md) | **Ready** | [TASKS-markdown-export.md](TASKS-markdown-export.md) | 56 |
@@ -69,8 +74,8 @@
 
 ### Also In POC 2
 
-- **Session Recorder Completion** - Remaining 56 tasks for full recorder functionality
-- **Performance Optimizations** - ResourceCaptureQueue, non-blocking handlers (3 tasks)
+- **Session Recorder Completion** - Remaining 44 tasks (mostly viewer features FR-4.7)
+- **Performance Optimizations** - ✅ ResourceCaptureQueue implemented, non-blocking handlers complete
 - **Voice Recording Phase 3+** - Advanced voice features (19 tasks)
 - **Markdown Export** - Auto-generate human-readable markdown from session JSON (~14h, 56 tasks)
 
@@ -206,10 +211,10 @@ interface RecordingOptions {
 | Phase | Status | Tasks | Repo |
 |-------|--------|-------|------|
 | POC 1 - Core Recording | ✅ Complete | 19 remaining | this → session-recorder |
-| POC 2 - Desktop & Recorder | 🔄 In Progress | 116 remaining | this → session-recorder |
+| POC 2 - Desktop & Recorder | 🔄 In Progress | 165 remaining | this → session-recorder |
 | POC 3 - Viewer/Editor | 📋 Planning | 214 remaining | this / LivHub |
 | Future Work | ⏳ Deferred | 175 remaining | split |
-| **Total** | | **524** | |
+| **Total** | | **573** | |
 
 ### Repo Split After POC 2
 
@@ -332,3 +337,4 @@ npm run viewer
 | 3.6 | 2025-12-11 | Removed headless option from MCP recording tools - browser always visible during recording |
 | 3.7 | 2025-12-11 | Added Markdown Export PRD/TASKS - auto-generate human-readable markdown from session JSON |
 | 3.8 | 2025-12-11 | Updated TASKS-markdown-export.md to match template: added TR sections, fixed TOC anchors |
+| 3.9 | 2025-12-11 | Implemented TR-1 compression (gzip snapshots, JPEG screenshots, MP3 audio), TR-4 ResourceCaptureQueue. Session recorder now ~95% complete. |

@@ -7,9 +7,15 @@ import * as fs from 'fs';
 import { promises as fsPromises } from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
+import * as zlib from 'zlib';
+import { promisify } from 'util';
 import archiver from 'archiver';
+
+// Promisified zlib functions for async compression
+const gzipAsync = promisify(zlib.gzip);
 import { SessionData, RecordedAction, NavigationAction, HarEntry, SnapshotterBlob, NetworkEntry, ConsoleEntry, VoiceTranscriptAction, MediaAction, DownloadAction, FullscreenAction, PrintAction, AnyAction, BrowserEventSnapshot } from './types';
 import { ResourceStorage } from '../storage/resourceStorage';
+import { ResourceCaptureQueue } from '../storage/ResourceCaptureQueue';
 import { VoiceRecorder } from '../voice/VoiceRecorder';
 
 // Extend Window interface for session recorder flags
@@ -27,6 +33,16 @@ export interface SessionRecorderOptions {
   voice_record?: boolean;    // Capture audio + transcript (default: false)
   whisper_model?: 'tiny' | 'base' | 'small' | 'medium' | 'large';
   whisper_device?: 'cuda' | 'mps' | 'cpu';
+
+  // Compression options (TR-1)
+  compress_snapshots?: boolean;  // Gzip compress DOM snapshots (default: true)
+  screenshot_format?: 'png' | 'jpeg';  // Screenshot format (default: jpeg)
+  screenshot_quality?: number;  // JPEG quality 0-100 (default: 75)
+
+  // Audio compression options (TR-1)
+  audio_format?: 'wav' | 'mp3';  // Audio format (default: wav, mp3 requires ffmpeg)
+  audio_bitrate?: string;        // MP3 bitrate (default: 64k)
+  audio_sample_rate?: number;    // MP3 sample rate (default: 22050)
 }
 
 // Track page info for multi-tab support
@@ -44,6 +60,7 @@ export class SessionRecorder {
   private page: Page | null = null;  // Primary page (for backward compat)
   private pages: Map<number, TrackedPage> = new Map();  // All tracked pages by tabId
   private nextTabId: number = 0;
+  private nextNavId: number = 0;  // Counter for navigation action IDs
   private context: BrowserContext | null = null;
   private sessionData: SessionData;
   private sessionDir: string;
@@ -58,6 +75,7 @@ export class SessionRecorder {
   private consoleLogCount = 0;
   private sessionStartTime: number = 0;
   private resourceStorage: ResourceStorage; // SHA1-based resource deduplication
+  private resourceQueue: ResourceCaptureQueue; // Non-blocking resource capture (TR-4)
   private voiceRecorder: VoiceRecorder | null = null;
   private voiceStarted: boolean = false;
   private audioDir: string;
@@ -76,7 +94,15 @@ export class SessionRecorder {
       browser_record: browserRecord,
       voice_record: voiceRecord,
       whisper_model: options.whisper_model || 'base',
-      whisper_device: options.whisper_device
+      whisper_device: options.whisper_device,
+      // Compression defaults (TR-1)
+      compress_snapshots: options.compress_snapshots !== false,  // Default: true
+      screenshot_format: options.screenshot_format || 'jpeg',     // Default: jpeg (smaller)
+      screenshot_quality: options.screenshot_quality ?? 75,       // Default: 75%
+      // Audio compression defaults (TR-1)
+      audio_format: options.audio_format || 'wav',  // Default: wav (mp3 requires ffmpeg)
+      audio_bitrate: options.audio_bitrate || '64k',
+      audio_sample_rate: options.audio_sample_rate || 22050
     }
 
     this.sessionData = {
@@ -96,11 +122,21 @@ export class SessionRecorder {
     // Initialize resource storage with SHA1 deduplication
     this.resourceStorage = new ResourceStorage(this.sessionData.sessionId);
 
+    // Initialize non-blocking resource capture queue (TR-4)
+    this.resourceQueue = new ResourceCaptureQueue(this.resourcesDir, {
+      maxConcurrent: 5,
+      batchSize: 10
+    });
+
     // Initialize voice recorder if enabled
     if (this.options.voice_record) {
       this.voiceRecorder = new VoiceRecorder({
         model: this.options.whisper_model,
-        device: this.options.whisper_device
+        device: this.options.whisper_device,
+        // TR-1: Audio compression options
+        outputFormat: this.options.audio_format,
+        mp3Bitrate: this.options.audio_bitrate,
+        mp3SampleRate: this.options.audio_sample_rate
       });
 
       this.sessionData.voiceRecording = {
@@ -443,7 +479,20 @@ export class SessionRecorder {
               });
             });
           });
-          mediaObserver.observe(document.body, { childList: true, subtree: true });
+          // Wait for document.body to exist before observing
+          // (addInitScript runs before body is created)
+          function startMediaObserver() {
+            if (document.body) {
+              mediaObserver.observe(document.body, { childList: true, subtree: true });
+            } else {
+              document.addEventListener('DOMContentLoaded', function() {
+                if (document.body) {
+                  mediaObserver.observe(document.body, { childList: true, subtree: true });
+                }
+              });
+            }
+          }
+          startMediaObserver();
 
           // Fullscreen changes
           document.addEventListener('fullscreenchange', function() {
@@ -654,7 +703,7 @@ export class SessionRecorder {
       return;
     }
 
-    const actionId = `nav-${this.sessionData.actions.length + 1}`;
+    const actionId = `nav-${++this.nextNavId}`;
     const timestamp = new Date().toISOString();
 
     // Try to capture snapshot (HTML + screenshot) after page is fully loaded
@@ -709,24 +758,26 @@ export class SessionRecorder {
         await this._processSnapshotResources(resourceOverrides);
       }
 
-      // Save HTML snapshot (async for performance)
+      // Save HTML snapshot with optional gzip compression (TR-1)
+      const ext = this.options.compress_snapshots ? '.html.gz' : '.html';
       if (htmlContent) {
         const rewrittenHtml = this._rewriteHTML(htmlContent, toUrl);
         const snapshotPath = path.join(this.sessionDir, 'snapshots', `${actionId}.html`);
-        await fsPromises.writeFile(snapshotPath, rewrittenHtml, 'utf-8');
+        await this._saveSnapshot(snapshotPath, rewrittenHtml);
       }
 
-      // Capture screenshot
-      const screenshotPath = `screenshots/${actionId}.png`;
+      // Capture screenshot with configurable format/quality (TR-1)
+      const screenshotExt = this._getScreenshotExtension();
+      const screenshotPath = `screenshots/${actionId}${screenshotExt}`;
       const fullScreenshotPath = path.join(this.sessionDir, screenshotPath);
 
       await page.screenshot({
         path: fullScreenshotPath,
-        type: 'png'
+        ...this._getScreenshotOptions()
       });
 
       snapshotData = {
-        html: `snapshots/${actionId}.html`,
+        html: `snapshots/${actionId}${ext}`,
         screenshot: screenshotPath,
         url: toUrl,
         viewport: viewportSize
@@ -782,10 +833,12 @@ export class SessionRecorder {
         return undefined;
       }
 
-      const screenshotPath = `screenshots/${actionId}.png`;
+      const screenshotExt = this._getScreenshotExtension();
+      const snapshotExt = this.options.compress_snapshots ? '.html.gz' : '.html';
+      const screenshotPath = `screenshots/${actionId}${screenshotExt}`;
       const fullScreenshotPath = path.join(this.sessionDir, screenshotPath);
-      const htmlPath = `snapshots/${actionId}.html`;
-      const fullHtmlPath = path.join(this.sessionDir, htmlPath);
+      const htmlPath = `snapshots/${actionId}${snapshotExt}`;
+      const fullHtmlPath = path.join(this.sessionDir, 'snapshots', `${actionId}.html`);
 
       // Get viewport dimensions
       const viewportSize = page.viewportSize() || { width: 1280, height: 720 };
@@ -824,16 +877,16 @@ export class SessionRecorder {
         await this._processSnapshotResources(resourceOverrides);
       }
 
-      // Save HTML snapshot (async for performance)
+      // Save HTML snapshot with optional gzip compression (TR-1)
       if (htmlContent) {
         const rewrittenHtml = this._rewriteHTML(htmlContent, pageUrl);
-        await fsPromises.writeFile(fullHtmlPath, rewrittenHtml, 'utf-8');
+        await this._saveSnapshot(fullHtmlPath, rewrittenHtml);
       }
 
-      // Capture screenshot
+      // Capture screenshot with configurable format/quality (TR-1)
       await page.screenshot({
         path: fullScreenshotPath,
-        type: 'png'
+        ...this._getScreenshotOptions()
       });
 
       return {
@@ -873,25 +926,27 @@ export class SessionRecorder {
     // Rewrite HTML to reference local resources
     const rewrittenHtml = this._rewriteHTML(data.beforeHtml, data.beforeUrl);
 
-    // Save BEFORE HTML snapshot as separate file (async for performance)
+    // Save BEFORE HTML snapshot with optional gzip compression (TR-1)
+    const snapshotExt = this.options.compress_snapshots ? '.html.gz' : '.html';
     const beforeSnapshotPath = path.join(
       this.sessionDir,
       'snapshots',
       `${actionId}-before.html`
     );
-    await fsPromises.writeFile(beforeSnapshotPath, rewrittenHtml, 'utf-8');
+    await this._saveSnapshot(beforeSnapshotPath, rewrittenHtml);
 
-    // Take BEFORE screenshot
+    // Take BEFORE screenshot with configurable format/quality (TR-1)
+    const screenshotExt = this._getScreenshotExtension();
     const beforeScreenshotPath = path.join(
       this.sessionDir,
       'screenshots',
-      `${actionId}-before.png`
+      `${actionId}-before${screenshotExt}`
     );
 
     try {
       await page.screenshot({
         path: beforeScreenshotPath,
-        type: 'png'
+        ...this._getScreenshotOptions()
       });
     } catch (err: any) {
       if (err.message?.includes('closed') || err.message?.includes('Target')) {
@@ -910,8 +965,8 @@ export class SessionRecorder {
       tabUrl: tabUrl || data.beforeUrl,  // Multi-tab support
       before: {
         timestamp: data.beforeTimestamp,
-        html: `snapshots/${actionId}-before.html`,  // File path instead of HTML string
-        screenshot: `screenshots/${actionId}-before.png`,
+        html: `snapshots/${actionId}-before${snapshotExt}`,  // File path with compression extension
+        screenshot: `screenshots/${actionId}-before${screenshotExt}`,  // Screenshot with format extension
         url: data.beforeUrl,
         viewport: data.beforeViewport
       },
@@ -955,25 +1010,27 @@ export class SessionRecorder {
     // Rewrite HTML to reference local resources
     const rewrittenHtml = this._rewriteHTML(data.afterHtml, data.afterUrl);
 
-    // Save AFTER HTML snapshot as separate file (async for performance)
+    // Save AFTER HTML snapshot with optional gzip compression (TR-1)
+    const snapshotExt = this.options.compress_snapshots ? '.html.gz' : '.html';
     const afterSnapshotPath = path.join(
       this.sessionDir,
       'snapshots',
       `${actionId}-after.html`
     );
-    await fsPromises.writeFile(afterSnapshotPath, rewrittenHtml, 'utf-8');
+    await this._saveSnapshot(afterSnapshotPath, rewrittenHtml);
 
-    // Take AFTER screenshot
+    // Take AFTER screenshot with configurable format/quality (TR-1)
+    const screenshotExt = this._getScreenshotExtension();
     const afterScreenshotPath = path.join(
       this.sessionDir,
       'screenshots',
-      `${actionId}-after.png`
+      `${actionId}-after${screenshotExt}`
     );
 
     try {
       await page.screenshot({
         path: afterScreenshotPath,
-        type: 'png'
+        ...this._getScreenshotOptions()
       });
     } catch (err: any) {
       if (err.message?.includes('closed') || err.message?.includes('Target')) {
@@ -987,8 +1044,8 @@ export class SessionRecorder {
     // Complete action data (with file path, not inline HTML)
     this.currentActionData.after = {
       timestamp: data.afterTimestamp,
-      html: `snapshots/${actionId}-after.html`,  // File path instead of HTML string
-      screenshot: `screenshots/${actionId}-after.png`,
+      html: `snapshots/${actionId}-after${snapshotExt}`,  // File path with compression extension
+      screenshot: `screenshots/${actionId}-after${screenshotExt}`,  // Screenshot with format extension
       url: data.afterUrl,
       viewport: data.afterViewport
     };
@@ -1009,6 +1066,12 @@ export class SessionRecorder {
 
     // Wait for any pending actions to complete
     await this.actionQueue;
+
+    // TR-4: Flush resource capture queue to ensure all resources are saved
+    console.log('📦 Flushing resource capture queue...');
+    await this.resourceQueue.flush();
+    const queueStats = this.resourceQueue.getStats();
+    console.log(`📦 Resource queue: ${queueStats.completed} captured, ${queueStats.failed} failed, ${(queueStats.totalBytes / 1024).toFixed(1)}KB total`);
 
     // Stop voice recording if enabled
     if (this.options.voice_record && this.voiceRecorder) {
@@ -1504,7 +1567,6 @@ export class SessionRecorder {
 
       // Try to get response body for successful responses
       let buffer: Buffer | null = null;
-      let sha1: string | undefined = undefined;
       let filename: string | undefined = undefined;
 
       // Only capture successful responses with body content
@@ -1521,16 +1583,12 @@ export class SessionRecorder {
         if (shouldCapture) {
           buffer = await response.body().catch(() => null);
           if (buffer) {
-            // Calculate SHA1 hash (like HarTracer does)
-            sha1 = this._calculateSha1(buffer);
-            const extension = this._getExtensionFromContentType(contentType, url);
-            filename = `${sha1}${extension}`;
+            // TR-4: Use ResourceCaptureQueue for non-blocking capture
+            // SHA1 calculation happens inline (fast), disk write is queued
+            filename = this.resourceQueue.enqueue(url, buffer, contentType);
 
-            // Store URL → filename mapping for rewriting
+            // Store URL → filename mapping for CSS rewriting
             this.urlToResourceMap.set(url, filename);
-
-            // Save via onContentBlob (mimics HarTracer delegate pattern)
-            this.onContentBlob(filename, buffer);
 
             // If CSS, also rewrite and save rewritten version (async)
             if (contentType.includes('text/css')) {
@@ -1540,7 +1598,7 @@ export class SessionRecorder {
               fsPromises.writeFile(path.join(this.resourcesDir, filename), rewrittenBuffer).catch(() => {});
             }
 
-            console.log(`📦 Captured resource: ${filename} (${buffer.length} bytes) - ${contentType}`);
+            console.log(`📦 Queued resource: ${filename} (${buffer.length} bytes) - ${contentType}`);
           }
         }
       }
@@ -1631,6 +1689,43 @@ export class SessionRecorder {
    */
   private _calculateSha1(buffer: Buffer): string {
     return crypto.createHash('sha1').update(buffer).digest('hex');
+  }
+
+  /**
+   * Save HTML snapshot with optional gzip compression (TR-1)
+   * Returns the file path (with .gz extension if compressed)
+   */
+  private async _saveSnapshot(snapshotPath: string, htmlContent: string): Promise<string> {
+    if (this.options.compress_snapshots) {
+      // Gzip compress the HTML
+      const compressed = await gzipAsync(Buffer.from(htmlContent, 'utf-8'));
+      const compressedPath = snapshotPath + '.gz';
+      await fsPromises.writeFile(compressedPath, compressed);
+      return compressedPath;
+    } else {
+      await fsPromises.writeFile(snapshotPath, htmlContent, 'utf-8');
+      return snapshotPath;
+    }
+  }
+
+  /**
+   * Get screenshot options based on configuration
+   */
+  private _getScreenshotOptions(): { type: 'png' | 'jpeg'; quality?: number } {
+    if (this.options.screenshot_format === 'jpeg') {
+      return {
+        type: 'jpeg',
+        quality: this.options.screenshot_quality
+      };
+    }
+    return { type: 'png' };
+  }
+
+  /**
+   * Get screenshot file extension based on configuration
+   */
+  private _getScreenshotExtension(): string {
+    return this.options.screenshot_format === 'jpeg' ? '.jpg' : '.png';
   }
 
   /**

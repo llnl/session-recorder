@@ -2,12 +2,16 @@
 """
 Audio recording and transcription script for SessionRecorder
 Handles both recording audio from microphone AND transcription using Whisper
+
+TR-1: Supports MP3 output with configurable bitrate and sample rate
 """
 
 import sys
 import json
 import argparse
 import signal
+import subprocess
+import shutil
 from pathlib import Path
 from datetime import datetime, timezone
 import time
@@ -27,6 +31,94 @@ except ImportError as e:
 
 # Whisper and torch are imported lazily when transcription starts
 # This allows recording to start immediately without waiting for torch to load
+
+
+def convert_wav_to_mp3(wav_path: str, mp3_path: str, bitrate: str = "64k",
+                       sample_rate: int = 22050) -> dict:
+    """
+    Convert WAV to MP3 using ffmpeg (TR-1 compression)
+
+    Args:
+        wav_path: Path to input WAV file
+        mp3_path: Path to output MP3 file
+        bitrate: MP3 bitrate (e.g., "64k", "128k")
+        sample_rate: Output sample rate (default: 22050 Hz)
+
+    Returns:
+        dict with success status and file info
+    """
+    # Check if ffmpeg is available
+    ffmpeg_path = shutil.which("ffmpeg")
+    if not ffmpeg_path:
+        return {
+            "success": False,
+            "error": "ffmpeg not found. Install ffmpeg to enable MP3 conversion.",
+            "fallback": wav_path
+        }
+
+    try:
+        print(json.dumps({
+            "type": "status",
+            "message": f"Converting to MP3 ({bitrate}, {sample_rate}Hz)...",
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }), flush=True)
+
+        # ffmpeg command: convert to mono MP3 with specified bitrate and sample rate
+        cmd = [
+            ffmpeg_path,
+            "-i", wav_path,
+            "-ac", "1",  # Mono
+            "-ar", str(sample_rate),  # Sample rate
+            "-b:a", bitrate,  # Audio bitrate
+            "-y",  # Overwrite output
+            mp3_path
+        ]
+
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=300  # 5 minute timeout
+        )
+
+        if result.returncode != 0:
+            return {
+                "success": False,
+                "error": f"ffmpeg conversion failed: {result.stderr}",
+                "fallback": wav_path
+            }
+
+        # Get file sizes for comparison
+        wav_size = Path(wav_path).stat().st_size
+        mp3_size = Path(mp3_path).stat().st_size
+        compression_ratio = wav_size / mp3_size if mp3_size > 0 else 0
+
+        print(json.dumps({
+            "type": "status",
+            "message": f"MP3 conversion complete. Compression ratio: {compression_ratio:.1f}x",
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }), flush=True)
+
+        return {
+            "success": True,
+            "mp3_path": mp3_path,
+            "wav_size": wav_size,
+            "mp3_size": mp3_size,
+            "compression_ratio": compression_ratio
+        }
+
+    except subprocess.TimeoutExpired:
+        return {
+            "success": False,
+            "error": "ffmpeg conversion timed out",
+            "fallback": wav_path
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"MP3 conversion error: {str(e)}",
+            "fallback": wav_path
+        }
 
 
 class AudioRecorder:
@@ -232,7 +324,7 @@ def transcribe_audio(audio_path: str, model_size: str = "base",
 
 def main():
     parser = argparse.ArgumentParser(description="Record audio and transcribe using Whisper")
-    parser.add_argument("output_path", help="Path to save audio recording (WAV)")
+    parser.add_argument("output_path", help="Path to save audio recording (WAV or MP3)")
     parser.add_argument("--model", default="base", choices=["tiny", "base", "small", "medium", "large"],
                         help="Whisper model size (default: base)")
     parser.add_argument("--device", choices=["cuda", "mps", "cpu"],
@@ -241,6 +333,13 @@ def main():
                         help="Sample rate for recording (default: 16000)")
     parser.add_argument("--channels", type=int, default=1,
                         help="Number of audio channels (default: 1)")
+    # TR-1: MP3 conversion options
+    parser.add_argument("--output-format", default="wav", choices=["wav", "mp3"],
+                        help="Output audio format (default: wav, use mp3 for smaller files)")
+    parser.add_argument("--mp3-bitrate", default="64k",
+                        help="MP3 bitrate (default: 64k, TR-1 target)")
+    parser.add_argument("--mp3-sample-rate", type=int, default=22050,
+                        help="MP3 sample rate (default: 22050 Hz, TR-1 target)")
 
     args = parser.parse_args()
 
@@ -284,24 +383,70 @@ def main():
             print(json.dumps(record_result), flush=True)
             sys.exit(1)
 
-        # Transcribe the recorded audio
+        # Transcribe the recorded audio (always use WAV for transcription)
         transcription_result = transcribe_audio(
             str(output_path),
             model_size=args.model,
             device=args.device
         )
 
+        # TR-1: Convert to MP3 if requested
+        final_audio_path = str(output_path)
+        mp3_conversion = None
+
+        if args.output_format == "mp3":
+            mp3_path = str(output_path).replace(".wav", ".mp3")
+            if mp3_path == str(output_path):
+                mp3_path = str(output_path) + ".mp3"
+
+            mp3_result = convert_wav_to_mp3(
+                str(output_path),
+                mp3_path,
+                bitrate=args.mp3_bitrate,
+                sample_rate=args.mp3_sample_rate
+            )
+
+            if mp3_result["success"]:
+                final_audio_path = mp3_result["mp3_path"]
+                mp3_conversion = {
+                    "converted": True,
+                    "format": "mp3",
+                    "bitrate": args.mp3_bitrate,
+                    "sample_rate": args.mp3_sample_rate,
+                    "compression_ratio": mp3_result.get("compression_ratio", 0),
+                    "original_size": mp3_result.get("wav_size", 0),
+                    "compressed_size": mp3_result.get("mp3_size", 0)
+                }
+
+                Path(output_path).unlink()
+            else:
+                # Conversion failed, keep WAV
+                mp3_conversion = {
+                    "converted": False,
+                    "error": mp3_result.get("error", "Unknown error")
+                }
+                print(json.dumps({
+                    "type": "warning",
+                    "message": f"MP3 conversion failed, keeping WAV: {mp3_result.get('error')}",
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                }), flush=True)
+
         # Combine results
         final_result = {
             **transcription_result,
-            "audio_path": str(output_path),
+            "audio_path": final_audio_path,
             "recording": {
                 "duration": record_result.get("duration", 0),
                 "sample_rate": record_result.get(
                     "sample_rate", args.sample_rate),
-                "channels": record_result.get("channels", args.channels)
+                "channels": record_result.get("channels", args.channels),
+                "format": args.output_format
             }
         }
+
+        # Add MP3 conversion info if applicable
+        if mp3_conversion:
+            final_result["mp3_conversion"] = mp3_conversion
 
         # Output final result as single-line JSON for easy parsing
         print(json.dumps(final_result), flush=True)
