@@ -36,6 +36,7 @@ import {
 } from '@/utils/editOperationsProcessor';
 import { indexedDBService } from '@/services/indexedDBService';
 import { getLazyResourceLoader, resetLazyResourceLoader } from '@/utils/lazyResourceLoader';
+import { importSessionFromZip } from '@/utils/zipHandler';
 
 // Maximum number of operations to keep (oldest are trimmed)
 const MAX_OPERATIONS = 100;
@@ -72,8 +73,10 @@ export interface SessionStore {
   error: string | null;
 
   // Session actions
-  loadSession: (data: LoadedSessionData) => Promise<void>;
+  loadSession: (data: LoadedSessionData, sourceBlob?: Blob) => Promise<void>;
+  loadSessionFromStorage: (sessionId: string) => Promise<boolean>;
   selectAction: (index: number) => void;
+  selectActionById: (actionId: string) => boolean;
   setTimelineSelection: (selection: TimelineSelection | null) => void;
   setActiveTab: (tab: 'information' | 'console' | 'network' | 'metadata' | 'voice') => void;
   clearSession: () => void;
@@ -100,7 +103,7 @@ export interface SessionStore {
   getExcludedFiles: () => Set<string>;
 
   // Edit actions (Task 2.2)
-  addNote: (insertAfterActionId: string | null, content: string) => Promise<void>;
+  addNote: (insertAfterActionId: string | null, content: string) => Promise<string | null>;
   editNote: (noteId: string, newContent: string) => Promise<void>;
   editActionField: (actionId: string, fieldPath: string, newValue: unknown) => Promise<void>;
   deleteAction: (actionId: string) => Promise<void>;
@@ -137,7 +140,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
   error: null,
 
   // Actions
-  loadSession: async (data: LoadedSessionData) => {
+  loadSession: async (data: LoadedSessionData, sourceBlob?: Blob) => {
     // Reset lazy resource loader when loading a new session
     resetLazyResourceLoader();
 
@@ -166,6 +169,83 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
 
     // Load edit state from IndexedDB
     await get().loadEditState(data.sessionData.sessionId);
+
+    // Store the source blob for reload support
+    if (sourceBlob) {
+      const sessionId = data.sessionData.sessionId;
+      try {
+        await indexedDBService.saveSessionBlob(sessionId, sourceBlob);
+
+        // Update metadata with blob status and action count
+        const metadata = await indexedDBService.getSessionMetadata(sessionId);
+        if (metadata) {
+          await indexedDBService.updateSessionMetadata({
+            ...metadata,
+            actionCount: data.sessionData.actions.length,
+            hasStoredBlob: true,
+          });
+        }
+      } catch (error) {
+        console.warn('Failed to store session blob:', error);
+      }
+    }
+  },
+
+  loadSessionFromStorage: async (sessionId: string) => {
+    const state = get();
+
+    // Check if we have a stored blob for this session
+    const blob = await indexedDBService.getSessionBlob(sessionId);
+    if (!blob) {
+      console.warn(`No stored blob found for session ${sessionId}`);
+      return false;
+    }
+
+    try {
+      state.setLoading(true);
+      state.setError(null);
+
+      // Create a File from the blob for the import function
+      const file = new File([blob], `${sessionId}.zip`, { type: 'application/zip' });
+      const loadedData = await importSessionFromZip(file);
+
+      // Load without storing again (already stored)
+      // Reset lazy resource loader when loading a new session
+      resetLazyResourceLoader();
+
+      // Load resourceStorage from session data
+      const resourceStorage = new Map<string, StoredResource>();
+      if (loadedData.sessionData.resourceStorage) {
+        for (const [sha1, resource] of Object.entries(loadedData.sessionData.resourceStorage)) {
+          resourceStorage.set(sha1, resource as StoredResource);
+        }
+      }
+
+      set({
+        sessionData: loadedData.sessionData,
+        networkEntries: loadedData.networkEntries,
+        consoleEntries: loadedData.consoleEntries,
+        resources: loadedData.resources,
+        resourceStorage,
+        audioBlob: loadedData.audioBlob || null,
+        lazyLoadEnabled: loadedData.lazyLoadEnabled || false,
+        loadingResources: new Set(),
+        selectedActionIndex: null,
+        timelineSelection: null,
+        error: null,
+        loading: false,
+      });
+
+      // Load edit state from IndexedDB
+      await get().loadEditState(loadedData.sessionData.sessionId);
+
+      return true;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to load session from storage';
+      state.setError(message);
+      console.error('Failed to load session from storage:', error);
+      return false;
+    }
   },
 
   selectAction: (index: number) => {
@@ -174,6 +254,17 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
     if (index >= 0 && index < editedActions.length) {
       set({ selectedActionIndex: index });
     }
+  },
+
+  selectActionById: (actionId: string) => {
+    const state = get();
+    const editedActions = state.getEditedActions();
+    const index = editedActions.findIndex((a) => a.id === actionId);
+    if (index !== -1) {
+      set({ selectedActionIndex: index });
+      return true;
+    }
+    return false;
   },
 
   setTimelineSelection: (selection: TimelineSelection | null) => {
@@ -436,7 +527,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
 
   addNote: async (insertAfterActionId: string | null, content: string) => {
     const state = get();
-    if (!state.sessionData || !state.editState) return;
+    if (!state.sessionData || !state.editState) return null;
 
     const now = new Date().toISOString();
     const noteId = generateNoteId();
@@ -460,6 +551,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
 
     set({ editState: newEditState });
     await persistEditState(newEditState);
+    return noteId;
   },
 
   editNote: async (noteId: string, newContent: string) => {

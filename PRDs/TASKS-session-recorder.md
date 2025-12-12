@@ -476,3 +476,4 @@ See [TASKS-export.md](TASKS-export.md) for detailed export feature tasks.
 | 1.3 | 2025-12-11 | Moved FR-5.2-5.5 export tasks to [TASKS-export.md](TASKS-export.md) |
 | 1.4 | 2025-12-11 | Implemented TR-1 compression (gzip snapshots, JPEG screenshots, MP3 audio), TR-4 ResourceCaptureQueue, FR-2.4 font/styling fixes. Status now ~95% complete. |
 | 1.5 | 2025-12-11 | Implemented FR-3.1 visual recording indicator (TrayManager with system tray + desktop notifications), FR-4.7 lazy loading (LazyResourceLoader, IntersectionObserver, LRU cache). Status now ~97% complete. |
+| 1.6 | 2025-12-12 | Added TR-1 viewer support: gzip decompression in SnapshotViewer using pako library for `.html.gz` snapshots. Fixed viewer bugs: jittering loader (memoized htmlSnapshotPath), duplicate React keys (Timeline/ActionList). |

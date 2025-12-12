@@ -18,6 +18,8 @@ export interface LocalSessionsViewProps {
   onLoadSession?: () => void;
   /** Current session ID (to highlight) */
   currentSessionId?: string;
+  /** Callback when current session is renamed (to sync with store) */
+  onRenameCurrentSession?: (newName: string) => void;
 }
 
 export const LocalSessionsView = ({
@@ -25,6 +27,7 @@ export const LocalSessionsView = ({
   onClose,
   onLoadSession,
   currentSessionId,
+  onRenameCurrentSession,
 }: LocalSessionsViewProps) => {
   const [sessions, setSessions] = useState<LocalSessionMetadata[]>([]);
   const [loading, setLoading] = useState(true);
@@ -77,14 +80,21 @@ export const LocalSessionsView = ({
       return;
     }
 
+    const trimmedName = editName.trim();
+
     try {
       const session = sessions.find(s => s.sessionId === sessionId);
       if (session) {
         await indexedDBService.updateSessionMetadata({
           ...session,
-          displayName: editName.trim(),
+          displayName: trimmedName,
         });
         await loadSessions();
+
+        // If renaming the current session, also notify the parent to update the store
+        if (sessionId === currentSessionId && onRenameCurrentSession) {
+          onRenameCurrentSession(trimmedName);
+        }
       }
     } catch (err) {
       console.error('Failed to rename session:', err);

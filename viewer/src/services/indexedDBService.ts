@@ -10,11 +10,12 @@ import type {
 import { createInitialEditState } from '@/types/editOperations';
 
 const DB_NAME = 'session-editor-db';
-const DB_VERSION = 1;
+const DB_VERSION = 2; // Incremented for new sessionBlobs store
 
 // Object store names
 const STORE_SESSION_EDITS = 'sessionEdits';
 const STORE_SESSION_METADATA = 'sessionMetadata';
+const STORE_SESSION_BLOBS = 'sessionBlobs';
 
 /**
  * IndexedDB Service singleton
@@ -87,6 +88,11 @@ class IndexedDBService {
           const metadataStore = db.createObjectStore(STORE_SESSION_METADATA, { keyPath: 'sessionId' });
           // Create index for sorting by lastModified
           metadataStore.createIndex('lastModified', 'lastModified', { unique: false });
+        }
+
+        // Create sessionBlobs store (keyPath: sessionId) - v2
+        if (!db.objectStoreNames.contains(STORE_SESSION_BLOBS)) {
+          db.createObjectStore(STORE_SESSION_BLOBS, { keyPath: 'sessionId' });
         }
       };
 
@@ -360,14 +366,15 @@ class IndexedDBService {
   }
 
   /**
-   * Delete all data for a session (both edit state and metadata)
+   * Delete all data for a session (edit state, metadata, and blob)
    */
   async deleteAllSessionData(sessionId: string): Promise<boolean> {
-    const [editDeleted, metadataDeleted] = await Promise.all([
+    const [editDeleted, metadataDeleted, blobDeleted] = await Promise.all([
       this.deleteSessionEditState(sessionId),
       this.deleteSessionMetadata(sessionId),
+      this.deleteSessionBlob(sessionId),
     ]);
-    return editDeleted && metadataDeleted;
+    return editDeleted && metadataDeleted && blobDeleted;
   }
 
   /**
@@ -383,6 +390,122 @@ class IndexedDBService {
     const newState = createInitialEditState(sessionId, displayName);
     await this.saveSessionEditState(newState);
     return newState;
+  }
+
+  // ============== Session Blob Storage (for reload support) ==============
+
+  /**
+   * Store a session zip blob for later reload
+   */
+  async saveSessionBlob(sessionId: string, blob: Blob): Promise<boolean> {
+    if (!this.isReady()) {
+      await this.init();
+    }
+
+    if (!this.db) {
+      console.warn('IndexedDB not available. Session blob will not persist.');
+      return false;
+    }
+
+    return new Promise((resolve) => {
+      try {
+        const transaction = this.db!.transaction(STORE_SESSION_BLOBS, 'readwrite');
+        const store = transaction.objectStore(STORE_SESSION_BLOBS);
+
+        const request = store.put({
+          sessionId,
+          blob,
+          savedAt: new Date().toISOString(),
+        });
+
+        request.onsuccess = () => {
+          resolve(true);
+        };
+
+        request.onerror = () => {
+          console.error('Failed to save session blob:', request.error);
+          resolve(false);
+        };
+      } catch (error) {
+        console.error('Error saving session blob:', error);
+        resolve(false);
+      }
+    });
+  }
+
+  /**
+   * Get a stored session zip blob
+   */
+  async getSessionBlob(sessionId: string): Promise<Blob | null> {
+    if (!this.isReady()) {
+      await this.init();
+    }
+
+    if (!this.db) {
+      return null;
+    }
+
+    return new Promise((resolve) => {
+      try {
+        const transaction = this.db!.transaction(STORE_SESSION_BLOBS, 'readonly');
+        const store = transaction.objectStore(STORE_SESSION_BLOBS);
+        const request = store.get(sessionId);
+
+        request.onsuccess = () => {
+          const result = request.result;
+          resolve(result?.blob || null);
+        };
+
+        request.onerror = () => {
+          console.error('Failed to get session blob:', request.error);
+          resolve(null);
+        };
+      } catch (error) {
+        console.error('Error getting session blob:', error);
+        resolve(null);
+      }
+    });
+  }
+
+  /**
+   * Delete a stored session blob
+   */
+  async deleteSessionBlob(sessionId: string): Promise<boolean> {
+    if (!this.isReady()) {
+      await this.init();
+    }
+
+    if (!this.db) {
+      return false;
+    }
+
+    return new Promise((resolve) => {
+      try {
+        const transaction = this.db!.transaction(STORE_SESSION_BLOBS, 'readwrite');
+        const store = transaction.objectStore(STORE_SESSION_BLOBS);
+        const request = store.delete(sessionId);
+
+        request.onsuccess = () => {
+          resolve(true);
+        };
+
+        request.onerror = () => {
+          console.error('Failed to delete session blob:', request.error);
+          resolve(false);
+        };
+      } catch (error) {
+        console.error('Error deleting session blob:', error);
+        resolve(false);
+      }
+    });
+  }
+
+  /**
+   * Check if a session blob exists
+   */
+  async hasSessionBlob(sessionId: string): Promise<boolean> {
+    const blob = await this.getSessionBlob(sessionId);
+    return blob !== null;
   }
 
   /**

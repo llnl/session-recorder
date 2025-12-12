@@ -506,6 +506,97 @@
   pointer-events: none;
 }
 
+/* ===== Insert Point Styles ===== */
+.action-insert-point {
+  position: relative;
+  height: 24px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.action-insert-point:hover {
+  background-color: rgba(245, 158, 11, 0.15);
+}
+
+.action-insert-point-line {
+  position: absolute;
+  left: 0.75rem;
+  right: 0.75rem;
+  top: 50%;
+  height: 2px;
+  background-color: transparent;
+  transition: all 0.15s ease;
+}
+
+.action-insert-point:hover .action-insert-point-line {
+  background-color: #f59e0b;
+}
+
+.action-insert-point-button {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 50%;
+  background-color: #f59e0b;
+  color: #1e2128;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  opacity: 0;
+  transition: all 0.15s ease;
+  z-index: 1;
+}
+
+.action-insert-point:hover .action-insert-point-button {
+  opacity: 1;
+}
+
+.action-insert-point-button:hover {
+  background-color: #d97706;
+  transform: translate(-50%, -50%) scale(1.1);
+}
+
+/* Insert point with active editor */
+.action-insert-point.editing {
+  background-color: transparent;
+  padding: 0.5rem 0.75rem;
+}
+
+.action-insert-point.editing .action-insert-point-line,
+.action-insert-point.editing .action-insert-point-button {
+  display: none;
+}
+
+/* ===== Empty State Add Note Button ===== */
+.action-list-add-first-note-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding: 0.625rem 1.25rem;
+  border: 1px dashed #f59e0b;
+  border-radius: 6px;
+  background-color: transparent;
+  color: #f59e0b;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.action-list-add-first-note-btn:hover {
+  background-color: rgba(245, 158, 11, 0.1);
+  border-style: solid;
+}
+
 /* ===== Edited Action Indicator ===== */
 .action-edited-badge {
   font-size: 0.65rem;

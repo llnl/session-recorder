@@ -746,7 +746,7 @@ Week 4: Integration & Polish (Tasks 4.1-4.5)
 
 ## File Changes Summary
 
-### New Files (12)
+### New Files (16)
 
 | File | Description |
 |------|-------------|
@@ -754,10 +754,14 @@ Week 4: Integration & Polish (Tasks 4.1-4.5)
 | `services/indexedDBService.ts` | IndexedDB persistence service |
 | `utils/editOperationsProcessor.ts` | Pure functions for applying edits |
 | `utils/markdownRenderer.ts` | Markdown to HTML conversion |
-| `components/NoteEditor/NoteEditor.tsx` | Note creation/editing modal |
+| `components/NoteEditor/NoteEditor.tsx` | Note creation/editing modal (deprecated - use InlineNoteEditor) |
 | `components/NoteEditor/NoteEditor.css` | Note editor styles |
-| `components/ActionEditor/ActionEditor.tsx` | Action field editor |
+| `components/ActionEditor/ActionEditor.tsx` | Action field editor (deprecated - use InlineFieldEditor) |
 | `components/ActionEditor/ActionEditor.css` | Action editor styles |
+| `components/InlineNoteEditor/InlineNoteEditor.tsx` | Inline note editor (replaces NoteEditor modal) |
+| `components/InlineNoteEditor/InlineFieldEditor.tsx` | Inline field editor for actions/transcripts |
+| `components/InlineNoteEditor/InlineNoteEditor.css` | Inline editor styles |
+| `components/InlineNoteEditor/index.ts` | Module exports |
 | `components/EditorToolbar/EditorToolbar.tsx` | Undo/redo/export toolbar |
 | `components/EditorToolbar/EditorToolbar.css` | Toolbar styles |
 | `components/LocalSessionsView/LocalSessionsView.tsx` | Local sessions panel |
@@ -765,18 +769,19 @@ Week 4: Integration & Polish (Tasks 4.1-4.5)
 | `components/ConfirmDialog/ConfirmDialog.tsx` | Confirmation dialog |
 | `components/ConfirmDialog/ConfirmDialog.css` | Dialog styles |
 
-### Modified Files (7)
+### Modified Files (8)
 
 | File | Changes |
 |------|---------|
 | `types/session.ts` | Add NoteAction type |
 | `stores/sessionStore.ts` | Add edit state, actions, undo/redo |
-| `components/ActionList/ActionList.tsx` | Insert points, notes, edit/delete |
-| `components/ActionList/ActionList.css` | Note and button styles |
+| `components/ActionList/ActionList.tsx` | Rewritten with inline editing, insert points between actions, virtual scrolling support |
+| `components/ActionList/ActionList.css` | Note styles, insert point styles, inline editing styles |
 | `components/Timeline/Timeline.tsx` | Note indicators, bulk delete |
 | `components/Timeline/Timeline.css` | Note indicator styles |
 | `utils/zipHandler.ts` | Export with edits |
 | `App.tsx` | Integration, toolbar, rename |
+| `components/InlineSessionName/InlineSessionName.tsx` | Fixed unused sessionId TypeScript error |
 
 ---
 
@@ -851,3 +856,7 @@ A task is complete when:
 | 1.1 | 2025-12-10 | Updated to follow TASKS template, added PRD references |
 | 1.2 | 2025-12-11 | Phases 1 & 2 complete. Created: editOperations.ts, indexedDBService.ts, editOperationsProcessor.ts, markdownRenderer.ts. Extended sessionStore.ts with edit state, actions, undo/redo, export support. Installed marked & dompurify. Renamed app to "Session Editor". |
 | 1.3 | 2025-12-11 | **All Phases Complete!** Phase 3: Created NoteEditor, ActionEditor, EditorToolbar, ConfirmDialog, LocalSessionsView components. Modified ActionList with note rendering, edit/delete buttons, insert points. Modified Timeline with note indicators, bulk delete. Phase 4: Updated zipHandler for export with edits, integrated all components in App.tsx. |
+| 1.4 | 2025-12-12 | Bug fixes: Fixed jittering loading spinner (memoized htmlSnapshotPath), fixed duplicate React keys in Timeline/ActionList (changed to `${action.id}-${index}`), added gzip decompression for TR-1 compressed snapshots, fixed TypeScript errors (DOMPurify types, useLazyResource enabled option). |
+| 1.5 | 2025-12-12 | **URL State & Session History Enhancement:** Added URL-based deep linking for sessions and actions. Sessions can now be reloaded via URL params (`?session=id&action=id`). Previous sessions with stored blobs appear in SessionLoader for quick reload. Created useUrlState hook, extended IndexedDB to store session blobs (v2), updated sessionStore with loadSessionFromStorage and selectActionById methods. |
+| 1.6 | 2025-12-12 | **Inline Session Name Editing:** Session name in header is now clickable to edit inline. Edit icon appears on hover. Renaming in LocalSessionsView syncs with header via callback. Created InlineSessionName component (`InlineSessionName.tsx`, `InlineSessionName.css`). Updated LocalSessionsView with `onRenameCurrentSession` callback. |
+| 1.7 | 2025-12-12 | **Inline Note Editing (v2 - immediate creation):** Clicking "+" immediately creates a note in the action list (no overlay/modal). The note appears inline in edit mode. Cancel/empty-save deletes new note. Notes, transcripts, and action values all edit inline. New components: `InlineNoteEditor.tsx`, `InlineFieldEditor.tsx` in `components/InlineNoteEditor/`. ActionList rewritten with virtual scrolling + insert points. sessionStore.addNote now returns noteId for immediate creation flow. Keyboard: Ctrl+Enter=save, Esc=cancel. |

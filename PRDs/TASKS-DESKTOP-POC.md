@@ -23,6 +23,8 @@
 - [ ] Implement graceful shutdown on SIGTERM/SIGINT
 - [ ] Add JSON output for transcript (stdout or file)
 - [ ] Handle microphone permission errors gracefully
+- [ ] Allow you to select the microphone you want to record on
+- [ ] Allow transription on any wav or mp3 file (without recording)
 
 ### 1.3 Build & Test (1.5h)
 

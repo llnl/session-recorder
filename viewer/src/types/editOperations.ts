@@ -171,6 +171,10 @@ export interface LocalSessionMetadata {
   createdAt: string;
   /** Original session start time */
   originalStartTime: string;
+  /** Number of actions in the session */
+  actionCount?: number;
+  /** Whether the session zip blob is stored for reload */
+  hasStoredBlob?: boolean;
 }
 
 /**

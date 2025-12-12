@@ -1,8 +1,8 @@
 # Session Editor - Product Requirements Document
 
-**Version:** 1.1
+**Version:** 1.3
 **Last Updated:** December 2025
-**Status:** In Progress (~45% Complete - Phases 1 & 2 done)
+**Status:** ✅ Complete (All Phases + URL State + Inline Session Name)
 
 ---
 
@@ -227,16 +227,33 @@ A full-featured editor eliminates these limitations by enabling complete session
 - [ ] Edit history preserved in IndexedDB after export
 - [ ] Downloaded zip has descriptive filename
 
-### US-10: Session Rename
+### US-10: Session Rename (v1.3 Enhanced)
 
 > As a user, I want to give my session a custom display name so that I can identify it in my local sessions list.
 
 **Acceptance Criteria:**
 
-- [ ] Display name editable in session metadata
-- [ ] Display name shown in header when session loaded
-- [ ] Display name used in Local Sessions view
-- [ ] Display name persisted in IndexedDB
+- [x] Display name editable in session metadata
+- [x] Display name shown in header when session loaded
+- [x] Display name used in Local Sessions view
+- [x] Display name persisted in IndexedDB
+- [x] Clicking session name in header enables inline editing (v1.3)
+- [x] Renaming in LocalSessionsView syncs with header display (v1.3)
+- [x] Edit icon appears on hover to indicate editability (v1.3)
+- [x] Enter key saves, Escape cancels inline edit (v1.3)
+
+### US-11: URL Deep Linking (v1.2)
+
+> As a user, I want to share a URL that links directly to a specific action in my session so that I can bookmark or share my current view.
+
+**Acceptance Criteria:**
+
+- [x] URL updates with session ID when session loads (`?session=<id>`)
+- [x] URL updates with action ID when action is selected (`?session=<id>&action=<actionId>`)
+- [x] Refreshing page reloads session and navigates to selected action
+- [x] Browser back/forward buttons navigate between actions
+- [x] Previous sessions shown in SessionLoader for quick reload
+- [x] Sessions with stored blobs can be reloaded without re-uploading zip
 
 ---
 
@@ -305,6 +322,30 @@ A full-featured editor eliminates these limitations by enabling complete session
 | FR-6.5 | Export preserves network/console logs unchanged |
 | FR-6.6 | Export filename: `{sessionId}-edited.zip` |
 
+### FR-7: URL State & Session History (v1.2)
+
+| ID | Requirement |
+|----|-------------|
+| FR-7.1 | URL params `?session=<id>&action=<id>` for deep linking |
+| FR-7.2 | Session ID stored in URL when session loads |
+| FR-7.3 | Action ID stored in URL when action is selected |
+| FR-7.4 | Browser refresh reloads session and navigates to action |
+| FR-7.5 | Session zip blobs stored in IndexedDB for reload |
+| FR-7.6 | Previous sessions with stored blobs shown in SessionLoader |
+| FR-7.7 | Browser back/forward navigation updates session/action selection |
+| FR-7.8 | Session history list shows: name, action count, edit count, last modified |
+
+### FR-8: Inline Session Name Editing (v1.3)
+
+| ID | Requirement |
+|----|-------------|
+| FR-8.1 | Session name in header clickable to enable inline editing |
+| FR-8.2 | InlineSessionName component shows edit icon on hover |
+| FR-8.3 | Clicking name transforms to text input with current value |
+| FR-8.4 | Enter key saves the name, Escape key cancels edit |
+| FR-8.5 | Renaming in LocalSessionsView panel syncs with header via callback |
+| FR-8.6 | Name changes persist to both editState and IndexedDB metadata |
+
 ---
 
 ## Technical Requirements
@@ -316,12 +357,13 @@ A full-featured editor eliminates these limitations by enabling complete session
 The editor shall use IndexedDB for persistent storage of edit states.
 
 **Database name:** `session-editor-db`
-**Version:** 1
+**Version:** 2
 
 ```typescript
 // Object stores
-sessionEdits: { keyPath: 'sessionId' }  // SessionEditState
+sessionEdits: { keyPath: 'sessionId' }     // SessionEditState
 sessionMetadata: { keyPath: 'sessionId' }  // LocalSessionMetadata
+sessionBlobs: { keyPath: 'sessionId' }     // Session zip blobs for reload (v2)
 ```
 
 #### TR-1.2: Edit State Persistence
@@ -526,6 +568,9 @@ type EditOperation =
 
 ### Potential v2 Features
 
+- ~~URL deep linking with session/action params~~ ✅ Implemented in v1.2
+- ~~Session history with quick reload~~ ✅ Implemented in v1.2
+- ~~Inline session name editing in header~~ ✅ Implemented in v1.3
 - Tagging system for actions and notes
 - Search within session content
 - Diff view comparing original vs edited
