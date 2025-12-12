@@ -1,17 +1,34 @@
 /**
  * Zip file handling utilities
  * Handles import/export of session data as zip files
+ * Supports exporting with edit operations applied
  */
 
 import JSZip from 'jszip';
 import type { LoadedSessionData, SessionData, NetworkEntry, ConsoleEntry } from '@/types/session';
+import type { EditOperation } from '@/types/editOperations';
 import { parseJSONLines, validateSession } from './sessionLoader';
+import { getLazyResourceLoader, resetLazyResourceLoader } from './lazyResourceLoader';
+import { applyOperations, getExcludedFilesFromOperations } from './editOperationsProcessor';
+
+export interface ImportOptions {
+  /** Enable lazy loading of resources (default: true for large sessions) */
+  lazyLoad?: boolean;
+  /** Threshold for auto-enabling lazy loading (default: 100 actions) */
+  lazyLoadThreshold?: number;
+}
 
 /**
  * Import session from zip file
+ * @param zipFile The zip file to import
+ * @param options Import options including lazy loading settings
  */
-export async function importSessionFromZip(zipFile: File): Promise<LoadedSessionData> {
+export async function importSessionFromZip(
+  zipFile: File,
+  options: ImportOptions = {}
+): Promise<LoadedSessionData> {
   const zip = new JSZip();
+  const { lazyLoadThreshold = 100 } = options;
 
   try {
     // Load and parse zip
@@ -31,6 +48,11 @@ export async function importSessionFromZip(zipFile: File): Promise<LoadedSession
       throw new Error(`Invalid session data: ${validation.errors.join(', ')}`);
     }
 
+    // Determine if we should use lazy loading
+    // Auto-enable for large sessions unless explicitly disabled
+    const shouldLazyLoad =
+      options.lazyLoad ?? sessionData.actions.length >= lazyLoadThreshold;
+
     // Load network entries
     let networkEntries: NetworkEntry[] = [];
     const networkFile = zipData.file('session.network');
@@ -47,34 +69,53 @@ export async function importSessionFromZip(zipFile: File): Promise<LoadedSession
       consoleEntries = parseJSONLines<ConsoleEntry>(consoleText);
     }
 
-    // Load all resources (snapshots, screenshots, etc.)
-    const resources = new Map<string, Blob>();
+    // Load audio file (always load immediately - needed for playback)
     let audioBlob: Blob | undefined;
-    const filePromises: Promise<void>[] = [];
-
-    zipData.forEach((relativePath, file) => {
-      if (!file.dir) {
-        if (relativePath.startsWith('snapshots/') ||
-            relativePath.startsWith('screenshots/') ||
-            relativePath.startsWith('resources/')) {
-          filePromises.push(
-            file.async('blob').then((blob) => {
-              resources.set(relativePath, blob);
-            })
-          );
-        } else if (relativePath.startsWith('audio/') && relativePath.endsWith('.wav')) {
-          // Load audio file for voice recording
-          filePromises.push(
-            file.async('blob').then((blob) => {
-              audioBlob = blob;
-            })
-          );
-        }
+    const audioFiles = ['audio/recording.wav', 'audio/recording.mp3'];
+    for (const audioPath of audioFiles) {
+      const audioFile = zipData.file(audioPath);
+      if (audioFile) {
+        audioBlob = await audioFile.async('blob');
+        break;
       }
-    });
+    }
 
-    // Wait for all resources to load
-    await Promise.all(filePromises);
+    // Handle resources based on lazy loading setting
+    const resources = new Map<string, Blob>();
+
+    if (shouldLazyLoad) {
+      // Initialize lazy resource loader with the zip
+      resetLazyResourceLoader();
+      const loader = getLazyResourceLoader();
+      await loader.initialize(zipData);
+
+      console.log(
+        `[LazyLoader] Initialized for ${sessionData.actions.length} actions. ` +
+        `Resources will be loaded on demand.`
+      );
+    } else {
+      // Load all resources immediately (existing behavior)
+      const filePromises: Promise<void>[] = [];
+
+      zipData.forEach((relativePath, file) => {
+        if (!file.dir) {
+          if (
+            relativePath.startsWith('snapshots/') ||
+            relativePath.startsWith('screenshots/') ||
+            relativePath.startsWith('resources/')
+          ) {
+            filePromises.push(
+              file.async('blob').then((blob) => {
+                resources.set(relativePath, blob);
+              })
+            );
+          }
+        }
+      });
+
+      // Wait for all resources to load
+      await Promise.all(filePromises);
+    }
 
     return {
       sessionData,
@@ -82,6 +123,7 @@ export async function importSessionFromZip(zipFile: File): Promise<LoadedSession
       consoleEntries,
       resources,
       audioBlob,
+      lazyLoadEnabled: shouldLazyLoad,
     };
   } catch (error) {
     if (error instanceof Error) {
@@ -91,21 +133,51 @@ export async function importSessionFromZip(zipFile: File): Promise<LoadedSession
   }
 }
 
+export interface ExportOptions {
+  /** Edit operations to apply before export */
+  editOperations?: EditOperation[];
+  /** Audio blob if available */
+  audioBlob?: Blob;
+}
+
 /**
  * Export session to zip file
- * Note: This function expects the session to be loaded from a directory or previous import
+ * Supports applying edit operations (notes, field edits, deletions) before export
+ *
+ * @param sessionData - Original session data
+ * @param networkEntries - Network log entries
+ * @param consoleEntries - Console log entries
+ * @param resources - Map of resource paths to blobs
+ * @param options - Export options including edit operations
  */
 export async function exportSessionToZip(
   sessionData: SessionData,
   networkEntries: NetworkEntry[],
   consoleEntries: ConsoleEntry[],
-  resources: Map<string, Blob>
+  resources: Map<string, Blob>,
+  options: ExportOptions = {}
 ): Promise<Blob> {
   const zip = new JSZip();
+  const { editOperations = [], audioBlob } = options;
 
   try {
-    // Add session.json
-    zip.file('session.json', JSON.stringify(sessionData, null, 2));
+    // Apply edit operations to create modified session data
+    let modifiedSessionData = { ...sessionData };
+
+    if (editOperations.length > 0) {
+      // Apply all edit operations to the actions array
+      const modifiedActions = applyOperations(sessionData.actions, editOperations);
+      modifiedSessionData = {
+        ...sessionData,
+        actions: modifiedActions,
+      };
+    }
+
+    // Get files to exclude (from deleted actions)
+    const excludedFiles = getExcludedFilesFromOperations(editOperations);
+
+    // Add session.json with modified data
+    zip.file('session.json', JSON.stringify(modifiedSessionData, null, 2));
 
     // Add network log (JSON Lines format)
     if (networkEntries.length > 0) {
@@ -119,10 +191,19 @@ export async function exportSessionToZip(
       zip.file('session.console', consoleLines);
     }
 
-    // Add all resources
+    // Add resources (excluding files from deleted actions)
     resources.forEach((blob, relativePath) => {
-      zip.file(relativePath, blob);
+      if (!excludedFiles.has(relativePath)) {
+        zip.file(relativePath, blob);
+      }
     });
+
+    // Add audio file if available
+    if (audioBlob) {
+      // Determine audio format from blob type
+      const extension = audioBlob.type.includes('mp3') ? 'mp3' : 'wav';
+      zip.file(`audio/recording.${extension}`, audioBlob);
+    }
 
     // Generate zip file
     const zipBlob = await zip.generateAsync({

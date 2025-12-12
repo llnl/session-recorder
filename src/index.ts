@@ -17,3 +17,16 @@ export type {
   SnapshotWithScreenshot,
   ActionDetails
 } from './node/types';
+
+// Tray Manager for visual recording indicator (FR-3.1)
+export {
+  createTrayManager,
+  CLITrayManager,
+  NoOpTrayManager,
+  TrayManagerBase
+} from './node/TrayManager';
+export type {
+  TrayState,
+  TrayManagerOptions,
+  TrayNotification
+} from './node/TrayManager';

@@ -1,19 +1,25 @@
 /**
  * Action List Component
  * Displays chronological list of recorded actions with virtual scrolling
+ * Supports note insertion, editing, and deletion
  */
 
 import { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import { useSessionStore } from '@/stores/sessionStore';
-import { useFilteredActions } from '@/hooks/useFilteredActions';
 import { useVirtualList } from '@/hooks/useVirtualList';
-import type { VoiceTranscriptAction, RecordedAction, NavigationAction, PageVisibilityAction, MediaAction, DownloadAction, FullscreenAction, PrintAction, AnyAction } from '@/types/session';
+import { NoteEditor } from '@/components/NoteEditor/NoteEditor';
+import { ActionEditor, useActionEditor, type FieldType } from '@/components/ActionEditor/ActionEditor';
+import { ConfirmDialog } from '@/components/ConfirmDialog/ConfirmDialog';
+import { renderMarkdown } from '@/utils/markdownRenderer';
+import type { VoiceTranscriptAction, RecordedAction, NavigationAction, PageVisibilityAction, MediaAction, DownloadAction, FullscreenAction, PrintAction, AnyAction, NoteAction } from '@/types/session';
+import { isNoteAction } from '@/types/session';
 import './ActionList.css';
 
 const ACTION_ITEM_HEIGHT = 80; // Estimated height per regular action item
 const VOICE_ITEM_HEIGHT = 100; // Estimated height per voice transcript item (more content)
 const NAV_ITEM_HEIGHT = 60; // Estimated height per navigation item
 const EVENT_ITEM_HEIGHT = 50; // Estimated height for simple event items
+const NOTE_ITEM_HEIGHT = 80; // Estimated height for note items
 
 // Type guard for voice transcript actions
 function isVoiceTranscriptAction(action: AnyAction): action is VoiceTranscriptAction {
@@ -35,7 +41,14 @@ export const ActionList = () => {
   const selectedActionIndex = useSessionStore((state) => state.selectedActionIndex);
   const selectAction = useSessionStore((state) => state.selectAction);
   const audioBlob = useSessionStore((state) => state.audioBlob);
-  const filteredActions = useFilteredActions();
+  const getEditedActions = useSessionStore((state) => state.getEditedActions);
+  const addNote = useSessionStore((state) => state.addNote);
+  const editNote = useSessionStore((state) => state.editNote);
+  const editActionField = useSessionStore((state) => state.editActionField);
+  const deleteAction = useSessionStore((state) => state.deleteAction);
+
+  // Use edited actions instead of raw actions
+  const editedActions = getEditedActions();
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -43,6 +56,22 @@ export const ActionList = () => {
   // Audio playback state
   const [playingVoiceId, setPlayingVoiceId] = useState<string | null>(null);
   const [currentSegmentEnd, setCurrentSegmentEnd] = useState<number | null>(null);
+
+  // Note editor state
+  const [noteEditorOpen, setNoteEditorOpen] = useState(false);
+  const [noteEditorContent, setNoteEditorContent] = useState('');
+  const [noteEditorActionId, setNoteEditorActionId] = useState<string | null>(null);
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+
+  // Action editor state
+  const { editingState, startEditing, stopEditing } = useActionEditor();
+
+  // Delete confirmation state
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    isOpen: boolean;
+    actionId: string;
+    actionType: string;
+  } | null>(null);
 
   // Create audio URL from blob
   const audioUrl = useMemo(() => {
@@ -64,7 +93,6 @@ export const ActionList = () => {
     if (!sessionData) return null;
     const firstVoice = sessionData.actions.find(isVoiceTranscriptAction);
     if (!firstVoice) return null;
-    // Use transcript's startTime as reference (consistent with segment times)
     return new Date(firstVoice.transcript.startTime).getTime();
   }, [sessionData]);
 
@@ -90,7 +118,6 @@ export const ActionList = () => {
     };
 
     const handlePause = () => {
-      // Only clear state if we're not auto-stopping at segment end
       if (currentSegmentEnd === null) {
         setPlayingVoiceId(null);
       }
@@ -109,21 +136,18 @@ export const ActionList = () => {
 
   // Play/pause voice segment
   const handleVoicePlayPause = useCallback((e: React.MouseEvent, voiceAction: VoiceTranscriptAction) => {
-    e.stopPropagation(); // Don't trigger item selection
+    e.stopPropagation();
 
     const audio = audioRef.current;
     if (!audio || !audioUrl || !audioStartTime) return;
 
     if (playingVoiceId === voiceAction.id) {
-      // Currently playing this segment - pause it
       audio.pause();
       setPlayingVoiceId(null);
       setCurrentSegmentEnd(null);
     } else {
-      // Trust the session.json values - use transcript times directly
       const segmentStart = new Date(voiceAction.transcript.startTime).getTime();
       const segmentEnd = Math.ceil(new Date(voiceAction.transcript.endTime).getTime() / 1000) * 1000;
-
       const relativeStart = (segmentStart - audioStartTime) / 1000;
 
       audio.currentTime = Math.max(0, relativeStart);
@@ -135,8 +159,9 @@ export const ActionList = () => {
 
   // Virtual scrolling setup with dynamic heights for different action types
   const getItemHeight = (index: number) => {
-    const action = filteredActions[index];
+    const action = editedActions[index];
     if (!action) return ACTION_ITEM_HEIGHT;
+    if (isNoteAction(action)) return NOTE_ITEM_HEIGHT;
     if (isVoiceTranscriptAction(action)) return VOICE_ITEM_HEIGHT;
     if (isNavigationAction(action)) return NAV_ITEM_HEIGHT;
     if (isBrowserEventAction(action)) return EVENT_ITEM_HEIGHT;
@@ -144,7 +169,7 @@ export const ActionList = () => {
   };
 
   const { virtualizer, items: virtualItems, totalSize } = useVirtualList({
-    items: filteredActions,
+    items: editedActions,
     estimateSize: getItemHeight,
     scrollElement: scrollRef,
     overscan: 5,
@@ -153,8 +178,8 @@ export const ActionList = () => {
   // Auto-scroll to selected action
   useEffect(() => {
     if (selectedActionIndex !== null && sessionData) {
-      const actionInFiltered = filteredActions.findIndex(
-        (action) => sessionData.actions.indexOf(action) === selectedActionIndex
+      const actionInFiltered = editedActions.findIndex(
+        (_, idx) => idx === selectedActionIndex
       );
 
       if (actionInFiltered !== -1) {
@@ -164,7 +189,7 @@ export const ActionList = () => {
         });
       }
     }
-  }, [selectedActionIndex, filteredActions, sessionData, virtualizer]);
+  }, [selectedActionIndex, editedActions, sessionData, virtualizer]);
 
   const formatTime = (timestamp: string) => {
     if (!sessionData) return '';
@@ -199,6 +224,8 @@ export const ActionList = () => {
         return '📺';
       case 'print':
         return '🖨️';
+      case 'note':
+        return '📝';
       default:
         return '▶️';
     }
@@ -207,14 +234,12 @@ export const ActionList = () => {
   const getClickDetails = (action: RecordedAction) => {
     const parts: string[] = [];
 
-    // Button type
     if (action.action.button === 1) {
       parts.push('Middle');
     } else if (action.action.button === 2) {
       parts.push('Right');
     }
 
-    // Modifiers
     if (action.action.modifiers) {
       const mods = action.action.modifiers;
       if (mods.ctrl) parts.push('Ctrl');
@@ -224,6 +249,74 @@ export const ActionList = () => {
     }
 
     return parts.length > 0 ? parts.join('+') + ' click' : null;
+  };
+
+  // Handle adding a new note
+  const handleAddNote = (afterActionId: string | null) => {
+    setNoteEditorActionId(afterActionId);
+    setNoteEditorContent('');
+    setEditingNoteId(null);
+    setNoteEditorOpen(true);
+  };
+
+  // Handle editing an existing note
+  const handleEditNote = (e: React.MouseEvent, note: NoteAction) => {
+    e.stopPropagation();
+    setNoteEditorActionId(null);
+    setNoteEditorContent(note.note.content);
+    setEditingNoteId(note.id);
+    setNoteEditorOpen(true);
+  };
+
+  // Handle saving note from editor
+  const handleSaveNote = async (content: string) => {
+    if (editingNoteId) {
+      await editNote(editingNoteId, content);
+    } else {
+      await addNote(noteEditorActionId, content);
+    }
+    setNoteEditorOpen(false);
+    setNoteEditorContent('');
+    setNoteEditorActionId(null);
+    setEditingNoteId(null);
+  };
+
+  // Handle closing note editor
+  const handleCloseNoteEditor = () => {
+    setNoteEditorOpen(false);
+    setNoteEditorContent('');
+    setNoteEditorActionId(null);
+    setEditingNoteId(null);
+  };
+
+  // Handle editing an action field
+  const handleEditField = (e: React.MouseEvent, actionId: string, fieldPath: string, currentValue: string, fieldType: FieldType, fieldName?: string) => {
+    e.stopPropagation();
+    startEditing(actionId, fieldPath, currentValue, fieldType, fieldName);
+  };
+
+  // Handle saving edited field
+  const handleSaveField = async (actionId: string, fieldPath: string, newValue: string) => {
+    await editActionField(actionId, fieldPath, newValue);
+    stopEditing();
+  };
+
+  // Handle delete confirmation
+  const handleDeleteAction = (e: React.MouseEvent, action: AnyAction) => {
+    e.stopPropagation();
+    setDeleteConfirm({
+      isOpen: true,
+      actionId: action.id,
+      actionType: action.type,
+    });
+  };
+
+  // Handle confirmed deletion
+  const handleConfirmDelete = async () => {
+    if (deleteConfirm) {
+      await deleteAction(deleteConfirm.actionId);
+      setDeleteConfirm(null);
+    }
   };
 
   if (!sessionData) {
@@ -239,6 +332,13 @@ export const ActionList = () => {
     );
   }
 
+  // Check for multi-tab
+  const hasMultipleTabs = sessionData.actions.some(
+    a => !isVoiceTranscriptAction(a) && !isNavigationAction(a) && !isNoteAction(a) && (a as RecordedAction).tabId !== undefined && (a as RecordedAction).tabId !== 0
+  ) || sessionData.actions.some(
+    a => isNavigationAction(a) && (a as NavigationAction).tabId !== 0
+  );
+
   return (
     <div className="action-list">
       {/* Hidden audio element for voice playback */}
@@ -246,15 +346,50 @@ export const ActionList = () => {
         <audio ref={audioRef} src={audioUrl} preload="metadata" className="audio-hidden" />
       )}
 
+      {/* Note Editor Modal */}
+      <NoteEditor
+        isOpen={noteEditorOpen}
+        initialContent={noteEditorContent}
+        title={editingNoteId ? 'Edit Note' : 'Add Note'}
+        onSave={handleSaveNote}
+        onClose={handleCloseNoteEditor}
+      />
+
+      {/* Action Editor (for inline/modal editing) */}
+      {editingState && (
+        <ActionEditor
+          actionId={editingState.actionId}
+          fieldPath={editingState.fieldPath}
+          currentValue={editingState.currentValue}
+          fieldType={editingState.fieldType}
+          fieldName={editingState.fieldName}
+          onSave={handleSaveField}
+          onCancel={stopEditing}
+        />
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      {deleteConfirm && (
+        <ConfirmDialog
+          isOpen={deleteConfirm.isOpen}
+          title="Delete Action"
+          message={`Are you sure you want to delete this ${deleteConfirm.actionType === 'note' ? 'note' : 'action'}? This cannot be undone.`}
+          confirmText="Delete"
+          destructive
+          onConfirm={handleConfirmDelete}
+          onCancel={() => setDeleteConfirm(null)}
+        />
+      )}
+
       <div className="action-list-header">
         <h3>Actions</h3>
         <span className="action-list-count">
-          {filteredActions.length} / {sessionData.actions.length}
+          {editedActions.length} / {sessionData.actions.length}
         </span>
       </div>
 
       <div className="action-list-content" ref={scrollRef}>
-        {filteredActions.length === 0 ? (
+        {editedActions.length === 0 ? (
           <div className="action-list-empty">
             <p>No actions in selected time range</p>
           </div>
@@ -264,9 +399,57 @@ export const ActionList = () => {
             style={{ height: `${totalSize}px`, position: 'relative' }}
           >
             {virtualItems.map((virtualRow) => {
-              const action = filteredActions[virtualRow.index];
-              const actualIndex = sessionData.actions.indexOf(action);
-              const isSelected = selectedActionIndex === actualIndex;
+              const action = editedActions[virtualRow.index];
+              const isSelected = selectedActionIndex === virtualRow.index;
+
+              // Render note action
+              if (isNoteAction(action)) {
+                return (
+                  <div
+                    key={`${action.id}-${virtualRow.index}`}
+                    className={`action-list-item note-item ${isSelected ? 'selected' : ''}`}
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      height: `${virtualRow.size}px`,
+                      transform: `translateY(${virtualRow.start}px)`,
+                    }}
+                    onClick={() => selectAction(virtualRow.index)}
+                  >
+                    <div className="action-list-item-header">
+                      <span className="action-list-item-icon">📝</span>
+                      <span className="action-list-item-type">Note</span>
+                      <span className="action-list-item-time">
+                        {formatTime(action.timestamp)}
+                      </span>
+                      <div className="action-item-buttons">
+                        <button
+                          type="button"
+                          className="action-edit-btn"
+                          onClick={(e) => handleEditNote(e, action)}
+                          title="Edit note"
+                        >
+                          ✏️
+                        </button>
+                        <button
+                          type="button"
+                          className="action-delete-btn"
+                          onClick={(e) => handleDeleteAction(e, action)}
+                          title="Delete note"
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    </div>
+                    <div
+                      className="action-list-item-details note-content markdown-content"
+                      dangerouslySetInnerHTML={{ __html: renderMarkdown(action.note.content) }}
+                    />
+                  </div>
+                );
+              }
 
               // Render voice transcript action
               if (isVoiceTranscriptAction(action)) {
@@ -277,7 +460,7 @@ export const ActionList = () => {
 
                 return (
                   <div
-                    key={action.id}
+                    key={`${action.id}-${virtualRow.index}`}
                     className={`action-list-item voice-item ${isSelected ? 'selected' : ''} ${isPlayingThis ? 'playing' : ''}`}
                     style={{
                       position: 'absolute',
@@ -287,7 +470,7 @@ export const ActionList = () => {
                       height: `${virtualRow.size}px`,
                       transform: `translateY(${virtualRow.start}px)`,
                     }}
-                    onClick={() => selectAction(actualIndex)}
+                    onClick={() => selectAction(virtualRow.index)}
                   >
                     <div className="action-list-item-header">
                       <span className="action-list-item-icon">🎙️</span>
@@ -295,6 +478,24 @@ export const ActionList = () => {
                       <span className="action-list-item-time">
                         {formatTime(action.timestamp)}
                       </span>
+                      <div className="action-item-buttons">
+                        <button
+                          type="button"
+                          className="action-edit-btn"
+                          onClick={(e) => handleEditField(e, action.id, 'transcript.text', voiceAction.transcript.text, 'markdown', 'Transcript')}
+                          title="Edit transcript"
+                        >
+                          ✏️
+                        </button>
+                        <button
+                          type="button"
+                          className="action-delete-btn"
+                          onClick={(e) => handleDeleteAction(e, action)}
+                          title="Delete action"
+                        >
+                          🗑️
+                        </button>
+                      </div>
                     </div>
 
                     <div className="action-list-item-details voice-text">
@@ -322,13 +523,6 @@ export const ActionList = () => {
                 );
               }
 
-              // Check for multi-tab to show tab indicators
-              const hasMultipleTabs = sessionData.actions.some(
-                a => !isVoiceTranscriptAction(a) && !isNavigationAction(a) && (a as RecordedAction).tabId !== undefined && (a as RecordedAction).tabId !== 0
-              ) || sessionData.actions.some(
-                a => isNavigationAction(a) && (a as NavigationAction).tabId !== 0
-              );
-
               // Render navigation action
               if (isNavigationAction(action)) {
                 const navAction = action as NavigationAction;
@@ -338,7 +532,7 @@ export const ActionList = () => {
 
                 return (
                   <div
-                    key={action.id}
+                    key={`${action.id}-${virtualRow.index}`}
                     className={`action-list-item navigation-item ${isSelected ? 'selected' : ''}`}
                     style={{
                       position: 'absolute',
@@ -348,7 +542,7 @@ export const ActionList = () => {
                       height: `${virtualRow.size}px`,
                       transform: `translateY(${virtualRow.start}px)`,
                     }}
-                    onClick={() => selectAction(actualIndex)}
+                    onClick={() => selectAction(virtualRow.index)}
                   >
                     <div className="action-list-item-header">
                       <span className="action-list-item-icon">🔗</span>
@@ -363,6 +557,16 @@ export const ActionList = () => {
                       <span className="action-list-item-time">
                         {formatTime(action.timestamp)}
                       </span>
+                      <div className="action-item-buttons">
+                        <button
+                          type="button"
+                          className="action-delete-btn"
+                          onClick={(e) => handleDeleteAction(e, action)}
+                          title="Delete action"
+                        >
+                          🗑️
+                        </button>
+                      </div>
                     </div>
 
                     <div className="action-list-item-url navigation-url" title={navAction.navigation.toUrl}>
@@ -372,14 +576,13 @@ export const ActionList = () => {
                 );
               }
 
-              // Render browser event actions (visibility, media, download, fullscreen, print)
+              // Render browser event actions
               if (isBrowserEventAction(action)) {
                 let eventDescription = '';
                 let eventClass = 'event-item';
 
                 if (action.type === 'page_visibility') {
                   const visAction = action as PageVisibilityAction;
-                  // Use clearer naming: "Tab Focused" when visible, "Tab Switched" when hidden
                   eventDescription = visAction.visibility.state === 'visible' ? 'Tab Focused' : 'Tab Switched';
                   eventClass = visAction.visibility.state === 'visible' ? 'event-item visibility-visible' : 'event-item visibility-hidden';
                 } else if (action.type === 'media') {
@@ -402,7 +605,7 @@ export const ActionList = () => {
 
                 return (
                   <div
-                    key={action.id}
+                    key={`${action.id}-${virtualRow.index}`}
                     className={`action-list-item ${eventClass} ${isSelected ? 'selected' : ''}`}
                     style={{
                       position: 'absolute',
@@ -412,7 +615,7 @@ export const ActionList = () => {
                       height: `${virtualRow.size}px`,
                       transform: `translateY(${virtualRow.start}px)`,
                     }}
-                    onClick={() => selectAction(actualIndex)}
+                    onClick={() => selectAction(virtualRow.index)}
                   >
                     <div className="action-list-item-header">
                       <span className="action-list-item-icon">{getActionIcon(action.type)}</span>
@@ -425,6 +628,16 @@ export const ActionList = () => {
                       <span className="action-list-item-time">
                         {formatTime(action.timestamp)}
                       </span>
+                      <div className="action-item-buttons">
+                        <button
+                          type="button"
+                          className="action-delete-btn"
+                          onClick={(e) => handleDeleteAction(e, action)}
+                          title="Delete action"
+                        >
+                          🗑️
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );
@@ -435,7 +648,7 @@ export const ActionList = () => {
 
               return (
                 <div
-                  key={action.id}
+                  key={`${action.id}-${virtualRow.index}`}
                   className={`action-list-item ${isSelected ? 'selected' : ''}`}
                   style={{
                     position: 'absolute',
@@ -445,7 +658,7 @@ export const ActionList = () => {
                     height: `${virtualRow.size}px`,
                     transform: `translateY(${virtualRow.start}px)`,
                   }}
-                  onClick={() => selectAction(actualIndex)}
+                  onClick={() => selectAction(virtualRow.index)}
                 >
                   <div className="action-list-item-header">
                     <span className="action-list-item-icon">
@@ -460,6 +673,26 @@ export const ActionList = () => {
                     <span className="action-list-item-time">
                       {formatTime(action.timestamp)}
                     </span>
+                    <div className="action-item-buttons">
+                      {browserAction.action.value && (
+                        <button
+                          type="button"
+                          className="action-edit-btn"
+                          onClick={(e) => handleEditField(e, action.id, 'action.value', browserAction.action.value!, 'text', 'Value')}
+                          title="Edit value"
+                        >
+                          ✏️
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        className="action-delete-btn"
+                        onClick={(e) => handleDeleteAction(e, action)}
+                        title="Delete action"
+                      >
+                        🗑️
+                      </button>
+                    </div>
                   </div>
 
                   {browserAction.action.value && (
@@ -492,6 +725,16 @@ export const ActionList = () => {
           </div>
         )}
       </div>
+
+      {/* Add Note Button (floating) */}
+      <button
+        type="button"
+        className="action-list-add-note-btn"
+        onClick={() => handleAddNote(editedActions.length > 0 ? editedActions[editedActions.length - 1].id : null)}
+        title="Add note at end"
+      >
+        + Add Note
+      </button>
     </div>
   );
 };

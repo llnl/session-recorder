@@ -1,13 +1,43 @@
 /**
  * Snapshot Viewer Component
  * Displays before/after HTML snapshots in iframes with element highlighting
+ * Supports gzip-compressed snapshots (TR-1 compression)
  */
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useSessionStore } from '@/stores/sessionStore';
 import { generateRestorationScript } from '../../../../src/browser/snapshotRestoration';
+import { useLazyResource } from '@/hooks/useLazyResource';
+import { ungzip } from 'pako';
 import type { RecordedAction, AnyAction, BrowserEventSnapshot, NavigationAction, PageVisibilityAction, MediaAction, DownloadAction, FullscreenAction, PrintAction } from '@/types/session';
 import './SnapshotViewer.css';
+
+/**
+ * Decompress gzip-compressed blob content (TR-1 compression support)
+ * Returns the decompressed string, or the original text if not gzip
+ */
+async function decompressIfGzip(blob: Blob, path: string): Promise<string> {
+  // Check if the file is gzip compressed (by extension or magic bytes)
+  const isGzipPath = path.endsWith('.gz');
+
+  if (isGzipPath) {
+    try {
+      const arrayBuffer = await blob.arrayBuffer();
+      const uint8Array = new Uint8Array(arrayBuffer);
+
+      // Check gzip magic bytes (1f 8b)
+      if (uint8Array[0] === 0x1f && uint8Array[1] === 0x8b) {
+        const decompressed = ungzip(uint8Array);
+        return new TextDecoder('utf-8').decode(decompressed);
+      }
+    } catch (err) {
+      console.warn('Failed to decompress gzip, trying as plain text:', err);
+    }
+  }
+
+  // Not gzip or decompression failed - try as plain text
+  return blob.text();
+}
 
 // Type guard for voice transcripts (only type without any screenshot)
 function isVoiceTranscript(action: AnyAction): boolean {
@@ -186,6 +216,8 @@ export const SnapshotViewer = () => {
   const sessionData = useSessionStore((state) => state.sessionData);
   const selectedActionIndex = useSessionStore((state) => state.selectedActionIndex);
   const resources = useSessionStore((state) => state.resources);
+  const lazyLoadEnabled = useSessionStore((state) => state.lazyLoadEnabled);
+  const getResourceLazy = useSessionStore((state) => state.getResourceLazy);
 
   /**
    * Find the closest previous action that has snapshots
@@ -253,6 +285,18 @@ export const SnapshotViewer = () => {
     if (error !== null) setError(null);
   }
 
+  // Browser event screenshot path (for lazy loading)
+  const browserEventScreenshotPath = useMemo(() => {
+    if (!selectedAction) return null;
+    const eventSnapshot = getBrowserEventScreenshotOnly(selectedAction);
+    return eventSnapshot?.screenshot || null;
+  }, [selectedAction]);
+
+  // Use lazy loading hook for browser event screenshots
+  const {
+    url: lazyScreenshotUrl,
+  } = useLazyResource(browserEventScreenshotPath, { enabled: lazyLoadEnabled });
+
   // Derive browser event screenshot data using useMemo (avoids setState in effects)
   // Only used for browser events that DON'T have HTML snapshots (screenshot-only fallback)
   const browserEventData = useMemo(() => {
@@ -261,6 +305,15 @@ export const SnapshotViewer = () => {
     const eventSnapshot = getBrowserEventScreenshotOnly(selectedAction);
     if (!eventSnapshot) return null;
 
+    // Use lazy loaded URL if available, otherwise fall back to direct resources
+    if (lazyLoadEnabled && lazyScreenshotUrl) {
+      return {
+        screenshotUrl: lazyScreenshotUrl,
+        snapshot: eventSnapshot
+      };
+    }
+
+    // Direct resource access for non-lazy mode
     const screenshotBlob = resources.get(eventSnapshot.screenshot);
     if (!screenshotBlob) return null;
 
@@ -268,7 +321,7 @@ export const SnapshotViewer = () => {
       screenshotUrl: URL.createObjectURL(screenshotBlob),
       snapshot: eventSnapshot
     };
-  }, [selectedAction, resources]);
+  }, [selectedAction, resources, lazyLoadEnabled, lazyScreenshotUrl]);
 
   // Cleanup blob URL when browserEventData changes
   useEffect(() => {
@@ -279,8 +332,8 @@ export const SnapshotViewer = () => {
     };
   }, [browserEventData]);
 
-  // Compute HTML path for actions that need iframe display (derived value)
-  const getHtmlSnapshotPath = (): { path: string } | { error: string } | null => {
+  // Compute HTML path for actions that need iframe display (memoized to prevent re-renders)
+  const htmlSnapshotPath = useMemo((): { path: string } | { error: string } | null => {
     if (!selectedAction || browserEventData) return null;
 
     if (isVoiceTranscript(selectedAction)) {
@@ -321,8 +374,7 @@ export const SnapshotViewer = () => {
     }
 
     return { error: `No snapshot available for this ${getEventTypeName(selectedAction.type, selectedAction)}` };
-  };
-  const htmlSnapshotPath = getHtmlSnapshotPath();
+  }, [selectedAction, browserEventData, sessionData, selectedActionIndex, currentView]);
 
   // Highlight the target element in the iframe
   const highlightElement = (iframe: HTMLIFrameElement) => {
@@ -379,55 +431,86 @@ export const SnapshotViewer = () => {
     if (!iframeRef.current) return;
 
     const htmlPath = htmlSnapshotPath.path;
+    let cancelled = false;
 
-    // Get HTML content from resources
-    const htmlBlob = resources.get(htmlPath);
-    if (!htmlBlob) return;
+    const loadHtmlSnapshot = async () => {
+      setIsLoading(true);
 
-    // Load HTML into iframe
-    htmlBlob.text().then((htmlContent) => {
-      const iframe = iframeRef.current;
-      if (!iframe) return;
+      try {
+        // Get HTML content from resources (lazy or direct)
+        let htmlBlob: Blob | null = null;
 
-      // Write content to iframe
-      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-      if (!iframeDoc) {
-        setError('Failed to access iframe document');
-        setIsLoading(false);
-        return;
-      }
-
-      // Remove Chrome-specific URLs that won't work in iframe
-      const processedHtml = removeChromeUrls(htmlContent);
-
-      // Convert resource paths to blob URLs so CSS/images load correctly
-      // Also convert CSS url() references (fonts, background images in inline styles)
-      const htmlWithBlobUrls = convertCSSUrlsToBlobUrls(
-        convertResourcePathsToBlobUrls(processedHtml, resources),
-        resources
-      );
-
-      // Inject restoration script to restore form state, scroll positions, and Shadow DOM
-      const htmlWithRestoration = injectRestorationScript(htmlWithBlobUrls);
-
-      iframeDoc.open();
-      iframeDoc.write(htmlWithRestoration);
-      iframeDoc.close();
-
-      // Wait for iframe to load
-      iframe.onload = () => {
-        setIsLoading(false);
-
-        // Highlight element only for 'before' snapshot
-        if (currentView === 'before') {
-          highlightElement(iframe);
+        if (lazyLoadEnabled) {
+          // Use lazy loading
+          htmlBlob = await getResourceLazy(htmlPath);
+        } else {
+          // Direct resource access
+          htmlBlob = resources.get(htmlPath) || null;
         }
-      };
-    }).catch((err) => {
-      setError(`Failed to load snapshot: ${err.message}`);
-      setIsLoading(false);
-    });
-  }, [htmlSnapshotPath, resources, currentView]);
+
+        if (cancelled) return;
+
+        if (!htmlBlob) {
+          setError('Snapshot not found');
+          setIsLoading(false);
+          return;
+        }
+
+        // Decompress if gzip-compressed (TR-1 compression support)
+        const htmlContent = await decompressIfGzip(htmlBlob, htmlPath);
+        if (cancelled) return;
+
+        const iframe = iframeRef.current;
+        if (!iframe) return;
+
+        // Write content to iframe
+        const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+        if (!iframeDoc) {
+          setError('Failed to access iframe document');
+          setIsLoading(false);
+          return;
+        }
+
+        // Remove Chrome-specific URLs that won't work in iframe
+        const processedHtml = removeChromeUrls(htmlContent);
+
+        // Convert resource paths to blob URLs so CSS/images load correctly
+        // Also convert CSS url() references (fonts, background images in inline styles)
+        const htmlWithBlobUrls = convertCSSUrlsToBlobUrls(
+          convertResourcePathsToBlobUrls(processedHtml, resources),
+          resources
+        );
+
+        // Inject restoration script to restore form state, scroll positions, and Shadow DOM
+        const htmlWithRestoration = injectRestorationScript(htmlWithBlobUrls);
+
+        iframeDoc.open();
+        iframeDoc.write(htmlWithRestoration);
+        iframeDoc.close();
+
+        // Wait for iframe to load
+        iframe.onload = () => {
+          if (cancelled) return;
+          setIsLoading(false);
+
+          // Highlight element only for 'before' snapshot
+          if (currentView === 'before') {
+            highlightElement(iframe);
+          }
+        };
+      } catch (err) {
+        if (cancelled) return;
+        setError(`Failed to load snapshot: ${err instanceof Error ? err.message : 'Unknown error'}`);
+        setIsLoading(false);
+      }
+    };
+
+    loadHtmlSnapshot();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [htmlSnapshotPath, resources, currentView, lazyLoadEnabled, getResourceLazy]);
 
   const handleZoomIn = () => {
     setZoom((prev) => Math.min(prev + 25, 200));

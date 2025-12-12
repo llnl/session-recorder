@@ -22,6 +22,8 @@ Create a standalone Windows executable that allows anyone to record browser sess
 2. **Record** - Chrome opens with recording enabled (browser + voice)
 3. **Stop** - User closes Chrome (or clicks Stop in system tray)
 4. **Output** - Windows Explorer opens showing the `.zip` file
+5. **Microphone Selection** - User can select which microphone to record from
+6. **Transcribe Files** - User can transcribe existing WAV/MP3 files without recording
 
 ### What It Doesn't Do (Post-POC)
 
@@ -234,6 +236,8 @@ dist/
 - [ ] Test standalone exe on clean Windows machine
 - [ ] Optimize bundle size (CPU-only torch)
 - [ ] Handle microphone permissions gracefully
+- [ ] Allow microphone selection (list available devices)
+- [ ] Allow transcription of existing WAV/MP3 files (without recording)
 
 ### Phase 2: Electron Shell (4h)
 
@@ -329,3 +333,4 @@ See [PRD-DESKTOP.md](PRD-DESKTOP.md) for:
 | Version | Date | Changes |
 |---------|------|---------|
 | 1.0 | 2025-12-10 | Initial POC scope |
+| 1.1 | 2025-12-12 | Added microphone selection and file transcription features |

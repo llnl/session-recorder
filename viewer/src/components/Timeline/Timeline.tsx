@@ -1,11 +1,15 @@
 /**
  * Timeline Component
  * Displays horizontal timeline with screenshot thumbnails and time markers
+ * Supports note indicators and bulk delete operations
  */
 
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { useSessionStore } from '@/stores/sessionStore';
-import type { VoiceTranscriptAction, NavigationAction, RecordedAction, AnyAction, PageVisibilityAction, MediaAction, DownloadAction, FullscreenAction, PrintAction } from '@/types/session';
+import type { VoiceTranscriptAction, NavigationAction, RecordedAction, AnyAction, PageVisibilityAction, MediaAction, DownloadAction, FullscreenAction, PrintAction, NoteAction } from '@/types/session';
+import { LazyThumbnail, LazyPreviewImage } from './LazyThumbnail';
+import { usePreloadResources } from '@/hooks/useLazyResource';
+import { ConfirmDialog } from '@/components/ConfirmDialog/ConfirmDialog';
 import './Timeline.css';
 
 const PIXELS_PER_SECOND = 50;
@@ -33,17 +37,35 @@ export const Timeline = () => {
   const timelineSelection = useSessionStore((state) => state.timelineSelection);
   const setTimelineSelection = useSessionStore((state) => state.setTimelineSelection);
   const selectAction = useSessionStore((state) => state.selectAction);
-  const resources = useSessionStore((state) => state.resources);
+
+  // Edit state for notes and bulk delete
+  const editState = useSessionStore((state) => state.editState);
+  const getEditedActions = useSessionStore((state) => state.getEditedActions);
+  const deleteAction = useSessionStore((state) => state.deleteAction);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
+
+  // Bulk delete confirmation state
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState<{
+    isOpen: boolean;
+    actionCount: number;
+  } | null>(null);
+
+  // Preload resources around the selected action for smooth scrolling
+  usePreloadResources(selectedActionIndex);
   const [dragStart, setDragStart] = useState<number | null>(null);
   const [dragEnd, setDragEnd] = useState<number | null>(null);
   const [hoveredActionIndex, setHoveredActionIndex] = useState<number | null>(null);
   const [hoverPosition, setHoverPosition] = useState<{ x: number; y: number } | null>(null);
   const [hoveredVoiceAction, setHoveredVoiceAction] = useState<VoiceTranscriptAction | null>(null);
   const [voiceHoverPosition, setVoiceHoverPosition] = useState<{ x: number; y: number } | null>(null);
+  const [hoveredNoteAction, setHoveredNoteAction] = useState<NoteAction | null>(null);
+  const [noteHoverPosition, setNoteHoverPosition] = useState<{ x: number; y: number } | null>(null);
+
+  // Get edited actions (with notes and deletions applied)
+  const editedActions = editState ? getEditedActions() : sessionData?.actions || [];
 
   // Calculate timeline duration
   const getDuration = useCallback(() => {
@@ -171,6 +193,43 @@ export const Timeline = () => {
       ctx.stroke();
     });
 
+    // Draw note indicators (amber/orange bars)
+    const noteActions = editedActions.filter(
+      (action): action is NoteAction => action.type === 'note'
+    );
+
+    noteActions.forEach((noteAction) => {
+      const noteX = timestampToX(noteAction.timestamp);
+
+      // Draw amber diamond/marker for note
+      ctx.fillStyle = 'rgba(245, 158, 11, 0.8)';
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 1;
+
+      // Draw diamond shape for note indicator
+      const y = 22;
+      const size = 6;
+
+      ctx.beginPath();
+      ctx.moveTo(noteX, y - size);
+      ctx.lineTo(noteX + size, y);
+      ctx.lineTo(noteX, y + size);
+      ctx.lineTo(noteX - size, y);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Draw connecting line to timeline
+      ctx.strokeStyle = 'rgba(245, 158, 11, 0.5)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([2, 2]);
+      ctx.beginPath();
+      ctx.moveTo(noteX, y + size);
+      ctx.lineTo(noteX, 35);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    });
+
     // Draw selection rectangle if dragging or selection exists
     const drawSelection = (startX: number, endX: number) => {
       const left = Math.min(startX, endX);
@@ -192,7 +251,7 @@ export const Timeline = () => {
       drawSelection(startX, endX);
     }
 
-  }, [sessionData, timelineWidth, duration, selectedActionIndex, isDragging, dragStart, dragEnd, timelineSelection, timestampToX]);
+  }, [sessionData, timelineWidth, duration, selectedActionIndex, isDragging, dragStart, dragEnd, timelineSelection, timestampToX, editedActions]);
 
   // Mouse event handlers
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -239,6 +298,28 @@ export const Timeline = () => {
       if (!foundVoice) {
         setHoveredVoiceAction(null);
         setVoiceHoverPosition(null);
+      }
+
+      // Check if hovering over note indicator
+      const noteActions = editedActions.filter(
+        (action): action is NoteAction => action.type === 'note'
+      );
+
+      let foundNote = false;
+      for (const noteAction of noteActions) {
+        const noteX = timestampToX(noteAction.timestamp);
+        // Note diamond is at y=22, size=6, check if within diamond area
+        if (Math.abs(x - noteX) < 10 && e.clientY - rect.top >= 15 && e.clientY - rect.top <= 35) {
+          setHoveredNoteAction(noteAction);
+          setNoteHoverPosition({ x: e.clientX, y: e.clientY });
+          foundNote = true;
+          break;
+        }
+      }
+
+      if (!foundNote) {
+        setHoveredNoteAction(null);
+        setNoteHoverPosition(null);
       }
 
       // Find hovered action (browser actions only)
@@ -324,6 +405,8 @@ export const Timeline = () => {
     setHoverPosition(null);
     setHoveredVoiceAction(null);
     setVoiceHoverPosition(null);
+    setHoveredNoteAction(null);
+    setNoteHoverPosition(null);
   };
 
   const handleThumbnailMouseEnter = (e: React.MouseEvent, index: number) => {
@@ -342,6 +425,46 @@ export const Timeline = () => {
   };
 
   const clearSelection = () => {
+    setTimelineSelection(null);
+  };
+
+  // Get actions within the current timeline selection
+  const getSelectedActions = useCallback(() => {
+    if (!timelineSelection || !sessionData) return [];
+
+    const startMs = new Date(timelineSelection.startTime).getTime();
+    const endMs = new Date(timelineSelection.endTime).getTime();
+
+    return sessionData.actions.filter((action) => {
+      const actionMs = new Date(action.timestamp).getTime();
+      return actionMs >= startMs && actionMs <= endMs;
+    });
+  }, [timelineSelection, sessionData]);
+
+  // Count selected actions for bulk delete
+  const selectedActionsCount = getSelectedActions().length;
+
+  // Handle bulk delete button click
+  const handleBulkDeleteClick = () => {
+    const count = selectedActionsCount;
+    if (count > 0) {
+      setBulkDeleteConfirm({
+        isOpen: true,
+        actionCount: count,
+      });
+    }
+  };
+
+  // Perform bulk delete
+  const handleBulkDelete = () => {
+    if (!bulkDeleteConfirm || !editState) return;
+
+    const actionsToDelete = getSelectedActions();
+    actionsToDelete.forEach((action) => {
+      deleteAction(action.id);
+    });
+
+    setBulkDeleteConfirm(null);
     setTimelineSelection(null);
   };
 
@@ -380,9 +503,21 @@ export const Timeline = () => {
           Duration: {duration.toFixed(1)}s | Actions: {sessionData.actions.length}
         </div>
         {timelineSelection && (
-          <button type="button" className="timeline-clear-btn" onClick={clearSelection}>
-            Clear Selection
-          </button>
+          <div className="timeline-selection-controls">
+            {editState && selectedActionsCount > 0 && (
+              <button
+                type="button"
+                className="timeline-delete-btn"
+                onClick={handleBulkDeleteClick}
+                title={`Delete ${selectedActionsCount} action${selectedActionsCount !== 1 ? 's' : ''}`}
+              >
+                🗑️ Delete {selectedActionsCount}
+              </button>
+            )}
+            <button type="button" className="timeline-clear-btn" onClick={clearSelection}>
+              Clear Selection
+            </button>
+          </div>
         )}
       </div>
 
@@ -403,24 +538,20 @@ export const Timeline = () => {
 
             const x = timestampToX(action.timestamp);
             const screenshotPath = getScreenshotPath(action);
-            const screenshotBlob = screenshotPath ? resources.get(screenshotPath) : null;
-            const screenshotUrl = screenshotBlob ? URL.createObjectURL(screenshotBlob) : null;
 
             return (
-              <div
-                key={action.id}
-                className={`timeline-thumbnail ${index === selectedActionIndex ? 'selected' : ''} ${index === hoveredActionIndex ? 'hovered' : ''}`}
+              <LazyThumbnail
+                key={`${action.id}-${index}`}
+                screenshotPath={screenshotPath}
+                alt={`Action ${index + 1}`}
+                index={index}
+                isSelected={index === selectedActionIndex}
+                isHovered={index === hoveredActionIndex}
                 style={{ left: x - 40 }}
                 onClick={() => selectAction(index)}
                 onMouseEnter={(e) => handleThumbnailMouseEnter(e, index)}
                 onMouseLeave={handleThumbnailMouseLeave}
-              >
-                {screenshotUrl ? (
-                  <img src={screenshotUrl} alt={`Action ${index + 1}`} />
-                ) : (
-                  <div className="timeline-thumbnail-placeholder">{index + 1}</div>
-                )}
-              </div>
+              />
             );
           })}
         </div>
@@ -439,12 +570,11 @@ export const Timeline = () => {
                 const action = sessionData.actions[hoveredActionIndex];
                 if (action.type === 'voice_transcript') return null;
                 const screenshotPath = getScreenshotPath(action);
-                const screenshotBlob = screenshotPath ? resources.get(screenshotPath) : null;
-                const screenshotUrl = screenshotBlob ? URL.createObjectURL(screenshotBlob) : null;
-                return screenshotUrl ? (
-                  <img src={screenshotUrl} alt={`Action ${hoveredActionIndex + 1}`} />
-                ) : (
-                  <div className="timeline-hover-zoom-placeholder">No preview</div>
+                return (
+                  <LazyPreviewImage
+                    screenshotPath={screenshotPath}
+                    alt={`Action ${hoveredActionIndex + 1}`}
+                  />
                 );
               })()}
             </div>
@@ -535,7 +665,44 @@ export const Timeline = () => {
             </div>
           </div>
         )}
+
+        {/* Note Hover Tooltip */}
+        {hoveredNoteAction && noteHoverPosition && (
+          <div
+            className="timeline-note-tooltip"
+            style={{
+              left: `${noteHoverPosition.x}px`,
+              top: `${noteHoverPosition.y + 10}px`,
+            }}
+          >
+            <div className="timeline-note-tooltip-header">
+              <span className="timeline-note-tooltip-icon">📝</span>
+              <span className="timeline-note-tooltip-title">Note</span>
+            </div>
+            <div className="timeline-note-tooltip-time">
+              {((new Date(hoveredNoteAction.timestamp).getTime() -
+                 new Date(sessionData.startTime).getTime()) / 1000).toFixed(2)}s
+            </div>
+            <div className="timeline-note-tooltip-content">
+              {hoveredNoteAction.note.content.slice(0, 150)}
+              {hoveredNoteAction.note.content.length > 150 ? '...' : ''}
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Bulk Delete Confirmation Dialog */}
+      {bulkDeleteConfirm && (
+        <ConfirmDialog
+          isOpen={bulkDeleteConfirm.isOpen}
+          title="Delete Selected Actions"
+          message={`Are you sure you want to delete ${bulkDeleteConfirm.actionCount} action${bulkDeleteConfirm.actionCount !== 1 ? 's' : ''} within the selected time range? This cannot be undone.`}
+          confirmText={`Delete ${bulkDeleteConfirm.actionCount} Action${bulkDeleteConfirm.actionCount !== 1 ? 's' : ''}`}
+          destructive
+          onConfirm={handleBulkDelete}
+          onCancel={() => setBulkDeleteConfirm(null)}
+        />
+      )}
     </div>
   );
 };

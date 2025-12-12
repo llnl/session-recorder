@@ -20,7 +20,35 @@ export type AnyAction =
   | MediaAction
   | DownloadAction
   | FullscreenAction
-  | PrintAction;
+  | PrintAction
+  | NoteAction;
+
+/**
+ * User-created note action
+ * Notes are inserted between actions for annotation purposes
+ */
+export interface NoteAction {
+  id: string;
+  type: 'note';
+  timestamp: string;  // ISO 8601 UTC - when note was created/last edited
+  note: {
+    /** Markdown content of the note */
+    content: string;
+    /** ISO 8601 UTC timestamp when note was created */
+    createdAt: string;
+    /** ISO 8601 UTC timestamp when note was last updated */
+    updatedAt: string;
+    /** ID of the action this note appears after (null if at the beginning) */
+    insertAfterActionId: string | null;
+  };
+}
+
+/**
+ * Type guard to check if an action is a NoteAction
+ */
+export function isNoteAction(action: AnyAction): action is NoteAction {
+  return action.type === 'note';
+}
 
 export interface SessionData {
   sessionId: string;
@@ -282,4 +310,6 @@ export interface LoadedSessionData {
   // Resource blobs loaded from zip or directory
   resources: Map<string, Blob>;
   audioBlob?: Blob;  // Audio file if voice recording enabled
+  // Whether lazy loading is enabled for this session (FR-4.7)
+  lazyLoadEnabled?: boolean;
 }

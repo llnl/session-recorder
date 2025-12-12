@@ -1,0 +1,63 @@
+/**
+ * Lazy Resource Loading Styles
+ */
+
+.lazy-resource-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f0f0f0;
+  color: #666;
+  min-height: 100px;
+}
+
+.lazy-loading-spinner {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.lazy-loading-spinner svg {
+  width: 24px;
+  height: 24px;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Skeleton loading effect for images */
+.lazy-image-skeleton {
+  background: linear-gradient(
+    90deg,
+    #f0f0f0 25%,
+    #e0e0e0 50%,
+    #f0f0f0 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Error state */
+.lazy-resource-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #fef2f2;
+  color: #dc2626;
+  font-size: 12px;
+  padding: 8px;
+  text-align: center;
+}

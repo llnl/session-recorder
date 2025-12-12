@@ -1,6 +1,6 @@
 # Session Recorder - Progress Tracker
 
-**Last Updated:** 2025-12-11
+**Last Updated:** 2025-12-12
 
 ---
 
@@ -35,6 +35,9 @@
 - ✅ MP3 audio conversion with configurable bitrate (TR-1)
 - ✅ ResourceCaptureQueue for non-blocking capture (TR-4)
 - ✅ Font/styling fixes for snapshot rendering (FR-2.4)
+- ✅ Visual recording indicator (TrayManager: system tray icon + desktop notifications)
+- ✅ Lazy loading for large sessions (LazyResourceLoader with IntersectionObserver)
+- ✅ Memory management with LRU cache eviction (FR-4.7)
 
 ---
 
@@ -46,7 +49,7 @@
 | PRD | Status | TASKS | Unchecked |
 |-----|--------|-------|-----------|
 | [PRD-DESKTOP-POC.md](PRD-DESKTOP-POC.md) | **Ready** | [TASKS-DESKTOP-POC.md](TASKS-DESKTOP-POC.md) | 38 |
-| [PRD-session-recorder.md](PRD-session-recorder.md) | ~95% Complete | [TASKS-session-recorder.md](TASKS-session-recorder.md) | 44 |
+| [PRD-session-recorder.md](PRD-session-recorder.md) | ~97% Complete | [TASKS-session-recorder.md](TASKS-session-recorder.md) | 40 |
 | [PRD-performance.md](PRD-performance.md) | ⚠️ Partial | [TASKS-performance.md](TASKS-performance.md) | 3 |
 | [PRD-4.md](PRD-4.md) (Voice Phase 3+) | Pending | [TASKS-4.md](TASKS-4.md) | 19 |
 | [PRD-markdown-export.md](PRD-markdown-export.md) | **Ready** | [TASKS-markdown-export.md](TASKS-markdown-export.md) | 56 |
@@ -112,7 +115,7 @@ session-recorder/           # NEW STANDALONE REPO
 | PRD | Status | TASKS | Unchecked |
 |-----|--------|-------|-----------|
 | [PRD-angular-migration.md](PRD-angular-migration.md) | Draft | [TASKS-angular-migration.md](TASKS-angular-migration.md) | 170 |
-| [PRD-session-editor.md](PRD-session-editor.md) | Draft | [TASKS-session-editor.md](TASKS-session-editor.md) | 22 |
+| [PRD-session-editor.md](PRD-session-editor.md) | ✅ Complete | [TASKS-session-editor.md](TASKS-session-editor.md) | 0 |
 | [PRD-ai-image-analysis.md](PRD-ai-image-analysis.md) | Draft | [TASKS-ai-image-analysis.md](TASKS-ai-image-analysis.md) | 6 |
 | [PRD-snapshot-styling.md](PRD-snapshot-styling.md) | Not Started | [TASKS-snapshot-styling.md](TASKS-snapshot-styling.md) | 16 |
 
@@ -338,3 +341,6 @@ npm run viewer
 | 3.7 | 2025-12-11 | Added Markdown Export PRD/TASKS - auto-generate human-readable markdown from session JSON |
 | 3.8 | 2025-12-11 | Updated TASKS-markdown-export.md to match template: added TR sections, fixed TOC anchors |
 | 3.9 | 2025-12-11 | Implemented TR-1 compression (gzip snapshots, JPEG screenshots, MP3 audio), TR-4 ResourceCaptureQueue. Session recorder now ~95% complete. |
+| 4.0 | 2025-12-11 | Session Editor Phases 1 & 2 complete: edit operation types, IndexedDB service, operations processor, markdown renderer, store extensions for edit state/actions/undo-redo/export. App renamed to "Session Editor". |
+| 4.1 | 2025-12-11 | Implemented FR-3.1 visual recording indicator (TrayManager), FR-4.7 lazy loading (LazyResourceLoader with IntersectionObserver and LRU cache). Session recorder now ~97% complete. |
+| 4.2 | 2025-12-12 | Made node-notifier and systray2 required dependencies (moved from optionalDependencies). TrayManager verified working. |

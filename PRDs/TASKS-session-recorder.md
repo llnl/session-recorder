@@ -1,8 +1,8 @@
 # Session Recorder - Consolidated Tasks
 
 **PRD:** [PRD-session-recorder.md](PRD-session-recorder.md)
-**Last Updated:** 2025-12-11
-**Overall Status:** ~95% Complete (Core recording, viewer, compression, and performance complete. Export formats pending)
+**Last Updated:** 2025-12-12
+**Overall Status:** ~97% Complete (Core recording, viewer, compression, performance, tray indicator, and lazy loading complete. Export formats pending)
 
 ---
 
@@ -160,9 +160,9 @@
 - [x] Implement continuous audio recording
 - [x] Handle microphone permissions via Python subprocess
 - [x] Create VoiceRecorder class
-- [ ] Add visual recording indicator during capture
+- [x] Add visual recording indicator during capture (TrayManager: system tray icon + desktop notifications, 2025-12-11)
 
-**Implementation:** [VoiceRecorder.ts](../src/voice/VoiceRecorder.ts)
+**Implementation:** [VoiceRecorder.ts](../src/voice/VoiceRecorder.ts), [TrayManager.ts](../src/node/TrayManager.ts)
 
 ### FR-3.2: Audio Storage ✅ COMPLETE
 
@@ -263,13 +263,18 @@
 
 **Implementation:** [VoiceTranscriptViewer.tsx](../viewer/src/components/VoiceTranscriptViewer/VoiceTranscriptViewer.tsx)
 
-### FR-4.7: Missing Viewer Features
+### FR-4.7: Viewer Performance Features ✅ COMPLETE
 
-- [ ] Lazy loading for large sessions (1000+ actions)
-- [ ] Progressive image loading
-- [ ] Memory management for extended viewing
+- [x] Lazy loading for large sessions (1000+ actions) - LazyResourceLoader with IntersectionObserver (2025-12-11)
+- [x] Progressive image loading - LazyThumbnail component with preloading around selected action (2025-12-11)
+- [x] Memory management for extended viewing - LRU cache with configurable limit (default 100 resources) (2025-12-11)
 
-**Task File:** [TASKS-performance.md](TASKS-performance.md) Sprint 5d (~7h)
+**Implementation:**
+
+- [lazyResourceLoader.ts](../viewer/src/utils/lazyResourceLoader.ts) - JSZip lazy extraction with LRU cache
+- [useLazyResource.ts](../viewer/src/hooks/useLazyResource.ts) - React hook with IntersectionObserver
+- [LazyThumbnail.tsx](../viewer/src/components/Timeline/LazyThumbnail.tsx) - Timeline thumbnails with lazy loading
+- [SnapshotViewer.tsx](../viewer/src/components/SnapshotViewer/SnapshotViewer.tsx) - Lazy snapshot loading
 
 ---
 
@@ -381,11 +386,10 @@ Export features have been moved to a separate task file for future implementatio
 - [x] Audio can be MP3 with `audio_format: 'mp3'` (2025-12-11)
 - [x] Session sizes should be closer to PRD targets
 
-**4. Viewer Performance with Large Sessions** (Deferred)
-- [ ] No lazy loading for large sessions (1000+ actions)
-- [ ] Memory issues with extended playback
+**4. Viewer Performance with Large Sessions** ✅ RESOLVED
 
-**Note:** Viewer features deferred - see [TASKS-performance.md](TASKS-performance.md) Sprint 5d (~7h)
+- [x] Lazy loading for large sessions (1000+ actions) - LazyResourceLoader (2025-12-11)
+- [x] Memory management with LRU cache eviction (2025-12-11)
 
 ### Low Priority
 
@@ -411,47 +415,33 @@ See [TASKS-export.md](TASKS-export.md) for detailed export feature tasks.
 
 | Phase | Task File | Hours | Priority |
 |-------|-----------|-------|----------|
-| Performance Fix | TASKS-performance.md | 2h | 🔴 HIGH |
-| Font Rendering | TASKS-snapshot-styling.md | 4-6h | 🔴 HIGH |
-| Compression | (new) | 4h | 🟡 MEDIUM |
-| Viewer Performance | TASKS-performance.md | 7h | 🟡 MEDIUM |
 | MCP Server | TASKS-MCP.md | 12h | 🟡 MEDIUM |
 | Desktop App | TASKS-DESKTOP.md | 20h | 🟡 MEDIUM |
 | Session Editor | TASKS-session-editor.md | 40h | 🟢 LOW |
 | Export Formats | [TASKS-export.md](TASKS-export.md) | 55h | 🟢 LOW |
-| **Remaining Total** | | **~145h** | |
+| **Remaining Total** | | **~127h** | |
 
 ### Summary
 
 | Category | Hours |
 |----------|-------|
-| Completed | 122h |
-| Remaining | ~145h |
+| Completed | 140h |
+| Remaining | ~127h |
 | **Grand Total** | **~267h** |
 
 ---
 
 ## Implementation Priority
 
-### Immediate (This Week)
-
-1. **Performance Fix** - TASKS-performance.md Sprint 5c (2h)
-2. **Font Rendering** - TASKS-snapshot-styling.md (4-6h)
-
-### Short-Term (Next 2 Weeks)
-
-3. **Compression** - gzip, JPEG, MP3 (4h)
-4. **Viewer Performance** - Lazy loading, memory management (7h)
-
 ### Medium-Term (Next Month)
 
-5. **MCP Server** - TASKS-MCP.md (12h)
-6. **Desktop App** - TASKS-DESKTOP.md (20h)
+1. **MCP Server** - TASKS-MCP.md (12h)
+2. **Desktop App** - TASKS-DESKTOP.md (20h)
 
 ### Long-Term (Backlog)
 
-7. **Session Editor** - TASKS-session-editor.md (40h)
-8. **Export Formats** - [TASKS-export.md](TASKS-export.md) (55h)
+3. **Session Editor** - TASKS-session-editor.md (40h)
+4. **Export Formats** - [TASKS-export.md](TASKS-export.md) (55h)
 
 ---
 
@@ -485,3 +475,4 @@ See [TASKS-export.md](TASKS-export.md) for detailed export feature tasks.
 | 1.2 | 2025-12-10 | Updated status to ~80%, verified implementation against codebase |
 | 1.3 | 2025-12-11 | Moved FR-5.2-5.5 export tasks to [TASKS-export.md](TASKS-export.md) |
 | 1.4 | 2025-12-11 | Implemented TR-1 compression (gzip snapshots, JPEG screenshots, MP3 audio), TR-4 ResourceCaptureQueue, FR-2.4 font/styling fixes. Status now ~95% complete. |
+| 1.5 | 2025-12-11 | Implemented FR-3.1 visual recording indicator (TrayManager with system tray + desktop notifications), FR-4.7 lazy loading (LazyResourceLoader, IntersectionObserver, LRU cache). Status now ~97% complete. |

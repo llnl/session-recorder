@@ -17,6 +17,7 @@ import { SessionData, RecordedAction, NavigationAction, HarEntry, SnapshotterBlo
 import { ResourceStorage } from '../storage/resourceStorage';
 import { ResourceCaptureQueue } from '../storage/ResourceCaptureQueue';
 import { VoiceRecorder } from '../voice/VoiceRecorder';
+import { createTrayManager, TrayManagerBase, TrayManagerOptions } from './TrayManager';
 
 // Extend Window interface for session recorder flags
 declare global {
@@ -43,6 +44,10 @@ export interface SessionRecorderOptions {
   audio_format?: 'wav' | 'mp3';  // Audio format (default: wav, mp3 requires ffmpeg)
   audio_bitrate?: string;        // MP3 bitrate (default: 64k)
   audio_sample_rate?: number;    // MP3 sample rate (default: 22050)
+
+  // Tray notification options (FR-3.1)
+  tray_notifications?: boolean;  // Show system tray notifications (default: true)
+  tray_icon?: boolean;           // Show system tray icon (default: true)
 }
 
 // Track page info for multi-tab support
@@ -80,6 +85,7 @@ export class SessionRecorder {
   private voiceStarted: boolean = false;
   private audioDir: string;
   private options: SessionRecorderOptions;
+  private trayManager: TrayManagerBase | null = null;
 
   constructor(sessionId?: string, options: SessionRecorderOptions = {}) {
     // Validate options - at least one must be true
@@ -144,6 +150,15 @@ export class SessionRecorder {
         model: this.options.whisper_model,
         device: this.options.whisper_device
       };
+    }
+
+    // Initialize tray manager for visual recording indicator (FR-3.1)
+    if (options.tray_notifications !== false || options.tray_icon !== false) {
+      this.trayManager = createTrayManager({
+        notifications: options.tray_notifications !== false,
+        trayIcon: options.tray_icon !== false,
+        appName: 'Session Recorder',
+      });
     }
   }
 
@@ -221,6 +236,12 @@ export class SessionRecorder {
       });
 
       console.log(`📹 Browser recording started: ${this.sessionData.sessionId}`);
+    }
+
+    // Initialize and start tray manager for visual recording indicator (FR-3.1)
+    if (this.trayManager) {
+      await this.trayManager.initialize();
+      this.trayManager.startRecording();
     }
 
     console.log(`📹 Session recording started: ${this.sessionData.sessionId}`);
@@ -1175,6 +1196,12 @@ export class SessionRecorder {
     }
 
     console.log(`📄 Session data: ${sessionJsonPath}`);
+
+    // Stop tray manager and show completion notification (FR-3.1)
+    if (this.trayManager) {
+      this.trayManager.stopRecording(sessionJsonPath);
+      await this.trayManager.destroy();
+    }
 
     this.page = null;
   }

@@ -1,16 +1,20 @@
 /**
  * Main Application Component
- * Provides the layout for the session viewer
+ * Provides the layout for the session viewer with editing capabilities
  */
 
+import { useState } from 'react';
 import { Timeline } from '@/components/Timeline/Timeline';
 import { ActionList } from '@/components/ActionList/ActionList';
 import { SnapshotViewer } from '@/components/SnapshotViewer/SnapshotViewer';
 import { TabPanel } from '@/components/TabPanel/TabPanel';
 import { SessionLoader } from '@/components/SessionLoader/SessionLoader';
 import { ResizablePanel } from '@/components/ResizablePanel/ResizablePanel';
+import { EditorToolbar } from '@/components/EditorToolbar/EditorToolbar';
+import { LocalSessionsView } from '@/components/LocalSessionsView/LocalSessionsView';
 import { useSessionStore } from '@/stores/sessionStore';
 import { exportSessionToZip, downloadZipFile, getExportFilename } from '@/utils/zipHandler';
+import { indexedDBService } from '@/services/indexedDBService';
 import './App.css';
 
 function App() {
@@ -18,22 +22,48 @@ function App() {
   const networkEntries = useSessionStore((state) => state.networkEntries);
   const consoleEntries = useSessionStore((state) => state.consoleEntries);
   const resources = useSessionStore((state) => state.resources);
+  const audioBlob = useSessionStore((state) => state.audioBlob);
   const loading = useSessionStore((state) => state.loading);
   const error = useSessionStore((state) => state.error);
   const clearSession = useSessionStore((state) => state.clearSession);
 
+  // Edit state
+  const editState = useSessionStore((state) => state.editState);
+
+  // Local sessions panel state
+  const [showLocalSessions, setShowLocalSessions] = useState(false);
+
+  // Export with edit operations applied
   const handleExport = async () => {
     if (!sessionData) return;
 
     try {
+      const editOperations = editState?.operations || [];
       const zipBlob = await exportSessionToZip(
         sessionData,
         networkEntries,
         consoleEntries,
-        resources
+        resources,
+        { editOperations, audioBlob: audioBlob ?? undefined }
       );
       const filename = getExportFilename(sessionData);
       downloadZipFile(zipBlob, filename);
+
+      // Update export count in IndexedDB if we have edits
+      if (editState && editOperations.length > 0) {
+        try {
+          const metadata = await indexedDBService.getSessionMetadata(sessionData.sessionId);
+          if (metadata) {
+            await indexedDBService.updateSessionMetadata({
+              ...metadata,
+              exportCount: metadata.exportCount + 1,
+              lastModified: new Date().toISOString(),
+            });
+          }
+        } catch (dbError) {
+          console.warn('Failed to update export count:', dbError);
+        }
+      }
     } catch (err) {
       console.error('Export failed:', err);
       alert('Failed to export session');
@@ -65,7 +95,7 @@ function App() {
         <>
           <header className="app-header">
             <div className="app-header-left">
-              <h1>Session Recorder Viewer</h1>
+              <h1>Session Editor</h1>
               <span className="app-header-session-id">
                 {sessionData.sessionId.substring(0, 8)}
               </span>
@@ -106,6 +136,12 @@ function App() {
               </button>
             </div>
           </header>
+
+          {/* Editor Toolbar - shows when edits exist */}
+          <EditorToolbar
+            onExport={handleExport}
+            onShowLocalSessions={() => setShowLocalSessions(true)}
+          />
 
           <div className="app-layout">
             {/* Top: Timeline (Resizable) */}
@@ -153,6 +189,13 @@ function App() {
               <TabPanel />
             </ResizablePanel>
           </div>
+
+          {/* Local Sessions Panel */}
+          <LocalSessionsView
+            isOpen={showLocalSessions}
+            onClose={() => setShowLocalSessions(false)}
+            currentSessionId={sessionData.sessionId}
+          />
         </>
       )}
     </div>

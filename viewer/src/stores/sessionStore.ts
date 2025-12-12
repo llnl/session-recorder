@@ -1,6 +1,6 @@
 /**
  * Global state store using Zustand
- * Manages session data, UI state, and derived data
+ * Manages session data, UI state, edit operations, and derived data
  */
 
 import { create } from 'zustand';
@@ -11,7 +11,34 @@ import type {
   ConsoleEntry,
   TimelineSelection,
   LoadedSessionData,
+  NoteAction,
 } from '@/types/session';
+import type {
+  SessionEditState,
+  EditOperation,
+  AddNoteOperation,
+  EditNoteOperation,
+  EditFieldOperation,
+  DeleteActionOperation,
+  BulkDeleteOperation,
+} from '@/types/editOperations';
+import {
+  createInitialEditState,
+  createLocalSessionMetadata,
+  generateOperationId,
+  generateNoteId,
+} from '@/types/editOperations';
+import {
+  applyOperations,
+  getExcludedFilesFromOperations,
+  getActionAssociatedFiles,
+  getNestedValue,
+} from '@/utils/editOperationsProcessor';
+import { indexedDBService } from '@/services/indexedDBService';
+import { getLazyResourceLoader, resetLazyResourceLoader } from '@/utils/lazyResourceLoader';
+
+// Maximum number of operations to keep (oldest are trimmed)
+const MAX_OPERATIONS = 100;
 
 export interface StoredResource {
   sha1: string;
@@ -30,6 +57,13 @@ export interface SessionStore {
   resourceStorage: Map<string, StoredResource>; // SHA1 -> resource
   audioBlob: Blob | null; // Audio file for voice recording
 
+  // Lazy loading state (FR-4.7)
+  lazyLoadEnabled: boolean;
+  loadingResources: Set<string>; // Currently loading resource paths
+
+  // Edit state
+  editState: SessionEditState | null;
+
   // UI state
   selectedActionIndex: number | null;
   timelineSelection: TimelineSelection | null;
@@ -37,8 +71,8 @@ export interface SessionStore {
   loading: boolean;
   error: string | null;
 
-  // Actions
-  loadSession: (data: LoadedSessionData) => void;
+  // Session actions
+  loadSession: (data: LoadedSessionData) => Promise<void>;
   selectAction: (index: number) => void;
   setTimelineSelection: (selection: TimelineSelection | null) => void;
   setActiveTab: (tab: 'information' | 'console' | 'network' | 'metadata' | 'voice') => void;
@@ -49,11 +83,40 @@ export interface SessionStore {
   // Resource accessors
   getResourceBySha1: (sha1: string) => StoredResource | null;
 
+  // Lazy loading methods (FR-4.7)
+  getResourceLazy: (path: string) => Promise<Blob | null>;
+  isResourceLoading: (path: string) => boolean;
+  preloadResourcesAround: (index: number) => void;
+
   // Derived selectors (computed values)
   getFilteredActions: () => AnyAction[];
   getFilteredConsole: () => ConsoleEntry[];
   getFilteredNetwork: () => NetworkEntry[];
   getSelectedAction: () => AnyAction | null;
+
+  // Edit state management (Task 2.1)
+  loadEditState: (sessionId: string) => Promise<void>;
+  getEditedActions: () => AnyAction[];
+  getExcludedFiles: () => Set<string>;
+
+  // Edit actions (Task 2.2)
+  addNote: (insertAfterActionId: string | null, content: string) => Promise<void>;
+  editNote: (noteId: string, newContent: string) => Promise<void>;
+  editActionField: (actionId: string, fieldPath: string, newValue: unknown) => Promise<void>;
+  deleteAction: (actionId: string) => Promise<void>;
+  deleteBulkActions: (startTime: string, endTime: string) => Promise<void>;
+
+  // Undo/Redo (Task 2.3)
+  undo: () => Promise<void>;
+  redo: () => Promise<void>;
+  canUndo: () => boolean;
+  canRedo: () => boolean;
+
+  // Export support (Task 2.4)
+  markAsExported: () => Promise<void>;
+  getDisplayName: () => string;
+  setDisplayName: (name: string) => Promise<void>;
+  getEditCount: () => number;
 }
 
 export const useSessionStore = create<SessionStore>((set, get) => ({
@@ -64,6 +127,9 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
   resources: new Map(),
   resourceStorage: new Map(),
   audioBlob: null,
+  lazyLoadEnabled: false,
+  loadingResources: new Set(),
+  editState: null,
   selectedActionIndex: null,
   timelineSelection: null,
   activeTab: 'information',
@@ -71,7 +137,10 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
   error: null,
 
   // Actions
-  loadSession: (data: LoadedSessionData) => {
+  loadSession: async (data: LoadedSessionData) => {
+    // Reset lazy resource loader when loading a new session
+    resetLazyResourceLoader();
+
     // Load resourceStorage from session data
     const resourceStorage = new Map<string, StoredResource>();
     if (data.sessionData.resourceStorage) {
@@ -87,16 +156,22 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       resources: data.resources,
       resourceStorage,
       audioBlob: data.audioBlob || null,
+      lazyLoadEnabled: data.lazyLoadEnabled || false,
+      loadingResources: new Set(),
       selectedActionIndex: null,
       timelineSelection: null,
       error: null,
       loading: false,
     });
+
+    // Load edit state from IndexedDB
+    await get().loadEditState(data.sessionData.sessionId);
   },
 
   selectAction: (index: number) => {
     const state = get();
-    if (state.sessionData && index >= 0 && index < state.sessionData.actions.length) {
+    const editedActions = state.getEditedActions();
+    if (index >= 0 && index < editedActions.length) {
       set({ selectedActionIndex: index });
     }
   },
@@ -110,12 +185,19 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
   },
 
   clearSession: () => {
+    // Reset lazy resource loader when clearing session
+    resetLazyResourceLoader();
+
     set({
       sessionData: null,
       networkEntries: [],
       consoleEntries: [],
       resources: new Map(),
       resourceStorage: new Map(),
+      audioBlob: null,
+      lazyLoadEnabled: false,
+      loadingResources: new Set(),
+      editState: null,
       selectedActionIndex: null,
       timelineSelection: null,
       error: null,
@@ -137,23 +219,112 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
     return state.resourceStorage.get(sha1) || null;
   },
 
+  // ============== Lazy Loading Methods (FR-4.7) ==============
+
+  getResourceLazy: async (path: string) => {
+    const state = get();
+
+    // If not using lazy loading, return from resources map directly
+    if (!state.lazyLoadEnabled) {
+      return state.resources.get(path) || null;
+    }
+
+    // Check if already in resources cache
+    const cached = state.resources.get(path);
+    if (cached) {
+      return cached;
+    }
+
+    // Mark as loading
+    const newLoadingSet = new Set(state.loadingResources);
+    newLoadingSet.add(path);
+    set({ loadingResources: newLoadingSet });
+
+    try {
+      const loader = getLazyResourceLoader();
+      const blob = await loader.getResource(path);
+
+      if (blob) {
+        // Add to resources cache
+        const updatedResources = new Map(get().resources);
+        updatedResources.set(path, blob);
+        set({ resources: updatedResources });
+      }
+
+      return blob;
+    } finally {
+      // Remove from loading set
+      const updatedLoadingSet = new Set(get().loadingResources);
+      updatedLoadingSet.delete(path);
+      set({ loadingResources: updatedLoadingSet });
+    }
+  },
+
+  isResourceLoading: (path: string) => {
+    const state = get();
+    return state.loadingResources.has(path);
+  },
+
+  preloadResourcesAround: (index: number) => {
+    const state = get();
+
+    if (!state.lazyLoadEnabled || !state.sessionData) {
+      return;
+    }
+
+    const actions = state.getEditedActions();
+    const loader = getLazyResourceLoader();
+
+    // Collect screenshot/snapshot paths around the current index
+    const pathsToPreload: string[] = [];
+    const radius = 5;
+
+    for (let i = Math.max(0, index - radius); i <= Math.min(actions.length - 1, index + radius); i++) {
+      const action = actions[i];
+      if (!action) continue;
+
+      // Get screenshot paths
+      if ('before' in action && action.before?.screenshot) {
+        pathsToPreload.push(action.before.screenshot);
+      }
+      if ('after' in action && action.after?.screenshot) {
+        pathsToPreload.push(action.after.screenshot);
+      }
+      if ('snapshot' in action && action.snapshot?.screenshot) {
+        pathsToPreload.push((action as any).snapshot.screenshot);
+      }
+
+      // Get snapshot HTML paths
+      if ('before' in action && action.before?.html) {
+        pathsToPreload.push(action.before.html);
+      }
+      if ('after' in action && action.after?.html) {
+        pathsToPreload.push(action.after.html);
+      }
+      if ('snapshot' in action && action.snapshot?.html) {
+        pathsToPreload.push((action as any).snapshot.html);
+      }
+    }
+
+    // Trigger preload (non-blocking)
+    loader.preloadAround(pathsToPreload, Math.floor(pathsToPreload.length / 2));
+  },
+
   // Derived selectors
   getFilteredActions: () => {
     const state = get();
-    if (!state.sessionData) return [];
-
-    const { actions } = state.sessionData;
+    const editedActions = state.getEditedActions();
     const { timelineSelection } = state;
 
     if (!timelineSelection) {
-      return actions;
+      return editedActions;
     }
 
     // Filter actions within the timeline selection
     const startMs = new Date(timelineSelection.startTime).getTime();
     const endMs = new Date(timelineSelection.endTime).getTime();
 
-    return actions.filter((action) => {
+    return editedActions.filter((action) => {
       const actionMs = new Date(action.timestamp).getTime();
       return actionMs >= startMs && actionMs <= endMs;
     });
@@ -197,9 +368,403 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
 
   getSelectedAction: () => {
     const state = get();
-    if (!state.sessionData || state.selectedActionIndex === null) {
+    const editedActions = state.getEditedActions();
+    if (state.selectedActionIndex === null) {
       return null;
     }
-    return state.sessionData.actions[state.selectedActionIndex] ?? null;
+    return editedActions[state.selectedActionIndex] ?? null;
+  },
+
+  // ============== Edit State Management (Task 2.1) ==============
+
+  loadEditState: async (sessionId: string) => {
+    try {
+      const existingState = await indexedDBService.getSessionEditState(sessionId);
+
+      if (existingState) {
+        set({ editState: existingState });
+      } else {
+        // Create new edit state
+        const state = get();
+        const displayName = state.sessionData?.sessionId.substring(0, 8) || sessionId;
+        const newState = createInitialEditState(sessionId, displayName);
+        set({ editState: newState });
+        await indexedDBService.saveSessionEditState(newState);
+
+        // Also create metadata entry
+        if (state.sessionData) {
+          const metadata = createLocalSessionMetadata(
+            sessionId,
+            displayName,
+            state.sessionData.startTime
+          );
+          await indexedDBService.updateSessionMetadata(metadata);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load edit state:', error);
+      // Create new state as fallback
+      const newState = createInitialEditState(sessionId);
+      set({ editState: newState });
+    }
+  },
+
+  getEditedActions: () => {
+    const state = get();
+    if (!state.sessionData) return [];
+
+    const { actions } = state.sessionData;
+    const { editState } = state;
+
+    if (!editState || editState.operations.length === 0) {
+      return actions;
+    }
+
+    // Apply all operations to get the edited actions
+    return applyOperations(actions, editState.operations);
+  },
+
+  getExcludedFiles: () => {
+    const state = get();
+    if (!state.editState) {
+      return new Set<string>();
+    }
+    return getExcludedFilesFromOperations(state.editState.operations);
+  },
+
+  // ============== Edit Actions (Task 2.2) ==============
+
+  addNote: async (insertAfterActionId: string | null, content: string) => {
+    const state = get();
+    if (!state.sessionData || !state.editState) return;
+
+    const now = new Date().toISOString();
+    const noteId = generateNoteId();
+
+    const operation: AddNoteOperation = {
+      id: generateOperationId(),
+      type: 'add_note',
+      timestamp: now,
+      sessionId: state.sessionData.sessionId,
+      noteId,
+      content,
+      insertAfterActionId,
+    };
+
+    const newEditState: SessionEditState = {
+      ...state.editState,
+      operations: trimOperations([...state.editState.operations, operation]),
+      redoStack: [], // Clear redo stack on new operation
+      lastModified: now,
+    };
+
+    set({ editState: newEditState });
+    await persistEditState(newEditState);
+  },
+
+  editNote: async (noteId: string, newContent: string) => {
+    const state = get();
+    if (!state.sessionData || !state.editState) return;
+
+    // Find the current content of the note
+    const editedActions = state.getEditedActions();
+    const note = editedActions.find((a) => a.id === noteId && a.type === 'note') as NoteAction | undefined;
+    if (!note) {
+      console.warn(`Note ${noteId} not found`);
+      return;
+    }
+
+    const now = new Date().toISOString();
+
+    const operation: EditNoteOperation = {
+      id: generateOperationId(),
+      type: 'edit_note',
+      timestamp: now,
+      sessionId: state.sessionData.sessionId,
+      noteId,
+      previousContent: note.note.content,
+      newContent,
+    };
+
+    const newEditState: SessionEditState = {
+      ...state.editState,
+      operations: trimOperations([...state.editState.operations, operation]),
+      redoStack: [],
+      lastModified: now,
+    };
+
+    set({ editState: newEditState });
+    await persistEditState(newEditState);
+  },
+
+  editActionField: async (actionId: string, fieldPath: string, newValue: unknown) => {
+    const state = get();
+    if (!state.sessionData || !state.editState) return;
+
+    // Find the current value
+    const editedActions = state.getEditedActions();
+    const action = editedActions.find((a) => a.id === actionId);
+    if (!action) {
+      console.warn(`Action ${actionId} not found`);
+      return;
+    }
+
+    const previousValue = getNestedValue(action, fieldPath);
+
+    const now = new Date().toISOString();
+
+    const operation: EditFieldOperation = {
+      id: generateOperationId(),
+      type: 'edit_field',
+      timestamp: now,
+      sessionId: state.sessionData.sessionId,
+      actionId,
+      fieldPath,
+      previousValue,
+      newValue,
+    };
+
+    const newEditState: SessionEditState = {
+      ...state.editState,
+      operations: trimOperations([...state.editState.operations, operation]),
+      redoStack: [],
+      lastModified: now,
+    };
+
+    set({ editState: newEditState });
+    await persistEditState(newEditState);
+  },
+
+  deleteAction: async (actionId: string) => {
+    const state = get();
+    if (!state.sessionData || !state.editState) return;
+
+    // Find the action and its index
+    const editedActions = state.getEditedActions();
+    const originalIndex = editedActions.findIndex((a) => a.id === actionId);
+    if (originalIndex === -1) {
+      console.warn(`Action ${actionId} not found`);
+      return;
+    }
+
+    const action = editedActions[originalIndex];
+    const associatedFiles = getActionAssociatedFiles(action);
+
+    const now = new Date().toISOString();
+
+    const operation: DeleteActionOperation = {
+      id: generateOperationId(),
+      type: 'delete_action',
+      timestamp: now,
+      sessionId: state.sessionData.sessionId,
+      actionId,
+      deletedAction: action,
+      originalIndex,
+      associatedFiles,
+    };
+
+    const newEditState: SessionEditState = {
+      ...state.editState,
+      operations: trimOperations([...state.editState.operations, operation]),
+      redoStack: [],
+      lastModified: now,
+    };
+
+    set({ editState: newEditState });
+    await persistEditState(newEditState);
+  },
+
+  deleteBulkActions: async (startTime: string, endTime: string) => {
+    const state = get();
+    if (!state.sessionData || !state.editState) return;
+
+    const editedActions = state.getEditedActions();
+    const startMs = new Date(startTime).getTime();
+    const endMs = new Date(endTime).getTime();
+
+    // Find all actions in the time range
+    const deletedActions: Array<{
+      action: AnyAction;
+      originalIndex: number;
+      associatedFiles: string[];
+    }> = [];
+
+    editedActions.forEach((action, index) => {
+      const actionMs = new Date(action.timestamp).getTime();
+      if (actionMs >= startMs && actionMs <= endMs) {
+        deletedActions.push({
+          action,
+          originalIndex: index,
+          associatedFiles: getActionAssociatedFiles(action),
+        });
+      }
+    });
+
+    if (deletedActions.length === 0) {
+      console.warn('No actions found in the specified time range');
+      return;
+    }
+
+    const now = new Date().toISOString();
+
+    const operation: BulkDeleteOperation = {
+      id: generateOperationId(),
+      type: 'bulk_delete',
+      timestamp: now,
+      sessionId: state.sessionData.sessionId,
+      startTime,
+      endTime,
+      deletedActions,
+    };
+
+    const newEditState: SessionEditState = {
+      ...state.editState,
+      operations: trimOperations([...state.editState.operations, operation]),
+      redoStack: [],
+      lastModified: now,
+    };
+
+    set({ editState: newEditState });
+    await persistEditState(newEditState);
+  },
+
+  // ============== Undo/Redo (Task 2.3) ==============
+
+  undo: async () => {
+    const state = get();
+    if (!state.editState || state.editState.operations.length === 0) return;
+
+    const operations = [...state.editState.operations];
+    const undoneOp = operations.pop()!;
+
+    const newEditState: SessionEditState = {
+      ...state.editState,
+      operations,
+      redoStack: [...state.editState.redoStack, undoneOp],
+      lastModified: new Date().toISOString(),
+    };
+
+    set({ editState: newEditState });
+    await persistEditState(newEditState);
+  },
+
+  redo: async () => {
+    const state = get();
+    if (!state.editState || state.editState.redoStack.length === 0) return;
+
+    const redoStack = [...state.editState.redoStack];
+    const redoneOp = redoStack.pop()!;
+
+    const newEditState: SessionEditState = {
+      ...state.editState,
+      operations: trimOperations([...state.editState.operations, redoneOp]),
+      redoStack,
+      lastModified: new Date().toISOString(),
+    };
+
+    set({ editState: newEditState });
+    await persistEditState(newEditState);
+  },
+
+  canUndo: () => {
+    const state = get();
+    return state.editState !== null && state.editState.operations.length > 0;
+  },
+
+  canRedo: () => {
+    const state = get();
+    return state.editState !== null && state.editState.redoStack.length > 0;
+  },
+
+  // ============== Export Support (Task 2.4) ==============
+
+  markAsExported: async () => {
+    const state = get();
+    if (!state.editState) return;
+
+    const newEditState: SessionEditState = {
+      ...state.editState,
+      exportCount: state.editState.exportCount + 1,
+      lastModified: new Date().toISOString(),
+    };
+
+    set({ editState: newEditState });
+    await persistEditState(newEditState);
+
+    // Also update metadata
+    const metadata = await indexedDBService.getSessionMetadata(state.editState.sessionId);
+    if (metadata) {
+      await indexedDBService.updateSessionMetadata({
+        ...metadata,
+        exportCount: newEditState.exportCount,
+      });
+    }
+  },
+
+  getDisplayName: () => {
+    const state = get();
+    if (state.editState?.displayName) {
+      return state.editState.displayName;
+    }
+    if (state.sessionData) {
+      return state.sessionData.sessionId.substring(0, 8);
+    }
+    return 'Untitled Session';
+  },
+
+  setDisplayName: async (name: string) => {
+    const state = get();
+    if (!state.editState) return;
+
+    const newEditState: SessionEditState = {
+      ...state.editState,
+      displayName: name,
+      lastModified: new Date().toISOString(),
+    };
+
+    set({ editState: newEditState });
+    await persistEditState(newEditState);
+
+    // Also update metadata
+    const metadata = await indexedDBService.getSessionMetadata(state.editState.sessionId);
+    if (metadata) {
+      await indexedDBService.updateSessionMetadata({
+        ...metadata,
+        displayName: name,
+      });
+    }
+  },
+
+  getEditCount: () => {
+    const state = get();
+    return state.editState?.operations.length ?? 0;
   },
 }));
+
+// Helper function to persist edit state to IndexedDB
+async function persistEditState(editState: SessionEditState): Promise<void> {
+  try {
+    await indexedDBService.saveSessionEditState(editState);
+
+    // Also update metadata
+    const metadata = await indexedDBService.getSessionMetadata(editState.sessionId);
+    if (metadata) {
+      await indexedDBService.updateSessionMetadata({
+        ...metadata,
+        editCount: editState.operations.length,
+        exportCount: editState.exportCount,
+      });
+    }
+  } catch (error) {
+    console.error('Failed to persist edit state:', error);
+  }
+}
+
+// Helper function to trim operations array to max size
+function trimOperations(operations: EditOperation[]): EditOperation[] {
+  if (operations.length <= MAX_OPERATIONS) {
+    return operations;
+  }
+  // Remove oldest operations
+  return operations.slice(operations.length - MAX_OPERATIONS);
+}
