@@ -280,7 +280,10 @@ export const SnapshotViewer = () => {
   if (selectedAction?.id !== prevActionIdRef.current) {
     prevActionIdRef.current = selectedAction?.id;
     // Reset state synchronously during render when action changes
-    if (currentView !== 'before') setCurrentView('before');
+    // For input/change actions, default to "after" to show the result of the action
+    const isInputAction = selectedAction?.type === 'input' || selectedAction?.type === 'change';
+    const defaultView = isInputAction ? 'after' : 'before';
+    if (currentView !== defaultView) setCurrentView(defaultView);
     if (zoom !== 100) setZoom(100);
     if (error !== null) setError(null);
   }
@@ -493,10 +496,8 @@ export const SnapshotViewer = () => {
           if (cancelled) return;
           setIsLoading(false);
 
-          // Highlight element only for 'before' snapshot
-          if (currentView === 'before') {
-            highlightElement(iframe);
-          }
+          // Highlight and scroll to the target element (works for both before/after views)
+          highlightElement(iframe);
         };
       } catch (err) {
         if (cancelled) return;
@@ -679,6 +680,7 @@ export const SnapshotViewer = () => {
         {!hasBrowserEventScreenshot && (
           <div className="snapshot-iframe-container" style={{ transform: `scale(${zoom / 100})` }}>
             <iframe
+              key={`${selectedAction?.id}-${currentView}`}
               ref={iframeRef}
               className="snapshot-iframe"
               title={`${currentView} snapshot`}

@@ -1,0 +1,25 @@
+# Voice Recorder Bundle Dependencies
+# For PyInstaller bundling - CPU-only build for smaller size
+# Install with: pip install -r requirements-bundle.txt
+
+# Audio recording
+sounddevice>=0.4.6
+soundfile>=0.12.1
+
+# Speech-to-text transcription
+openai-whisper>=20231117
+
+# Deep learning framework - CPU only for smaller bundle
+# Windows/Linux: Use CPU-only wheel
+# macOS: Default wheel includes MPS support
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch>=2.0.0
+
+# Numerical computing
+numpy>=1.24.0
+
+# PyInstaller for bundling
+pyinstaller>=6.0.0
+
+# Tiktoken (used by Whisper for tokenization)
+tiktoken>=0.5.0

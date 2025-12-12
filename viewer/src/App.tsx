@@ -15,9 +15,28 @@ import { EditorToolbar } from '@/components/EditorToolbar/EditorToolbar';
 import { LocalSessionsView } from '@/components/LocalSessionsView/LocalSessionsView';
 import { InlineSessionName } from '@/components/InlineSessionName/InlineSessionName';
 import { useSessionStore } from '@/stores/sessionStore';
-import { exportSessionToZip, downloadZipFile, getExportFilename } from '@/utils/zipHandler';
+import { exportSessionToZip, downloadZipFile, getExportFilename, importSessionFromZip } from '@/utils/zipHandler';
 import { indexedDBService } from '@/services/indexedDBService';
 import { useUrlState, parseUrlState } from '@/hooks/useUrlState';
+
+// Try to fetch session from a URL path
+async function tryFetchSessionFromPath(sessionPath: string): Promise<File | null> {
+  try {
+    const response = await fetch(sessionPath);
+    if (!response.ok) return null;
+    const blob = await response.blob();
+    // Extract filename from path
+    const filename = sessionPath.split('/').pop() || 'session.zip';
+    return new File([blob], filename, { type: 'application/zip' });
+  } catch {
+    return null;
+  }
+}
+
+// Check if the session param is a path (contains / or \) vs just an ID
+function isSessionPath(session: string): boolean {
+  return session.includes('/') || session.includes('\\') || session.endsWith('.zip');
+}
 import './App.css';
 
 function App() {
@@ -90,6 +109,14 @@ function App() {
     clearUrlState();
   }, [clearSession, clearUrlState]);
 
+  // Pending session ID from URL (when blob not found)
+  const [pendingUrlSessionId, setPendingUrlSessionId] = useState<string | null>(null);
+
+  // Get loadSession for fetching from output folder
+  const loadSession = useSessionStore((state) => state.loadSession);
+  const setLoading = useSessionStore((state) => state.setLoading);
+  const setError = useSessionStore((state) => state.setError);
+
   // Load session from URL on mount
   useEffect(() => {
     if (hasInitialized.current) return;
@@ -104,26 +131,52 @@ function App() {
           pendingActionId.current = urlState.action;
         }
 
-        // Try to load the session from storage
-        const success = await loadSessionFromStorage(urlState.session);
-        if (!success) {
-          // Clear invalid URL params if session doesn't exist
-          clearUrlState();
+        // Check if session param is a path or just an ID
+        if (isSessionPath(urlState.session)) {
+          // It's a path - fetch directly from that path
+          setLoading(true);
+          const file = await tryFetchSessionFromPath(urlState.session);
+
+          if (file) {
+            try {
+              const loadedData = await importSessionFromZip(file);
+              await loadSession(loadedData, file);
+              console.log('Session loaded from path:', urlState.session);
+            } catch (err) {
+              console.error('Failed to load session from path:', err);
+              setError(`Failed to load session from: ${urlState.session}`);
+              setPendingUrlSessionId(urlState.session);
+            }
+          } else {
+            setLoading(false);
+            setError(`Could not fetch session from: ${urlState.session}`);
+            setPendingUrlSessionId(urlState.session);
+          }
+        } else {
+          // It's just a session ID - try IndexedDB first
+          const success = await loadSessionFromStorage(urlState.session);
+          if (!success) {
+            // Not in IndexedDB - show message to user
+            setPendingUrlSessionId(urlState.session);
+          }
         }
       }
     };
 
     loadFromUrl();
-  }, [loadSessionFromStorage, clearUrlState]);
+  }, [loadSessionFromStorage, loadSession, setLoading, setError]);
 
   // Update URL when session loads
   useEffect(() => {
     if (sessionData) {
       setSessionInUrl(sessionData.sessionId);
 
-      // Handle pending action selection
+      // Clear pending URL session ID since we now have a loaded session
+      setPendingUrlSessionId(null);
+
+      // Handle pending action selection (scroll to it since it's from URL)
       if (pendingActionId.current) {
-        const success = selectActionById(pendingActionId.current);
+        const success = selectActionById(pendingActionId.current, true);
         if (!success) {
           // Clear invalid action param
           setActionInUrl(null);
@@ -159,8 +212,8 @@ function App() {
         // User navigated to a different session
         loadSessionFromStorage(urlState.session);
       } else if (urlState.action && sessionData) {
-        // User navigated to a different action
-        selectActionById(urlState.action);
+        // User navigated to a different action (scroll to it since it's from URL)
+        selectActionById(urlState.action, true);
       }
     };
 
@@ -170,7 +223,7 @@ function App() {
 
   return (
     <div className="app">
-      <SessionLoader />
+      <SessionLoader pendingSessionId={pendingUrlSessionId} />
 
       {loading && (
         <div className="app-loading">

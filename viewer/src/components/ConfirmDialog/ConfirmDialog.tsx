@@ -1,9 +1,11 @@
 /**
  * ConfirmDialog Component
  * Reusable confirmation dialog for destructive actions
+ * Uses React Portal to render at document body level (avoids overflow:hidden issues)
  */
 
 import { useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import './ConfirmDialog.css';
 
 export interface ConfirmDialogProps {
@@ -87,7 +89,8 @@ export const ConfirmDialog = ({
     return null;
   }
 
-  return (
+  // Use portal to render at body level, avoiding overflow:hidden clipping
+  return createPortal(
     <div className="confirm-dialog-overlay" onClick={handleOverlayClick}>
       <div className="confirm-dialog-modal" role="alertdialog" aria-modal="true" aria-labelledby="confirm-dialog-title">
         <div className="confirm-dialog-header">
@@ -119,7 +122,8 @@ export const ConfirmDialog = ({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

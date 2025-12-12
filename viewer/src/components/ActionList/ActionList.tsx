@@ -48,7 +48,9 @@ interface VirtualItem {
 export const ActionList = () => {
   const sessionData = useSessionStore((state) => state.sessionData);
   const selectedActionIndex = useSessionStore((state) => state.selectedActionIndex);
+  const shouldScrollToAction = useSessionStore((state) => state.shouldScrollToAction);
   const selectAction = useSessionStore((state) => state.selectAction);
+  const clearScrollFlag = useSessionStore((state) => state.clearScrollFlag);
   const audioBlob = useSessionStore((state) => state.audioBlob);
   const getEditedActions = useSessionStore((state) => state.getEditedActions);
   const addNote = useSessionStore((state) => state.addNote);
@@ -232,21 +234,31 @@ export const ActionList = () => {
     overscan: 5,
   });
 
-  // Auto-scroll to selected action
+  // Store virtualizer in a ref to access current value without dependency
+  const virtualizerRef = useRef(virtualizer);
+  virtualizerRef.current = virtualizer;
+
+  // Auto-scroll to selected action (only when requested via shouldScrollToAction)
   useEffect(() => {
-    if (selectedActionIndex !== null && sessionData) {
-      // Find the virtual row for this action
-      const rowIndex = virtualItems.findIndex(
-        item => item.type === 'action' && item.actionIndex === selectedActionIndex
-      );
-      if (rowIndex !== -1) {
-        virtualizer.scrollToIndex(rowIndex, {
-          align: 'center',
-          behavior: 'smooth',
-        });
-      }
+    // Only scroll if shouldScrollToAction is true (from URL or timeline click)
+    if (!shouldScrollToAction || selectedActionIndex === null || !sessionData) {
+      return;
     }
-  }, [selectedActionIndex, virtualItems, sessionData, virtualizer]);
+
+    // Clear the flag immediately so we only scroll once
+    clearScrollFlag();
+
+    // Find the virtual row for this action
+    const rowIndex = virtualItems.findIndex(
+      item => item.type === 'action' && item.actionIndex === selectedActionIndex
+    );
+    if (rowIndex !== -1) {
+      virtualizerRef.current.scrollToIndex(rowIndex, {
+        align: 'center',
+        behavior: 'smooth',
+      });
+    }
+  }, [shouldScrollToAction, selectedActionIndex, sessionData, virtualItems, clearScrollFlag]);
 
   const formatTime = (timestamp: string) => {
     if (!sessionData) return '';
@@ -430,7 +442,7 @@ export const ActionList = () => {
   };
 
   // Render note action
-  const renderNoteAction = (action: NoteAction, virtualRow: any, isSelected: boolean) => {
+  const renderNoteAction = (action: NoteAction, virtualRow: any, isSelected: boolean, actionIndex: number) => {
     const isEditing = editingNoteId === action.id;
     const isNew = newNoteId === action.id;
 
@@ -446,7 +458,7 @@ export const ActionList = () => {
           height: `${virtualRow.size}px`,
           transform: `translateY(${virtualRow.start}px)`,
         }}
-        onClick={() => !isEditing && selectAction(virtualRow.index)}
+        onClick={() => !isEditing && selectAction(actionIndex)}
       >
         <div className="action-list-item-header">
           <span className="action-list-item-icon">📝</span>
@@ -494,7 +506,7 @@ export const ActionList = () => {
   };
 
   // Render voice transcript action
-  const renderVoiceAction = (action: VoiceTranscriptAction, virtualRow: any, isSelected: boolean) => {
+  const renderVoiceAction = (action: VoiceTranscriptAction, virtualRow: any, isSelected: boolean, actionIndex: number) => {
     const duration = ((new Date(action.transcript.endTime).getTime() -
                       new Date(action.transcript.startTime).getTime()) / 1000).toFixed(1);
     const isPlayingThis = playingVoiceId === action.id;
@@ -512,7 +524,7 @@ export const ActionList = () => {
           height: `${virtualRow.size}px`,
           transform: `translateY(${virtualRow.start}px)`,
         }}
-        onClick={() => !isEditing && selectAction(virtualRow.index)}
+        onClick={() => !isEditing && selectAction(actionIndex)}
       >
         <div className="action-list-item-header">
           <span className="action-list-item-icon">🎙️</span>
@@ -542,7 +554,6 @@ export const ActionList = () => {
 
         {isEditing ? (
           <InlineFieldEditor
-            label={editingFieldState.fieldName}
             value={editingFieldState.currentValue}
             fieldType={editingFieldState.fieldType}
             onSave={handleSaveField}
@@ -578,7 +589,7 @@ export const ActionList = () => {
   };
 
   // Render navigation action
-  const renderNavigationAction = (action: NavigationAction, virtualRow: any, isSelected: boolean) => {
+  const renderNavigationAction = (action: NavigationAction, virtualRow: any, isSelected: boolean, actionIndex: number) => {
     const displayUrl = action.navigation.toUrl.length > 50
       ? action.navigation.toUrl.substring(0, 47) + '...'
       : action.navigation.toUrl;
@@ -595,7 +606,7 @@ export const ActionList = () => {
           height: `${virtualRow.size}px`,
           transform: `translateY(${virtualRow.start}px)`,
         }}
-        onClick={() => selectAction(virtualRow.index)}
+        onClick={() => selectAction(actionIndex)}
       >
         <div className="action-list-item-header">
           <span className="action-list-item-icon">🔗</span>
@@ -630,7 +641,7 @@ export const ActionList = () => {
   };
 
   // Render browser event action
-  const renderBrowserEventAction = (action: PageVisibilityAction | MediaAction | DownloadAction | FullscreenAction | PrintAction, virtualRow: any, isSelected: boolean) => {
+  const renderBrowserEventAction = (action: PageVisibilityAction | MediaAction | DownloadAction | FullscreenAction | PrintAction, virtualRow: any, isSelected: boolean, actionIndex: number) => {
     let eventDescription = '';
     let eventClass = 'event-item';
 
@@ -668,7 +679,7 @@ export const ActionList = () => {
           height: `${virtualRow.size}px`,
           transform: `translateY(${virtualRow.start}px)`,
         }}
-        onClick={() => selectAction(virtualRow.index)}
+        onClick={() => selectAction(actionIndex)}
       >
         <div className="action-list-item-header">
           <span className="action-list-item-icon">{getActionIcon(action.type)}</span>
@@ -697,7 +708,7 @@ export const ActionList = () => {
   };
 
   // Render browser action (click, input, etc.)
-  const renderBrowserAction = (action: RecordedAction, virtualRow: any, isSelected: boolean) => {
+  const renderBrowserAction = (action: RecordedAction, virtualRow: any, isSelected: boolean, actionIndex: number) => {
     const isEditing = editingFieldState?.actionId === action.id;
 
     return (
@@ -712,7 +723,7 @@ export const ActionList = () => {
           height: `${virtualRow.size}px`,
           transform: `translateY(${virtualRow.start}px)`,
         }}
-        onClick={() => !isEditing && selectAction(virtualRow.index)}
+        onClick={() => !isEditing && selectAction(actionIndex)}
       >
         <div className="action-list-item-header">
           <span className="action-list-item-icon">
@@ -751,7 +762,6 @@ export const ActionList = () => {
 
         {isEditing ? (
           <InlineFieldEditor
-            label={editingFieldState.fieldName}
             value={editingFieldState.currentValue}
             fieldType={editingFieldState.fieldType}
             onSave={handleSaveField}
@@ -844,25 +854,26 @@ export const ActionList = () => {
 
               // Render action
               const action = item.action!;
-              const isSelected = selectedActionIndex === item.actionIndex;
+              const actionIndex = item.actionIndex!;
+              const isSelected = selectedActionIndex === actionIndex;
 
               if (isNoteAction(action)) {
-                return renderNoteAction(action, virtualRow, isSelected);
+                return renderNoteAction(action, virtualRow, isSelected, actionIndex);
               }
 
               if (isVoiceTranscriptAction(action)) {
-                return renderVoiceAction(action, virtualRow, isSelected);
+                return renderVoiceAction(action, virtualRow, isSelected, actionIndex);
               }
 
               if (isNavigationAction(action)) {
-                return renderNavigationAction(action, virtualRow, isSelected);
+                return renderNavigationAction(action, virtualRow, isSelected, actionIndex);
               }
 
               if (isBrowserEventAction(action)) {
-                return renderBrowserEventAction(action, virtualRow, isSelected);
+                return renderBrowserEventAction(action, virtualRow, isSelected, actionIndex);
               }
 
-              return renderBrowserAction(action as RecordedAction, virtualRow, isSelected);
+              return renderBrowserAction(action as RecordedAction, virtualRow, isSelected, actionIndex);
             })}
           </div>
         )}

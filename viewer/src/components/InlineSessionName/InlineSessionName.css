@@ -41,18 +41,16 @@
   opacity: 1;
 }
 
-/* Editing state */
+/* Editing state - compact inline with buttons inside */
 .inline-session-name-editing {
+  position: relative;
   display: inline-flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.25rem;
-  padding: 0;
-  margin: 0;
+  align-items: center;
 }
 
 .inline-session-name-input {
   padding: 0.25rem 0.5rem;
+  padding-right: 52px; /* Space for buttons */
   font-size: 0.875rem;
   font-weight: 500;
   color: #e4e6eb;
@@ -71,8 +69,42 @@
   color: #6b7280;
 }
 
-.inline-session-name-hint {
-  font-size: 0.625rem;
-  color: #6b7280;
-  padding-left: 0.5rem;
+.inline-session-name-buttons {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  gap: 2px;
+}
+
+.inline-session-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 0.7rem;
+  transition: all 0.15s;
+}
+
+.inline-session-btn-save {
+  background-color: #10b981;
+  color: white;
+}
+
+.inline-session-btn-save:hover {
+  background-color: #059669;
+}
+
+.inline-session-btn-cancel {
+  background-color: #ef4444;
+  color: white;
+}
+
+.inline-session-btn-cancel:hover {
+  background-color: #dc2626;
 }

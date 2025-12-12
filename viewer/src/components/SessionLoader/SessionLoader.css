@@ -201,3 +201,47 @@
   background-color: rgba(239, 68, 68, 0.1);
   color: #ef4444;
 }
+
+/* Pending Session from URL */
+.session-loader-pending {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  background-color: #2a3040;
+  border: 1px solid #3b82f6;
+  border-radius: 8px;
+  color: #93c5fd;
+}
+
+.session-loader-pending svg {
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+  color: #3b82f6;
+}
+
+.session-loader-pending-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.session-loader-pending-content strong {
+  color: #e4e6eb;
+  font-size: 0.9375rem;
+}
+
+.session-loader-pending-content code {
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+  font-size: 0.8125rem;
+  padding: 0.25rem 0.5rem;
+  background-color: rgba(59, 130, 246, 0.15);
+  border-radius: 4px;
+  color: #60a5fa;
+  word-break: break-all;
+}
+
+.session-loader-pending-content span {
+  font-size: 0.8125rem;
+  color: #9ca3af;
+}

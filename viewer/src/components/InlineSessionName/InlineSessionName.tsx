@@ -1,7 +1,6 @@
 /**
  * InlineSessionName Component
- * Inline editable session name for the header
- * Clicking on the name shows an input field for editing
+ * Minimal inline editable session name - buttons inside input
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -24,8 +23,9 @@ export const InlineSessionName = ({
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(displayName);
   const inputRef = useRef<HTMLInputElement>(null);
+  const hasSavedRef = useRef(false);
 
-  // Update editValue when displayName changes externally
+  // Update editValue when displayName changes externally (only when not editing)
   useEffect(() => {
     if (!isEditing) {
       setEditValue(displayName);
@@ -37,6 +37,7 @@ export const InlineSessionName = ({
     if (isEditing && inputRef.current) {
       inputRef.current.focus();
       inputRef.current.select();
+      hasSavedRef.current = false;
     }
   }, [isEditing]);
 
@@ -46,14 +47,18 @@ export const InlineSessionName = ({
   }, [displayName]);
 
   const handleSave = useCallback(() => {
+    if (hasSavedRef.current) return;
+
     const trimmed = editValue.trim();
-    if (trimmed && trimmed !== displayName) {
+    if (trimmed) {
+      hasSavedRef.current = true;
       onSave(trimmed);
     }
     setIsEditing(false);
-  }, [editValue, displayName, onSave]);
+  }, [editValue, onSave]);
 
   const handleCancel = useCallback(() => {
+    hasSavedRef.current = true;
     setEditValue(displayName);
     setIsEditing(false);
   }, [displayName]);
@@ -62,9 +67,11 @@ export const InlineSessionName = ({
     (e: React.KeyboardEvent) => {
       if (e.key === 'Enter') {
         e.preventDefault();
+        e.stopPropagation();
         handleSave();
       } else if (e.key === 'Escape') {
         e.preventDefault();
+        e.stopPropagation();
         handleCancel();
       }
     },
@@ -72,15 +79,12 @@ export const InlineSessionName = ({
   );
 
   const handleBlur = useCallback(() => {
-    // Small delay to allow click events to fire first
-    setTimeout(() => {
-      handleSave();
-    }, 100);
+    handleSave();
   }, [handleSave]);
 
   if (isEditing) {
     return (
-      <div className="inline-session-name inline-session-name-editing">
+      <div className="inline-session-name-editing">
         <input
           ref={inputRef}
           type="text"
@@ -91,7 +95,26 @@ export const InlineSessionName = ({
           onBlur={handleBlur}
           placeholder="Session name"
         />
-        <span className="inline-session-name-hint">Enter to save, Esc to cancel</span>
+        <div className="inline-session-name-buttons">
+          <button
+            type="button"
+            className="inline-session-btn inline-session-btn-cancel"
+            onMouseDown={(e) => e.preventDefault()} // Prevent blur
+            onClick={handleCancel}
+            title="Cancel (Esc)"
+          >
+            ✕
+          </button>
+          <button
+            type="button"
+            className="inline-session-btn inline-session-btn-save"
+            onMouseDown={(e) => e.preventDefault()} // Prevent blur
+            onClick={handleSave}
+            title="Save (Enter)"
+          >
+            ✓
+          </button>
+        </div>
       </div>
     );
   }

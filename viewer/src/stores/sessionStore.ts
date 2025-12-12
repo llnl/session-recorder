@@ -67,6 +67,7 @@ export interface SessionStore {
 
   // UI state
   selectedActionIndex: number | null;
+  shouldScrollToAction: boolean; // Whether selection change should trigger auto-scroll
   timelineSelection: TimelineSelection | null;
   activeTab: 'information' | 'console' | 'network' | 'metadata' | 'voice';
   loading: boolean;
@@ -75,8 +76,9 @@ export interface SessionStore {
   // Session actions
   loadSession: (data: LoadedSessionData, sourceBlob?: Blob) => Promise<void>;
   loadSessionFromStorage: (sessionId: string) => Promise<boolean>;
-  selectAction: (index: number) => void;
-  selectActionById: (actionId: string) => boolean;
+  selectAction: (index: number, scroll?: boolean) => void;
+  selectActionById: (actionId: string, scroll?: boolean) => boolean;
+  clearScrollFlag: () => void;
   setTimelineSelection: (selection: TimelineSelection | null) => void;
   setActiveTab: (tab: 'information' | 'console' | 'network' | 'metadata' | 'voice') => void;
   clearSession: () => void;
@@ -134,6 +136,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
   loadingResources: new Set(),
   editState: null,
   selectedActionIndex: null,
+  shouldScrollToAction: false,
   timelineSelection: null,
   activeTab: 'information',
   loading: false,
@@ -162,6 +165,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       lazyLoadEnabled: data.lazyLoadEnabled || false,
       loadingResources: new Set(),
       selectedActionIndex: null,
+      shouldScrollToAction: false,
       timelineSelection: null,
       error: null,
       loading: false,
@@ -231,6 +235,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
         lazyLoadEnabled: loadedData.lazyLoadEnabled || false,
         loadingResources: new Set(),
         selectedActionIndex: null,
+        shouldScrollToAction: false,
         timelineSelection: null,
         error: null,
         loading: false,
@@ -248,23 +253,27 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
     }
   },
 
-  selectAction: (index: number) => {
+  selectAction: (index: number, scroll: boolean = false) => {
     const state = get();
     const editedActions = state.getEditedActions();
     if (index >= 0 && index < editedActions.length) {
-      set({ selectedActionIndex: index });
+      set({ selectedActionIndex: index, shouldScrollToAction: scroll });
     }
   },
 
-  selectActionById: (actionId: string) => {
+  selectActionById: (actionId: string, scroll: boolean = false) => {
     const state = get();
     const editedActions = state.getEditedActions();
     const index = editedActions.findIndex((a) => a.id === actionId);
     if (index !== -1) {
-      set({ selectedActionIndex: index });
+      set({ selectedActionIndex: index, shouldScrollToAction: scroll });
       return true;
     }
     return false;
+  },
+
+  clearScrollFlag: () => {
+    set({ shouldScrollToAction: false });
   },
 
   setTimelineSelection: (selection: TimelineSelection | null) => {
@@ -290,6 +299,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       loadingResources: new Set(),
       editState: null,
       selectedActionIndex: null,
+      shouldScrollToAction: false,
       timelineSelection: null,
       error: null,
       loading: false,

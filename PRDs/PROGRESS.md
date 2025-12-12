@@ -43,44 +43,57 @@
 
 ## POC 2 Progress - Desktop App & Recorder Completion
 
-**Status:** In Progress | **Tasks Remaining:** 165
+**Status:** In Progress | **Tasks Remaining:** 147
 **End Goal:** `session-recorder` becomes its own standalone repo
 
 | PRD | Status | TASKS | Unchecked |
 |-----|--------|-------|-----------|
-| [PRD-DESKTOP-POC.md](PRD-DESKTOP-POC.md) | **Ready** | [TASKS-DESKTOP-POC.md](TASKS-DESKTOP-POC.md) | 38 |
-| [PRD-session-recorder.md](PRD-session-recorder.md) | ~97% Complete | [TASKS-session-recorder.md](TASKS-session-recorder.md) | 40 |
+| [PRD-DESKTOP-POC.md](PRD-DESKTOP-POC.md) | 🔄 ~90% Complete | [TASKS-DESKTOP-POC.md](TASKS-DESKTOP-POC.md) | 15 |
+| [PRD-session-recorder.md](PRD-session-recorder.md) | ✅ Complete | [TASKS-session-recorder.md](TASKS-session-recorder.md) | 0 |
 | [PRD-performance.md](PRD-performance.md) | ⚠️ Partial | [TASKS-performance.md](TASKS-performance.md) | 3 |
-| [PRD-4.md](PRD-4.md) (Voice Phase 3+) | Pending | [TASKS-4.md](TASKS-4.md) | 19 |
-| [PRD-markdown-export.md](PRD-markdown-export.md) | **Ready** | [TASKS-markdown-export.md](TASKS-markdown-export.md) | 56 |
-| Voice Transcript Merging | Not Started | [TASKS-voice-merge.md](TASKS-voice-merge.md) | 5 |
+| [PRD-4.md](PRD-4.md) (Voice Phase 3+) | Pending | [TASKS-4.md](TASKS-4.md) | 4 |
+| [PRD-markdown-export.md](PRD-markdown-export.md) | **Ready** | [TASKS-markdown-export.md](TASKS-markdown-export.md) | 95 |
+| Voice Transcript Merging | Not Started | [TASKS-voice-merge.md](TASKS-voice-merge.md) | 30 |
 
-### IMMEDIATE: Desktop App POC (12 hours)
+### IMMEDIATE: Desktop App POC (12 hours) - ~90% Complete
 
-**Goal:** Standalone Windows exe that records browser + voice without requiring Python/Node.js installation
+**Goal:** Standalone cross-platform app that records browser + voice without requiring Python/Node.js installation
 
 **Architecture:**
 
-- **Electron Shell** - Orchestrates recording, system tray UI
-- **PyInstaller Bundle** - Python + Whisper + Torch bundled into voice-recorder.exe (~800MB)
-- **System Chrome** - Uses existing Chrome via CDP (not bundled)
+- **Electron Shell** - Orchestrates recording, system tray UI (✅ implemented)
+- **PyInstaller Bundle** - Python + Whisper + Torch bundled into voice-recorder (✅ 964 MB)
+- **Playwright Browsers** - Chromium, Firefox, WebKit support (✅ implemented)
+
+**Implementation Status:**
+
+- ✅ Voice recorder entry point with CLI (record, transcribe, list-devices)
+- ✅ PyInstaller spec file for cross-platform builds
+- ✅ Electron main process with system tray
+- ✅ Multi-browser support (Chromium/Firefox/WebKit)
+- ✅ Recording orchestration (browser + voice coordination)
+- ✅ electron-builder config (Windows/Mac/Linux)
+- ✅ **PyInstaller build working** (torch 2.9.1+cpu, whisper 20250625)
+- ✅ **Real SessionRecorder integration** (full session data: snapshots, screenshots, resources, network, console, transcript)
+- ✅ **Windows tray icons fixed** (programmatic RGBA buffer generation)
+- ⏳ Clean VM testing and final packaging
 
 **Scope:**
 
-1. Double-click `SessionRecorder.exe`
-2. Right-click tray → "Start Recording"
-3. Chrome opens, record browser + voice
+1. Double-click `SessionRecorder.exe` (or `.app` / `AppImage`)
+2. Right-click tray → "Start Recording" → Select browser
+3. Browser opens, record browser + voice
 4. Right-click tray → "Stop Recording"
-5. Explorer opens showing `session-XXXXX.zip`
+5. File explorer opens showing `session-XXXXX.zip`
 
 **Reference:** [PRD-DESKTOP-POC.md](PRD-DESKTOP-POC.md) | [TASKS-DESKTOP-POC.md](TASKS-DESKTOP-POC.md)
 
 ### Also In POC 2
 
-- **Session Recorder Completion** - Remaining 44 tasks (mostly viewer features FR-4.7)
+- **Session Recorder Completion** - ✅ All core tasks complete
 - **Performance Optimizations** - ✅ ResourceCaptureQueue implemented, non-blocking handlers complete
-- **Voice Recording Phase 3+** - Advanced voice features (19 tasks)
-- **Markdown Export** - Auto-generate human-readable markdown from session JSON (~14h, 56 tasks)
+- **Voice Recording Phase 3+** - Advanced voice features (4 tasks remaining)
+- **Markdown Export** - Auto-generate human-readable markdown from session JSON (95 tasks)
 
 ### POC 2 Completion Deliverables
 
@@ -109,14 +122,14 @@ session-recorder/           # NEW STANDALONE REPO
 
 ## POC 3 Progress - Viewer/Editor Deployment (LivHub vs Standalone?)
 
-**Status:** Planning | **Tasks Remaining:** 214 | **Decision Required**
+**Status:** Planning | **Tasks Remaining:** 317 | **Decision Required**
 **Note:** Session recorder will be in its own repo by this point
 
 | PRD | Status | TASKS | Unchecked |
 |-----|--------|-------|-----------|
 | [PRD-angular-migration.md](PRD-angular-migration.md) | Draft | [TASKS-angular-migration.md](TASKS-angular-migration.md) | 170 |
-| [PRD-session-editor.md](PRD-session-editor.md) | ✅ Complete | [TASKS-session-editor.md](TASKS-session-editor.md) | 0 |
-| [PRD-ai-image-analysis.md](PRD-ai-image-analysis.md) | Draft | [TASKS-ai-image-analysis.md](TASKS-ai-image-analysis.md) | 6 |
+| [PRD-session-editor.md](PRD-session-editor.md) | ✅ Core Complete | [TASKS-session-editor.md](TASKS-session-editor.md) | 14 |
+| [PRD-ai-image-analysis.md](PRD-ai-image-analysis.md) | Draft | [TASKS-ai-image-analysis.md](TASKS-ai-image-analysis.md) | 117 |
 | [PRD-snapshot-styling.md](PRD-snapshot-styling.md) | Not Started | [TASKS-snapshot-styling.md](TASKS-snapshot-styling.md) | 16 |
 
 ### Decision: Where to Deploy the Viewer/Editor?
@@ -156,7 +169,7 @@ session-recorder/           # NEW STANDALONE REPO
 
 ## Future Work (Post POC 3)
 
-**Tasks Remaining:** 175+
+**Tasks Remaining:** 158
 
 ### Session Recorder Repo (Post-POC 2 Enhancements)
 
@@ -164,7 +177,7 @@ session-recorder/           # NEW STANDALONE REPO
 |-----|--------|-------|-----------|
 | [PRD-DESKTOP.md](PRD-DESKTOP.md) (Full Desktop) | Post-POC | [TASKS-DESKTOP.md](TASKS-DESKTOP.md) | 39 |
 | [PRD-MCP.md](PRD-MCP.md) | ✅ Complete (18 tools) | [TASKS-MCP.md](TASKS-MCP.md) | 0 |
-| [PRD-5.md](PRD-5.md) (System Audio) | Planning | [TASKS-5.md](TASKS-5.md) | 10 |
+| [PRD-5.md](PRD-5.md) (System Audio) | Planning | [TASKS-5.md](TASKS-5.md) | 92 |
 | Testing Checklist | In Progress | [TASKS-TESTING.md](TASKS-TESTING.md) | 27 |
 
 ### This Repo / LivHub (Post-POC 3 Enhancements)
@@ -213,11 +226,11 @@ interface RecordingOptions {
 
 | Phase | Status | Tasks | Repo |
 |-------|--------|-------|------|
-| POC 1 - Core Recording | ✅ Complete | 19 remaining | this → session-recorder |
-| POC 2 - Desktop & Recorder | 🔄 In Progress | 165 remaining | this → session-recorder |
-| POC 3 - Viewer/Editor | 📋 Planning | 214 remaining | this / LivHub |
-| Future Work | ⏳ Deferred | 175 remaining | split |
-| **Total** | | **573** | |
+| POC 1 - Core Recording | ✅ Complete | 0 remaining | this → session-recorder |
+| POC 2 - Desktop & Recorder | 🔄 In Progress | 147 remaining | this → session-recorder |
+| POC 3 - Viewer/Editor | 📋 Planning | 317 remaining | this / LivHub |
+| Future Work | ⏳ Deferred | 158 remaining | split |
+| **Total** | | **622** | |
 
 ### Repo Split After POC 2
 
@@ -348,3 +361,10 @@ npm run viewer
 | 4.4 | 2025-12-12 | **URL State & Session History:** Added deep linking via URL params (`?session=id&action=id`). Sessions can be reloaded from browser refresh. Previous sessions with stored blobs shown in SessionLoader for quick reload. IndexedDB v2 stores session zip blobs. New store methods: `loadSessionFromStorage()`, `selectActionById()`. |
 | 4.5 | 2025-12-12 | **Inline Session Name Editing:** Session name in header is now clickable to edit inline (InlineSessionName component). Edit icon appears on hover. Renaming in LocalSessionsView syncs with header display. Enter saves, Escape cancels. |
 | 4.6 | 2025-12-12 | **Inline Note Editing (v2):** Clicking "+" immediately creates a note in the action list (no overlay/modal). Note is in edit mode inline; cancel/empty-save deletes new note. Notes, transcripts, and action values all edit inline. New components: InlineNoteEditor, InlineFieldEditor. ActionList rewritten with virtual scrolling + insert points. sessionStore.addNote now returns noteId for immediate creation flow. |
+| 4.7 | 2025-12-12 | **Desktop App POC (~75% Complete):** Created `desktop-app/` Electron project with TypeScript. Voice recorder entry point (`voice_recorder_main.py`) with CLI commands (record, transcribe, list-devices), PyInstaller spec file for cross-platform bundling. Electron shell with system tray (idle/recording/processing states), multi-browser support (Chromium/Firefox/WebKit via Playwright), recording orchestration, voice recorder subprocess management. electron-builder configured for Windows (NSIS+portable), macOS (DMG), Linux (AppImage+DEB). Remaining: PyInstaller build testing and final packaging. |
+| 4.8 | 2025-12-12 | **URL Path-Based Session Loading:** Sessions can now be loaded via direct file path in URL (`?session=/output/session-xxx.zip`). Vite dev server serves `../dist/output/` at `/output/*` via custom plugin. URL auto-detection: paths (containing `/` or ending `.zip`) fetch directly; plain session IDs try IndexedDB. Falls back to "Session requested from URL" message if fetch fails. |
+| 4.9 | 2025-12-12 | **Viewer UX Fixes:** (1) **Auto-scroll fix** - scrolls once from URL/timeline, not on every scroll (added `shouldScrollToAction` flag with `clearScrollFlag()` after scroll), (2) **Action list click highlighting** - fixed wrong index (was using `virtualRow.index` instead of `actionIndex` for all 5 render functions), (3) **Pronounced selection highlight** - increased opacity, added box-shadow glow and 1px border outline for all action types, (4) **Iframe caching fix** - added `key={selectedAction?.id}-${currentView}` to force iframe re-creation (was showing stale content from previous action), (5) **Smart default view** - input/change actions now default to "After" view to show typed values, (6) **Auto-scroll to element** - `highlightElement()` now called for both before/after views (scrolls to target element in snapshot). |
+| 5.0 | 2025-12-12 | **PyInstaller Build Success:** Voice recorder bundle now builds and runs correctly. Fixed pyinstaller-hooks-contrib 2025.10 compatibility with PyInstaller 6.17 by creating custom hooks (`hooks/hook-torch.py`, `hook-whisper.py`, `hook-tiktoken.py`, `hook-numba.py`). Removed `unittest` from excludes (required by torch). Final bundle: torch 2.9.1+cpu, whisper 20250625, 964 MB total. Desktop POC now ~85% complete. |
+| 5.1 | 2025-12-12 | **Compact Inline Editors:** Cleaned up all inline editors to be minimal single-line inputs with buttons inside. (1) **InlineFieldEditor** - single-line input for transcription/text edits, ✕/✓ buttons inside input on right, Enter saves, Esc cancels. (2) **InlineNoteEditor** - single-line input for notes (removed multiline textarea). (3) **InlineSessionName** - buttons inside input, `onMouseDown preventDefault` to prevent blur on button click. All editors: no extra padding/backgrounds/borders/hints - input directly replaces text in place. |
+| 5.2 | 2025-12-12 | **Voice Recorder Enhancements:** Added `--transcript-output` / `-t` parameter to save transcript JSON to file. Verified microphone recording and Whisper transcription working on built bundle. Recording runs until Ctrl+C (no duration flag). |
+| 5.3 | 2025-12-12 | **Desktop App Integration Complete:** (1) Fixed TypeScript build errors (`config.ts` null checking, `index.ts` window-all-closed handler signature). (2) Fixed Windows tray icons (replaced unreliable base64 PNG data URLs with programmatic RGBA buffer generation for 16x16 icons). (3) Integrated real `SessionRecorder` from parent package (removed InlineSessionRecorder, added `"session-recorder": "file:.."` dependency). (4) Added transcript.json saving (captures voice recorder result and saves to session directory before creating zip). Desktop app now produces complete session data matching CLI recorder output. |

@@ -360,7 +360,7 @@ export const Timeline = () => {
             // Find the index in the full actions array
             const voiceIndex = sessionData.actions.findIndex(a => a.id === voiceAction.id);
             if (voiceIndex !== -1) {
-              selectAction(voiceIndex);
+              selectAction(voiceIndex, true); // Scroll to action in list
               clickedVoice = true;
               break;
             }
@@ -383,7 +383,7 @@ export const Timeline = () => {
           });
 
           if (closestIndex !== -1) {
-            selectAction(closestIndex);
+            selectAction(closestIndex, true); // Scroll to action in list
           }
         }
       }
@@ -548,7 +548,7 @@ export const Timeline = () => {
                 isSelected={index === selectedActionIndex}
                 isHovered={index === hoveredActionIndex}
                 style={{ left: x - 40 }}
-                onClick={() => selectAction(index)}
+                onClick={() => selectAction(index, true)} // Scroll to action in list
                 onMouseEnter={(e) => handleThumbnailMouseEnter(e, index)}
                 onMouseLeave={handleThumbnailMouseLeave}
               />

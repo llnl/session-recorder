@@ -1,7 +1,6 @@
 /**
  * InlineNoteEditor Component
- * Compact inline editor for creating and editing notes
- * Replaces modal-based note editing with inline experience
+ * Minimal inline note editor - same size as action items
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -22,45 +21,35 @@ export interface InlineNoteEditorProps {
 
 export const InlineNoteEditor = ({
   initialContent = '',
-  placeholder = 'Add a note... (Markdown supported)',
+  placeholder = 'Add a note...',
   onSave,
   onCancel,
   autoFocus = true,
 }: InlineNoteEditorProps) => {
   const [content, setContent] = useState(initialContent);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Auto-focus and select all on mount
   useEffect(() => {
-    if (autoFocus && textareaRef.current) {
-      textareaRef.current.focus();
+    if (autoFocus && inputRef.current) {
+      inputRef.current.focus();
       if (initialContent) {
-        textareaRef.current.select();
+        inputRef.current.select();
       }
     }
   }, [autoFocus, initialContent]);
 
-  // Auto-resize textarea
-  useEffect(() => {
-    const textarea = textareaRef.current;
-    if (textarea) {
-      textarea.style.height = 'auto';
-      textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
-    }
-  }, [content]);
-
   // Handle keyboard shortcuts
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      // Escape to cancel
       if (e.key === 'Escape') {
         e.preventDefault();
         onCancel();
         return;
       }
 
-      // Ctrl/Cmd + Enter to save
-      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+      // Enter to save
+      if (e.key === 'Enter') {
         e.preventDefault();
         if (content.trim()) {
           onSave(content.trim());
@@ -78,36 +67,35 @@ export const InlineNoteEditor = ({
   };
 
   return (
-    <div className="inline-note-editor">
-      <textarea
-        ref={textareaRef}
-        className="inline-note-editor-textarea"
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-        onKeyDown={handleKeyDown}
-        placeholder={placeholder}
-        rows={2}
-        spellCheck
-      />
-      <div className="inline-note-editor-actions">
-        <span className="inline-note-editor-hint">
-          <kbd>Ctrl</kbd>+<kbd>Enter</kbd> save | <kbd>Esc</kbd> cancel
-        </span>
-        <div className="inline-note-editor-buttons">
+    <div className="compact-note-editor">
+      <div className="compact-note-wrapper">
+        <input
+          ref={inputRef}
+          type="text"
+          className="compact-note-input"
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder={placeholder}
+          spellCheck
+        />
+        <div className="compact-note-buttons">
           <button
             type="button"
-            className="inline-note-editor-btn inline-note-editor-btn-cancel"
+            className="compact-field-btn compact-field-btn-cancel"
             onClick={onCancel}
+            title="Cancel (Esc)"
           >
-            Cancel
+            ✕
           </button>
           <button
             type="button"
-            className="inline-note-editor-btn inline-note-editor-btn-save"
+            className="compact-field-btn compact-field-btn-save"
             onClick={handleSave}
             disabled={!content.trim()}
+            title="Save (Enter)"
           >
-            Save
+            ✓
           </button>
         </div>
       </div>

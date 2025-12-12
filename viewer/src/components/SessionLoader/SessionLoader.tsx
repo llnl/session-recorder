@@ -12,7 +12,11 @@ import { indexedDBService } from '@/services/indexedDBService';
 import type { LocalSessionMetadata } from '@/types/editOperations';
 import './SessionLoader.css';
 
-export const SessionLoader = () => {
+interface SessionLoaderProps {
+  pendingSessionId?: string | null;
+}
+
+export const SessionLoader = ({ pendingSessionId }: SessionLoaderProps) => {
   const loadSession = useSessionStore((state) => state.loadSession);
   const loadSessionFromStorage = useSessionStore((state) => state.loadSessionFromStorage);
   const setLoading = useSessionStore((state) => state.setLoading);
@@ -161,6 +165,20 @@ export const SessionLoader = () => {
   return (
     <div className="session-loader">
       <div className="session-loader-container">
+        {/* Show pending session message when URL has session ID but blob not found */}
+        {pendingSessionId && (
+          <div className="session-loader-pending">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="20" height="20">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div className="session-loader-pending-content">
+              <strong>Session requested from URL:</strong>
+              <code>{pendingSessionId}</code>
+              <span>Please load the session file below</span>
+            </div>
+          </div>
+        )}
+
         <input
           ref={fileInputRef}
           type="file"
