@@ -1,8 +1,14 @@
 /**
- * Session Tools - load, unload, summary
+ * Session Tools - load, unload, summary, markdown
  */
 
+import * as fs from 'fs';
+import * as path from 'path';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 import { SessionStore } from '../SessionStore';
+
+const execAsync = promisify(exec);
 import {
   LoadedSession,
   LoadResult,
@@ -240,5 +246,144 @@ export function sessionGetSummary(
     errorCount: consoleErrors + networkErrors,
     transcriptPreview,
     featuresDetected: features,
+  };
+}
+
+/**
+ * Available markdown file types
+ */
+type MarkdownType = 'transcript' | 'actions' | 'console' | 'network' | 'all';
+
+/**
+ * Get pre-generated markdown summaries from a session
+ * More token-efficient than returning raw JSON
+ */
+export function sessionGetMarkdown(
+  store: SessionStore,
+  params: { sessionId: string; type?: MarkdownType }
+): {
+  sessionId: string;
+  type: MarkdownType;
+  files: Array<{ name: string; content: string }>;
+  availableFiles: string[];
+} {
+  const session = store.get(params.sessionId);
+  if (!session) {
+    throw new Error(`Session not loaded: ${params.sessionId}`);
+  }
+
+  const sessionDir = path.dirname(session.zipPath);
+  const type = params.type || 'all';
+
+  // Define markdown file mappings
+  const markdownFiles: Record<string, string> = {
+    transcript: 'transcript.md',
+    actions: 'actions.md',
+    console: 'console-summary.md',
+    network: 'network-summary.md',
+  };
+
+  // Check which files exist
+  const availableFiles: string[] = [];
+  for (const [key, filename] of Object.entries(markdownFiles)) {
+    const filePath = path.join(sessionDir, filename);
+    if (fs.existsSync(filePath)) {
+      availableFiles.push(key);
+    }
+  }
+
+  // Determine which files to return
+  const filesToReturn = type === 'all'
+    ? availableFiles
+    : availableFiles.filter(f => f === type);
+
+  // Read requested files
+  const files: Array<{ name: string; content: string }> = [];
+  for (const fileType of filesToReturn) {
+    const filename = markdownFiles[fileType];
+    const filePath = path.join(sessionDir, filename);
+    try {
+      const content = fs.readFileSync(filePath, 'utf-8');
+      files.push({ name: filename, content });
+    } catch {
+      // Skip files that can't be read
+    }
+  }
+
+  return {
+    sessionId: session.sessionId,
+    type,
+    files,
+    availableFiles,
+  };
+}
+
+/**
+ * Regenerate markdown exports for a session
+ * Useful when session data has been edited or markdown files are missing
+ */
+export async function sessionRegenerateMarkdown(
+  store: SessionStore,
+  params: { sessionId: string }
+): Promise<{
+  sessionId: string;
+  generated: string[];
+  errors: string[];
+}> {
+  const session = store.get(params.sessionId);
+  if (!session) {
+    throw new Error(`Session not loaded: ${params.sessionId}`);
+  }
+
+  const sessionDir = path.dirname(session.zipPath);
+  const generated: string[] = [];
+  const errors: string[] = [];
+
+  // Use the session-recorder CLI to regenerate markdown
+  // The CLI script is at session-recorder/dist/src/scripts/export-markdown.js
+  const mcpServerDir = path.resolve(__dirname, '..', '..');
+  const sessionRecorderDir = path.resolve(mcpServerDir, '..');
+  const cliScript = path.join(sessionRecorderDir, 'dist', 'src', 'scripts', 'export-markdown.js');
+
+  try {
+    // Check if the CLI script exists
+    if (!fs.existsSync(cliScript)) {
+      // Try to build it first
+      errors.push(`CLI script not found at ${cliScript}. Run 'npm run build' in session-recorder first.`);
+      return { sessionId: session.sessionId, generated, errors };
+    }
+
+    // Run the CLI script
+    const { stdout, stderr } = await execAsync(`node "${cliScript}" "${sessionDir}"`);
+
+    // Parse output to determine what was generated
+    const output = stdout + stderr;
+    if (output.includes('transcript.md')) generated.push('transcript.md');
+    if (output.includes('actions.md')) generated.push('actions.md');
+    if (output.includes('console-summary.md')) generated.push('console-summary.md');
+    if (output.includes('network-summary.md')) generated.push('network-summary.md');
+
+    if (generated.length === 0 && !output.includes('No markdown files generated')) {
+      // Check if files exist in the directory
+      const markdownFiles = ['transcript.md', 'actions.md', 'console-summary.md', 'network-summary.md'];
+      for (const file of markdownFiles) {
+        if (fs.existsSync(path.join(sessionDir, file))) {
+          generated.push(file);
+        }
+      }
+    }
+
+    if (generated.length === 0) {
+      errors.push('No markdown files generated (missing source data)');
+    }
+  } catch (error) {
+    const err = error as { message: string; stderr?: string };
+    errors.push(`Failed to generate markdown: ${err.message || err.stderr || 'Unknown error'}`);
+  }
+
+  return {
+    sessionId: session.sessionId,
+    generated,
+    errors,
   };
 }

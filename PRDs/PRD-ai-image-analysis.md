@@ -413,6 +413,252 @@ Keep the description focused and factual, 100-300 words.
 
 ---
 
+## Alternative Approach: Markdown-First Image Analysis
+
+### Overview
+
+An alternative to the in-app UI approach above is a **markdown-first workflow** that defers image analysis to export time and leverages AI conversation for iterative analysis. This approach:
+
+1. **Does NOT analyze images during recording, viewing, or searching** - Keeps runtime operations fast
+2. **Generates a screenshot manifest markdown** (`screenshots.md`) during export
+3. **AI reads markdown and analyzes linked images** in a conversational workflow
+4. **Enables iterative improvement** - Generate docs per image, refine based on analysis
+
+### Workflow
+
+```
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│ Session Record  │ ──► │ Export Markdown │ ──► │ AI Conversation │
+│  (no analysis)  │     │ (screenshots.md)│     │  (analyze imgs) │
+└─────────────────┘     └─────────────────┘     └─────────────────┘
+                                                        │
+                                                        ▼
+                                               ┌─────────────────┐
+                                               │ Improved Docs   │
+                                               │ (descriptions)  │
+                                               └─────────────────┘
+```
+
+### Generated Markdown Format
+
+The `screenshots.md` file serves as a manifest/catalog:
+
+```markdown
+# Session Screenshots
+
+> **Purpose**: This document catalogs all screenshots captured during the session.
+> Use this as a reference for AI-powered image analysis.
+
+## Session Info
+
+- **Session ID**: session-abc123
+- **Total Screenshots**: 42
+
+## Screenshot Catalog
+
+### ss-1: Click (before)
+
+**Time**: 10:23:45 UTC
+**Image**: [screenshots/action-1-before.png](screenshots/action-1-before.png)
+**URL**: https://example.com/login
+**Action**: action-1 (before state of click)
+
+**Description**: _(pending analysis)_
+
+---
+
+### ss-2: Click (after)
+...
+```
+
+### Key Benefits
+
+| Benefit | Description |
+|---------|-------------|
+| **No runtime overhead** | Recording, viewing, and searching stay fast |
+| **Token-efficient** | AI only processes images when explicitly asked |
+| **Iterative refinement** | User can ask AI to analyze specific images or improve descriptions |
+| **Flexible workflow** | Works with any AI chat interface (Claude, ChatGPT, etc.) |
+| **No API key management** | Uses existing AI conversation context |
+| **Subset analysis** | User can request analysis of specific images only |
+
+### Functional Requirements (Markdown Approach)
+
+| ID | Requirement |
+|----|-------------|
+| FR-M1 | Generate `screenshots.md` during markdown export |
+| FR-M2 | Include all screenshot paths with relative links |
+| FR-M3 | Include context metadata (action type, timestamp, URL, viewport) |
+| FR-M4 | Group screenshots by action with before/after distinction |
+| FR-M5 | Include quick reference table for all images |
+| FR-M6 | Support regeneration via MCP tool |
+
+### MCP Tool Integration
+
+Add a tool for on-demand screenshot markdown generation:
+
+```typescript
+// session_generate_screenshot_docs
+{
+  sessionId: string;     // Session to generate for
+  outputFormat?: 'catalog' | 'analysis-ready';  // Format style
+}
+```
+
+### Recommended AI Workflow (Conversation-Based)
+
+1. **Generate catalog**: `session_regenerate_markdown` → produces `screenshots.md`
+2. **Load session in AI**: AI reads `screenshots.md` to understand image structure
+3. **Analyze images**: User asks AI to "analyze the screenshots in this session"
+4. **Iterative refinement**:
+   - "Describe what's shown in ss-5 through ss-10"
+   - "What error messages are visible in the screenshots?"
+   - "Summarize the user journey based on these screenshots"
+5. **Update descriptions**: AI can fill in description sections
+
+---
+
+## Full Analysis Mode
+
+For thorough analysis of features and user flows, a **full analysis mode** can process all screenshots automatically. This runs **after recording** and is triggered on-demand by the user.
+
+### When to Use Full Analysis
+
+| Use Case | Description |
+|----------|-------------|
+| **Feature documentation** | Generate comprehensive docs for a feature workflow |
+| **User flow analysis** | Understand complete user journeys with visual context |
+| **QA review** | Document all states and transitions for testing |
+| **Bug investigation** | Capture detailed visual state at each step |
+
+### Full Analysis Workflow
+
+```
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│ Session Record  │ ──► │ screenshots.md  │ ──► │ User triggers   │
+│  (no analysis)  │     │   (catalog)     │     │ full analysis   │
+└─────────────────┘     └─────────────────┘     └─────────────────┘
+                                                        │
+                                                        ▼
+                                               ┌─────────────────┐
+                                               │ AI analyzes all │
+                                               │   screenshots   │
+                                               └─────────────────┘
+                                                        │
+                                                        ▼
+                                               ┌─────────────────┐
+                                               │ image-analysis  │
+                                               │      .md        │
+                                               └─────────────────┘
+```
+
+### Cost Estimate
+
+| Session Size | Images | Estimated Cost | Time |
+|--------------|--------|----------------|------|
+| Small | 20-50 | ~$0.06-0.15 | 1-2 min |
+| Medium | 50-100 | ~$0.15-0.30 | 2-4 min |
+| Large | 100-200 | ~$0.30-0.60 | 4-8 min |
+| Very Large | 200-500 | ~$0.60-1.50 | 8-20 min |
+
+*Based on ~$0.003 per image with Claude Vision API*
+
+### Why Analyze All Images?
+
+**Don't try to deduplicate** - Even "similar" screenshots may have important differences:
+- Input validation errors appearing
+- Loading states vs loaded states
+- Hover/focus states
+- Toast notifications
+- Modal dialogs appearing/disappearing
+- Data changes in tables/lists
+
+The cost is minimal (~$0.30-1.50 for most sessions) compared to missing critical state changes.
+
+### Full Analysis Output Format
+
+Generates `image-analysis.md`:
+
+```markdown
+# Session Image Analysis
+
+**Session ID**: session-abc123
+**Analyzed**: 2025-12-16 10:30:00 UTC
+**Total Images**: 42
+**Analysis Model**: claude-3-5-sonnet
+
+---
+
+## Summary
+
+This session shows a user completing a checkout flow on an e-commerce site.
+Key observations:
+- User logged in successfully
+- Added 3 items to cart
+- Encountered a validation error on shipping form
+- Completed purchase after fixing address
+
+---
+
+## Detailed Analysis
+
+### ss-1: Navigation
+**Image**: [screenshots/nav-1.png](screenshots/nav-1.png)
+**URL**: https://shop.example.com
+
+**Description**:
+Homepage of an e-commerce site showing a hero banner with "Summer Sale 50% Off"
+promotion. Navigation bar has: Home, Products, Cart (0), Account. Search bar
+visible in header. Featured products grid shows 6 items below the fold.
+
+---
+
+### ss-2: Click (before)
+**Image**: [screenshots/action-1-before.png](screenshots/action-1-before.png)
+
+**Description**:
+Product listing page showing "Running Shoes" category. Grid of 12 products
+with images, names, and prices. User is about to click on "Nike Air Max"
+priced at $129.99. Filter sidebar shows size and color options.
+
+---
+...
+```
+
+### Functional Requirements (Full Analysis Mode)
+
+| ID | Requirement |
+|----|-------------|
+| FR-FA1 | Full analysis triggered on-demand after recording |
+| FR-FA2 | Process all screenshots in session (no deduplication) |
+| FR-FA3 | Generate `image-analysis.md` with detailed descriptions |
+| FR-FA4 | Include session summary with key observations |
+| FR-FA5 | Show progress during analysis (X of Y images) |
+| FR-FA6 | Support cancellation mid-analysis |
+| FR-FA7 | Handle failures gracefully (skip failed, continue) |
+
+### MCP Tool for Full Analysis
+
+```typescript
+// session_analyze_images
+{
+  sessionId: string;           // Session to analyze
+  model?: string;              // AI model (default: claude-3-5-sonnet)
+  includeContext?: boolean;    // Include action context in prompt (default: true)
+}
+
+// Returns:
+{
+  outputPath: string;          // Path to image-analysis.md
+  imagesAnalyzed: number;
+  imagesFailed: number;
+  estimatedCost: string;
+  duration: number;            // milliseconds
+}
+```
+
+---
+
 ## Future Considerations
 
 ### Not In Scope (v1)

@@ -20,10 +20,245 @@
 
 | Phase | Tasks | PRD References | Status |
 |-------|-------|----------------|--------|
+| Phase 0: Markdown-First Approach | 4 tasks | FR-M1-M6, FR-FA1-FA7 | Not Started |
 | Phase 1: AI Service Foundation | 2 tasks | FR-1, FR-2 | Not Started |
 | Phase 2: UI Components | 2 tasks | FR-3, US-2 | Not Started |
 | Phase 3: Integration | 2 tasks | US-1, US-3 | Not Started |
-| **Total** | **6 tasks** | | |
+| **Total** | **10 tasks** | | |
+
+---
+
+## Phase 0: Markdown-First Approach (Recommended First)
+
+> **PRD Reference:** [Alternative Approach: Markdown-First Image Analysis](PRD-ai-image-analysis.md#alternative-approach-markdown-first-image-analysis)
+
+This phase implements the markdown-first workflow for AI image analysis. **This approach is recommended to implement first** as it:
+- Has no UI dependencies
+- Works with any AI chat interface
+- Provides immediate value with minimal implementation effort
+
+### Task 0.1: Create Screenshots to Markdown Export Module NOT STARTED
+
+> [PRD: FR-M1-M5](PRD-ai-image-analysis.md#functional-requirements-markdown-approach)
+
+**Priority:** P0 - Critical
+**Estimated Effort:** Medium (3h)
+**Dependencies:** None
+
+**File:** `session-recorder/src/export/screenshotsToMarkdown.ts` (NEW)
+
+**Description:**
+Create a module that generates `screenshots.md` - a catalog of all screenshots in a session with context metadata. This file enables AI-powered image analysis workflows.
+
+**Subtasks:**
+
+- [ ] Create `ScreenshotEntry` interface with: id, path, timestamp, type, actionId, actionType, url, viewport
+- [ ] Create `extractScreenshots(sessionData): ScreenshotEntry[]` to collect all screenshots from actions
+  - Handle RecordedAction (before/after screenshots)
+  - Handle NavigationAction (snapshot screenshot)
+  - Handle event actions (media, download, fullscreen, print - snapshot screenshot)
+  - Skip voice_transcript actions (no screenshots)
+- [ ] Create `generateScreenshotsMarkdown(sessionData, screenshots): string` to generate markdown
+  - Header with session info
+  - Summary table (counts by type)
+  - Unique URLs visited
+  - Screenshot catalog with context for each image
+  - Quick reference table at end
+- [ ] Create `generateScreenshotsMarkdownFile(sessionDir): Promise<string | null>`
+  - Read session.json
+  - Extract screenshots
+  - Verify screenshot files exist on disk
+  - Generate and write screenshots.md
+- [ ] Export from `session-recorder/src/export/index.ts`
+
+**Markdown Output Format:**
+
+```markdown
+# Session Screenshots
+
+> **Purpose**: This document catalogs all screenshots captured during the session.
+> Use this as a reference for AI-powered image analysis.
+
+## Session Info
+- **Session ID**: {sessionId}
+- **Total Screenshots**: {count}
+
+### Screenshot Summary
+| Type | Count |
+|------|-------|
+| before | X |
+| after | X |
+| navigation | X |
+
+## Screenshot Catalog
+
+### ss-1: Click (before)
+**Time**: 10:23:45 UTC
+**Image**: [screenshots/action-1-before.png](screenshots/action-1-before.png)
+**URL**: https://example.com
+**Action**: action-1 (before state of click)
+**Description**: _(pending analysis)_
+
+---
+
+## Quick Reference
+| # | Time | Type | Action | Screenshot |
+|---|------|------|--------|------------|
+| ss-1 | 10:23:45 | before | click | [View](path) |
+```
+
+**Acceptance Criteria:**
+
+- [ ] Extracts all screenshots from RecordedAction (before/after)
+- [ ] Extracts screenshots from NavigationAction
+- [ ] Extracts screenshots from event actions (media, download, etc.)
+- [ ] Generates valid markdown with relative image links
+- [ ] Includes context metadata for each screenshot
+- [ ] Quick reference table lists all images
+- [ ] Handles sessions with 0 screenshots gracefully
+
+---
+
+### Task 0.2: Integrate Screenshots Export NOT STARTED
+
+> [PRD: FR-M1](PRD-ai-image-analysis.md#functional-requirements-markdown-approach)
+
+**Priority:** P0 - Critical
+**Estimated Effort:** Small (1h)
+**Dependencies:** Task 0.1
+
+**Files:**
+- `session-recorder/src/export/index.ts` (MODIFY)
+- `session-recorder/src/node/SessionRecorder.ts` (no change needed - uses generateMarkdownExports)
+
+**Description:**
+Integrate screenshots.md generation into the markdown export pipeline.
+
+**Subtasks:**
+
+- [ ] Export `generateScreenshotsMarkdown`, `generateScreenshotsMarkdownFile`, `ScreenshotEntry` from index.ts
+- [ ] Update `MarkdownExportResult` interface to include `screenshots?: string | null`
+- [ ] Add screenshots export to `generateMarkdownExports()` parallel Promise.all
+- [ ] Update summary log to include screenshots.md
+
+**Code Changes:**
+
+```typescript
+// index.ts additions
+export { generateScreenshotsMarkdown, generateScreenshotsMarkdownFile, ScreenshotEntry } from './screenshotsToMarkdown';
+
+interface MarkdownExportResult {
+  // ... existing
+  screenshots?: string | null;  // NEW
+}
+
+// In generateMarkdownExports()
+const [transcript, actions, consoleSummary, networkSummary, screenshots] = await Promise.all([
+  // ... existing
+  generateScreenshotsMarkdownFile(sessionDir).catch(err => {
+    errors.push(`screenshots.md: ${err.message}`);
+    return null;
+  })
+]);
+result.screenshots = screenshots;
+```
+
+**Acceptance Criteria:**
+
+- [ ] screenshots.md generated automatically when recording stops
+- [ ] Generation runs in parallel with other exports
+- [ ] Errors don't block other exports
+- [ ] Result includes screenshots path
+
+---
+
+### Task 0.3: Add MCP Tool for Screenshot Docs NOT STARTED
+
+> [PRD: FR-M6](PRD-ai-image-analysis.md#mcp-tool-integration)
+
+**Priority:** P1 - High
+**Estimated Effort:** Small (1h)
+**Dependencies:** Task 0.1
+
+**File:** `session-recorder/mcp-server/src/tools/session.ts` (MODIFY)
+
+**Description:**
+Extend `session_regenerate_markdown` to support screenshots.md or add dedicated tool.
+
+**Subtasks:**
+
+- [ ] Option A: Update `session_regenerate_markdown` to also regenerate screenshots.md
+- [ ] Option B: Add `session_get_markdown` type 'screenshots' support
+- [ ] Test regeneration works for loaded sessions
+
+**Acceptance Criteria:**
+
+- [ ] Can regenerate screenshots.md via MCP tool
+- [ ] Works with currently loaded session
+- [ ] Returns path to generated file
+
+---
+
+### Task 0.4: Full Image Analysis Mode NOT STARTED
+
+> [PRD: FR-FA1-FA7](PRD-ai-image-analysis.md#full-analysis-mode)
+
+**Priority:** P1 - High
+**Estimated Effort:** Large (4h)
+**Dependencies:** Task 0.1
+
+**Files:**
+
+- `session-recorder/src/analysis/imageAnalysis.ts` (NEW)
+- `session-recorder/mcp-server/src/tools/session.ts` (MODIFY)
+
+**Description:**
+Create on-demand full analysis mode that processes all screenshots using AI vision and generates `image-analysis.md` with detailed descriptions.
+
+**Subtasks:**
+
+- [ ] Create `imageAnalysis.ts` module with:
+  - `analyzeImage(imagePath: string, context: ImageContext): Promise<string>` - Analyze single image
+  - `analyzeAllImages(sessionDir: string, options: AnalysisOptions): Promise<AnalysisResult>` - Batch analysis
+  - `generateImageAnalysisMarkdown(sessionData, analyses): string` - Generate markdown output
+- [ ] Implement Claude Vision API integration for image analysis
+- [ ] Include action context in analysis prompt (action type, URL, before/after)
+- [ ] Generate session summary after all images analyzed
+- [ ] Add progress callback for tracking (X of Y images)
+- [ ] Support cancellation via AbortController
+- [ ] Handle failures gracefully (skip failed, log error, continue)
+- [ ] Add `session_analyze_images` MCP tool
+- [ ] Return analysis stats (images analyzed, failed, duration, estimated cost)
+
+**Analysis Prompt Template:**
+
+```
+Analyze this screenshot from a browser session recording.
+
+Context:
+- Action: {actionType} ({beforeOrAfter} state)
+- URL: {url}
+- Timestamp: {timestamp}
+
+Describe:
+1. What page/screen is shown
+2. Key UI elements visible
+3. Important text content
+4. Current state (loading, errors, success)
+5. What the user is doing or about to do
+
+Keep description concise (100-200 words).
+```
+
+**Acceptance Criteria:**
+
+- [ ] Analyzes all screenshots in a session
+- [ ] Generates `image-analysis.md` with detailed descriptions
+- [ ] Includes session summary with key observations
+- [ ] Shows progress during analysis
+- [ ] Handles API errors gracefully
+- [ ] Reports estimated cost after completion
+- [ ] Works via MCP tool `session_analyze_images`
 
 ---
 
@@ -348,20 +583,28 @@ Phase 3: Integration (6h)
 
 ## File Changes Summary
 
-### New Files (7)
+### Phase 0: Markdown-First (New Files: 1, Modified: 2)
 
 | File | Description |
 |------|-------------|
-| `types/aiAnalysis.ts` | AI analysis type definitions |
-| `services/aiAnalysisService.ts` | AI provider abstraction and analysis service |
-| `components/AISettings/AISettings.tsx` | AI configuration modal |
-| `components/AISettings/AISettings.css` | AI settings styles |
-| `components/AISettings/index.ts` | Component export |
-| `components/AIAnalysisProgress/AIAnalysisProgress.tsx` | Analysis progress modal |
-| `components/AIAnalysisProgress/AIAnalysisProgress.css` | Progress modal styles |
-| `components/AIAnalysisProgress/index.ts` | Component export |
+| `src/export/screenshotsToMarkdown.ts` | **NEW** - Screenshot catalog markdown generator |
+| `src/export/index.ts` | **MODIFY** - Add screenshots export to pipeline |
+| `mcp-server/src/tools/session.ts` | **MODIFY** - Add screenshots to regenerate tool |
 
-### Modified Files (4)
+### Phases 1-3: In-App UI (New Files: 8, Modified: 5)
+
+| File | Description |
+|------|-------------|
+| `viewer/src/types/aiAnalysis.ts` | AI analysis type definitions |
+| `viewer/src/services/aiAnalysisService.ts` | AI provider abstraction and analysis service |
+| `viewer/src/components/AISettings/AISettings.tsx` | AI configuration modal |
+| `viewer/src/components/AISettings/AISettings.css` | AI settings styles |
+| `viewer/src/components/AISettings/index.ts` | Component export |
+| `viewer/src/components/AIAnalysisProgress/AIAnalysisProgress.tsx` | Analysis progress modal |
+| `viewer/src/components/AIAnalysisProgress/AIAnalysisProgress.css` | Progress modal styles |
+| `viewer/src/components/AIAnalysisProgress/index.ts` | Component export |
+
+### Modified Files (Phases 1-3)
 
 | File | Changes |
 |------|---------|
@@ -414,18 +657,36 @@ A task is complete when:
 
 | Phase | Hours | Priority |
 |-------|-------|----------|
-| Phase 1: AI Service Foundation | 7h | HIGH |
-| Phase 2: UI Components | 6h | HIGH |
-| Phase 3: Integration | 6h | HIGH |
-| **Total** | **~19h** | |
+| Phase 0: Markdown-First Approach | 9h | HIGH (Recommended First) |
+| Phase 1: AI Service Foundation | 7h | LOW (Optional) |
+| Phase 2: UI Components | 6h | LOW (Optional) |
+| Phase 3: Integration | 6h | LOW (Optional) |
+| **Total** | **~28h** | |
+
+### Phase 0 Breakdown
+
+| Task | Hours | Description |
+|------|-------|-------------|
+| 0.1 | 3h | Screenshots to Markdown export module |
+| 0.2 | 1h | Integrate into export pipeline |
+| 0.3 | 1h | MCP tool for screenshot docs |
+| 0.4 | 4h | Full image analysis mode |
 
 ### Summary
 
 | Category | Hours |
 |----------|-------|
 | Completed | 0h |
-| Remaining | ~19h |
-| **Grand Total** | **~19h** |
+| Phase 0 (Recommended) | 9h |
+| Phases 1-3 (Optional) | 19h |
+| **Grand Total** | **~28h** |
+
+### Recommended Implementation Order
+
+1. **Phase 0 first** - Markdown-first approach provides immediate value (~9h)
+   - Tasks 0.1-0.3: Catalog mode (`screenshots.md`) - 5h
+   - Task 0.4: Full analysis mode (`image-analysis.md`) - 4h
+2. **Phases 1-3 optional** - In-app UI approach can be added later if needed
 
 ---
 

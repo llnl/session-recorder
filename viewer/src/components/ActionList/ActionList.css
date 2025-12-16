@@ -193,6 +193,13 @@
   font-weight: 600;
 }
 
+.voice-merged-indicator {
+  font-size: 0.7rem;
+  color: #888;
+  margin-left: 0.5rem;
+  font-style: italic;
+}
+
 /* Voice play button */
 .voice-play-btn {
   display: flex;

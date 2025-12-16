@@ -1,8 +1,8 @@
 # TASKS-Voice-Merge: Consecutive Voice Transcript Merging
 
 **PRD:** N/A (Enhancement to [PRD-4.md](./PRD-4.md))
-**Last Updated:** 2025-12-11
-**Overall Status:** Not Started
+**Last Updated:** 2025-12-13
+**Overall Status:** ✅ Complete
 **Estimated Effort:** 4-6 hours
 
 ---
@@ -255,13 +255,13 @@ console.log(`🎙️  Voice segments: ${voiceActions.length} raw → ${beforeMer
 
 #### Acceptance Criteria
 
-- [ ] `_mergeConsecutiveVoiceTranscripts()` method implemented
-- [ ] `_mergeVoiceSegments()` helper implemented
-- [ ] Integration in `stop()` method
-- [ ] Console logging shows merge statistics
-- [ ] Merged transcript has correct combined text
-- [ ] Word arrays combined with preserved timestamps
-- [ ] Confidence averaged correctly
+- [x] `_mergeConsecutiveVoiceTranscripts()` method implemented
+- [x] `_mergeVoiceSegments()` helper implemented
+- [x] Integration in `stop()` method
+- [x] Console logging shows merge statistics
+- [x] Merged transcript has correct combined text
+- [x] Word arrays combined with preserved timestamps
+- [x] Confidence averaged correctly
 
 ---
 
@@ -285,10 +285,10 @@ mergedSegments?: {
 
 #### Acceptance Criteria
 
-- [ ] Type updated in `src/node/types.ts`
-- [ ] Type updated in `src/voice/VoiceRecorder.ts`
-- [ ] Type updated in `viewer/src/types/session.ts`
-- [ ] TypeScript compiles without errors
+- [x] Type updated in `src/node/types.ts`
+- [x] Type updated in `src/voice/VoiceRecorder.ts`
+- [x] Type updated in `viewer/src/types/session.ts`
+- [x] TypeScript compiles without errors
 
 ---
 
@@ -326,10 +326,10 @@ The existing word-level playback should work automatically since words maintain 
 
 #### Acceptance Criteria
 
-- [ ] Merged segments show segment count in action list
-- [ ] Word highlighting works correctly across merged segments
-- [ ] Audio playback spans full merged duration
-- [ ] Click-to-seek works for any word in merged segment
+- [x] Merged segments show segment count in action list
+- [x] Word highlighting works correctly across merged segments (words preserved with timestamps)
+- [x] Audio playback spans full merged duration
+- [x] Click-to-seek works for any word in merged segment
 
 ---
 

@@ -1,6 +1,6 @@
 # Session Recorder - Progress Tracker
 
-**Last Updated:** 2025-12-12
+**Last Updated:** 2025-12-13
 
 ---
 
@@ -43,17 +43,17 @@
 
 ## POC 2 Progress - Desktop App & Recorder Completion
 
-**Status:** In Progress | **Tasks Remaining:** 147
+**Status:** In Progress | **Tasks Remaining:** 34
 **End Goal:** `session-recorder` becomes its own standalone repo
 
 | PRD | Status | TASKS | Unchecked |
 |-----|--------|-------|-----------|
 | [PRD-DESKTOP-POC.md](PRD-DESKTOP-POC.md) | 🔄 ~90% Complete | [TASKS-DESKTOP-POC.md](TASKS-DESKTOP-POC.md) | 15 |
 | [PRD-session-recorder.md](PRD-session-recorder.md) | ✅ Complete | [TASKS-session-recorder.md](TASKS-session-recorder.md) | 0 |
-| [PRD-performance.md](PRD-performance.md) | ⚠️ Partial | [TASKS-performance.md](TASKS-performance.md) | 3 |
+| [PRD-performance.md](PRD-performance.md) | ✅ Sprint 5c Complete | [TASKS-performance.md](TASKS-performance.md) | 0 |
 | [PRD-4.md](PRD-4.md) (Voice Phase 3+) | Pending | [TASKS-4.md](TASKS-4.md) | 4 |
-| [PRD-markdown-export.md](PRD-markdown-export.md) | **Ready** | [TASKS-markdown-export.md](TASKS-markdown-export.md) | 95 |
-| Voice Transcript Merging | Not Started | [TASKS-voice-merge.md](TASKS-voice-merge.md) | 30 |
+| [PRD-markdown-export.md](PRD-markdown-export.md) | ✅ Complete | [TASKS-markdown-export.md](TASKS-markdown-export.md) | 0 |
+| Voice Transcript Merging | ✅ Core Complete | [TASKS-voice-merge.md](TASKS-voice-merge.md) | 15 |
 
 ### IMMEDIATE: Desktop App POC (12 hours) - ~90% Complete
 
@@ -91,9 +91,9 @@
 ### Also In POC 2
 
 - **Session Recorder Completion** - ✅ All core tasks complete
-- **Performance Optimizations** - ✅ ResourceCaptureQueue implemented, non-blocking handlers complete
+- **Performance Optimizations** - ✅ Sprint 5c Complete: ResourceCaptureQueue (`src/storage/ResourceCaptureQueue.ts`) with non-blocking capture, background batch processing, `setImmediate` for event loop responsiveness, `flush()` for graceful shutdown
 - **Voice Recording Phase 3+** - Advanced voice features (4 tasks remaining)
-- **Markdown Export** - Auto-generate human-readable markdown from session JSON (95 tasks)
+- **Markdown Export** - ✅ Complete: Auto-generates transcript.md, actions.md, console-summary.md, network-summary.md
 
 ### POC 2 Completion Deliverables
 
@@ -129,7 +129,7 @@ session-recorder/           # NEW STANDALONE REPO
 |-----|--------|-------|-----------|
 | [PRD-angular-migration.md](PRD-angular-migration.md) | Draft | [TASKS-angular-migration.md](TASKS-angular-migration.md) | 170 |
 | [PRD-session-editor.md](PRD-session-editor.md) | ✅ Core Complete | [TASKS-session-editor.md](TASKS-session-editor.md) | 14 |
-| [PRD-ai-image-analysis.md](PRD-ai-image-analysis.md) | Draft | [TASKS-ai-image-analysis.md](TASKS-ai-image-analysis.md) | 117 |
+| [PRD-ai-image-analysis.md](PRD-ai-image-analysis.md) | Draft | [TASKS-ai-image-analysis.md](TASKS-ai-image-analysis.md) | 9 tasks |
 | [PRD-snapshot-styling.md](PRD-snapshot-styling.md) | Not Started | [TASKS-snapshot-styling.md](TASKS-snapshot-styling.md) | 16 |
 
 ### Decision: Where to Deploy the Viewer/Editor?
@@ -162,7 +162,9 @@ session-recorder/           # NEW STANDALONE REPO
 
 - **Angular Migration** - Port all React components to Angular (170 tasks)
 - **Session Editor** - Add editing capabilities: notes, action editing, undo/redo (22 tasks)
-- **AI Image Analysis** - Auto-generate descriptions for screenshots to enable LLM understanding (6 tasks)
+- **AI Image Analysis** - Two modes for screenshot analysis (9 tasks):
+  - **Catalog mode**: Generate `screenshots.md` listing all images with context (no AI cost)
+  - **Full analysis mode**: On-demand AI analysis of all screenshots → `image-analysis.md`
 - **Snapshot Styling** - CSS fixes for snapshot rendering (16 tasks)
 
 ---
@@ -176,7 +178,7 @@ session-recorder/           # NEW STANDALONE REPO
 | PRD | Status | TASKS | Unchecked |
 |-----|--------|-------|-----------|
 | [PRD-DESKTOP.md](PRD-DESKTOP.md) (Full Desktop) | Post-POC | [TASKS-DESKTOP.md](TASKS-DESKTOP.md) | 39 |
-| [PRD-MCP.md](PRD-MCP.md) | ✅ Complete (18 tools) | [TASKS-MCP.md](TASKS-MCP.md) | 0 |
+| [PRD-MCP.md](PRD-MCP.md) | ✅ Complete (20 tools) | [TASKS-MCP.md](TASKS-MCP.md) | 0 |
 | [PRD-5.md](PRD-5.md) (System Audio) | Planning | [TASKS-5.md](TASKS-5.md) | 92 |
 | Testing Checklist | In Progress | [TASKS-TESTING.md](TASKS-TESTING.md) | 27 |
 
@@ -190,7 +192,7 @@ session-recorder/           # NEW STANDALONE REPO
 ### Planned Features
 
 - **Full Desktop App** - Settings UI, recent recordings, mode selection (39 tasks) → session-recorder repo
-- **MCP Server** - ✅ Complete: 18 tools (5 Recording Control + 13 Session Query) in `mcp-server/` → session-recorder repo
+- **MCP Server** - ✅ Complete: 20 tools (5 Recording Control + 15 Session Query) in `mcp-server/` → session-recorder repo
 - **Testing** - Comprehensive test coverage (27 tasks) → session-recorder repo
 - **Intent Pipeline** - AI processing of recorded sessions → LivHub/standalone
 - **Service Worker** - Offline viewer support → LivHub/standalone
@@ -227,10 +229,10 @@ interface RecordingOptions {
 | Phase | Status | Tasks | Repo |
 |-------|--------|-------|------|
 | POC 1 - Core Recording | ✅ Complete | 0 remaining | this → session-recorder |
-| POC 2 - Desktop & Recorder | 🔄 In Progress | 147 remaining | this → session-recorder |
+| POC 2 - Desktop & Recorder | 🔄 In Progress | 34 remaining | this → session-recorder |
 | POC 3 - Viewer/Editor | 📋 Planning | 317 remaining | this / LivHub |
 | Future Work | ⏳ Deferred | 158 remaining | split |
-| **Total** | | **622** | |
+| **Total** | | **509** | |
 
 ### Repo Split After POC 2
 
@@ -368,3 +370,8 @@ npm run viewer
 | 5.1 | 2025-12-12 | **Compact Inline Editors:** Cleaned up all inline editors to be minimal single-line inputs with buttons inside. (1) **InlineFieldEditor** - single-line input for transcription/text edits, ✕/✓ buttons inside input on right, Enter saves, Esc cancels. (2) **InlineNoteEditor** - single-line input for notes (removed multiline textarea). (3) **InlineSessionName** - buttons inside input, `onMouseDown preventDefault` to prevent blur on button click. All editors: no extra padding/backgrounds/borders/hints - input directly replaces text in place. |
 | 5.2 | 2025-12-12 | **Voice Recorder Enhancements:** Added `--transcript-output` / `-t` parameter to save transcript JSON to file. Verified microphone recording and Whisper transcription working on built bundle. Recording runs until Ctrl+C (no duration flag). |
 | 5.3 | 2025-12-12 | **Desktop App Integration Complete:** (1) Fixed TypeScript build errors (`config.ts` null checking, `index.ts` window-all-closed handler signature). (2) Fixed Windows tray icons (replaced unreliable base64 PNG data URLs with programmatic RGBA buffer generation for 16x16 icons). (3) Integrated real `SessionRecorder` from parent package (removed InlineSessionRecorder, added `"session-recorder": "file:.."` dependency). (4) Added transcript.json saving (captures voice recorder result and saves to session directory before creating zip). Desktop app now produces complete session data matching CLI recorder output. |
+| 5.4 | 2025-12-13 | **Markdown Export Complete (PRD-markdown-export.md):** Implemented all features - (1) Element context extraction with cheerio DOM parsing (FR-1), (2) transcript.md generation (FR-2), (3) actions.md with human-readable element descriptions and before/after snapshots (FR-3), (4) console-summary.md with pattern grouping and deduplication (FR-4), (5) network-summary.md with request statistics (FR-5), (6) Auto-generation hook in SessionRecorder.stop() (FR-6). All markdown files generated automatically on recording stop. |
+| 5.5 | 2025-12-13 | **MCP Markdown Tools (2 new tools):** Added `session_get_markdown` (returns pre-generated markdown summaries, more token-efficient than JSON) and `session_regenerate_markdown` (regenerates markdown files for existing sessions). MCP Server now has 20 tools total (5 Recording Control + 15 Session Query). |
+| 5.6 | 2025-12-13 | **Performance Sprint 5c Complete:** Verified all Sprint 5c tasks implemented - ResourceCaptureQueue (`src/storage/ResourceCaptureQueue.ts`) provides non-blocking resource capture with concurrency limits (`maxConcurrent: 5`), batch processing (`batchSize: 10`), `setImmediate` for event loop responsiveness, and `flush()` for graceful shutdown. Integrated in SessionRecorder via `enqueue()` for fire-and-forget pattern. Updated TASKS-performance.md status. |
+| 5.7 | 2025-12-13 | **Voice Transcript Merging (TASKS-voice-merge.md):** Consecutive voice transcript actions are now merged into single combined segments. Added `_mergeConsecutiveVoiceTranscripts()` and `_mergeVoiceSegments()` methods to SessionRecorder. Merged segments preserve all word-level timing data for accurate playback. Updated types in `types.ts`, `VoiceRecorder.ts`, and viewer `session.ts` with `mergedSegments` field. ActionList shows "(N merged)" indicator for merged segments. Console logs show merge statistics: `Voice segments: X raw → Y aligned → Z merged`. |
+| 5.8 | 2025-12-16 | **AI Image Analysis PRD Update:** Redesigned approach with two modes: (1) **Catalog mode** - generates `screenshots.md` listing all images with context metadata (no AI cost, runs during export), (2) **Full analysis mode** - on-demand AI analysis of all screenshots via `session_analyze_images` MCP tool, generates `image-analysis.md` with detailed descriptions. Added Phase 0 to TASKS (4 tasks, ~9h) as recommended first implementation. Cost estimate: ~$0.30-1.50 for most sessions. |

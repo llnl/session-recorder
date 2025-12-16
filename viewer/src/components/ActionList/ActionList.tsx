@@ -582,6 +582,14 @@ export const ActionList = () => {
             <span className="voice-confidence">
               {(action.transcript.confidence * 100).toFixed(0)}%
             </span>
+            {action.transcript.mergedSegments && (
+              <span
+                className="voice-merged-indicator"
+                title={`Merged from ${action.transcript.mergedSegments.count} segments`}
+              >
+                ({action.transcript.mergedSegments.count} merged)
+              </span>
+            )}
           </div>
         )}
       </div>

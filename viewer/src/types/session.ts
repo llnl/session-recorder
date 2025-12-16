@@ -133,6 +133,11 @@ export interface VoiceTranscriptAction {
     isPartial?: boolean;    // True if this was split from a larger segment
     partIndex?: number;     // 0, 1, 2... which part of the split
     totalParts?: number;    // Total number of parts this segment was split into
+    // Merged segment metadata (for consecutive voice transcript merging)
+    mergedSegments?: {
+      count: number;           // Number of original segments merged
+      originalIds: string[];   // Original segment IDs for debugging
+    };
   };
   audioFile?: string;  // Relative path to audio segment
   nearestSnapshotId?: string;

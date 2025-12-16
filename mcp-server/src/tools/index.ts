@@ -11,8 +11,8 @@ export {
   getRecordingStatus,
 } from './recording';
 
-// Phase 2: Session Query (13 tools)
-export { sessionLoad, sessionUnload, sessionGetSummary } from './session';
+// Phase 2: Session Query (15 tools)
+export { sessionLoad, sessionUnload, sessionGetSummary, sessionGetMarkdown, sessionRegenerateMarkdown } from './session';
 export {
   sessionSearch,
   sessionSearchNetwork,

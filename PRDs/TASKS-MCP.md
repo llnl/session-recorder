@@ -2,7 +2,7 @@
 
 **PRD:** [PRD-MCP.md](./PRD-MCP.md)
 **Last Updated:** 2025-12-11
-**Overall Status:** ✅ Phase 1 & 2 Complete - 18 tools implemented
+**Overall Status:** ✅ Phase 1 & 2 Complete - 20 tools implemented
 
 **Implementation:** [mcp-server/](../mcp-server/) - Session Recorder MCP Server (standalone)
 
@@ -32,9 +32,9 @@ This document breaks down the MCP Server implementation into actionable tasks. T
 | Phase | Purpose | Tools | Transport | Status |
 |-------|---------|-------|-----------|--------|
 | **Recording Control** | Start/stop browser & voice recording | 5 tools | stdio | ✅ Complete |
-| **Session Query** | Search & analyze session.zip files | 13 tools | stdio | ✅ Complete |
+| **Session Query** | Search & analyze session.zip files | 15 tools | stdio | ✅ Complete |
 
-**Total Tools:** 18 (5 recording control + 13 session query)
+**Total Tools:** 20 (5 recording control + 15 session query)
 
 ---
 
@@ -1551,7 +1551,7 @@ export function getToolSchemas() {
 **Goal:** Implement all 12 session query tools
 **Deliverable:** Fully functional query API
 
-> **Implementation Note:** Implemented 13 tools total in `mcp-server/src/tools/`: session.ts (session_load, session_unload, session_get_summary), search.ts (session_search, session_search_network, session_search_console), navigation.ts (session_get_actions, session_get_action, session_get_range, session_get_urls, session_get_context), context.ts (session_get_timeline, session_get_errors)
+> **Implementation Note:** Implemented 15 tools total in `mcp-server/src/tools/`: session.ts (session_load, session_unload, session_get_summary, session_get_markdown, session_regenerate_markdown), search.ts (session_search, session_search_network, session_search_console), navigation.ts (session_get_actions, session_get_action, session_get_range, session_get_urls, session_get_context), context.ts (session_get_timeline, session_get_errors)
 
 ### Task P2-2.1: Core Tools - load, search, summary (3 hours)
 
@@ -2064,8 +2064,8 @@ Add to your MCP settings:
 | Phase | Tool Count | Description |
 |-------|------------|-------------|
 | Recording Control | 5 | Start/stop recording via AI |
-| Session Query | 12 | Search and analyze sessions |
-| **Total** | **17** | |
+| Session Query | 15 | Search and analyze sessions |
+| **Total** | **20** | |
 
 | Phase | Hours | Priority |
 |-------|-------|----------|
@@ -2116,3 +2116,4 @@ session-recorder-mcp/
 | 2.0 | 2025-12-11 | Phase 2 (Session Query) complete - 13 tools implemented in mcp-server/ |
 | 3.0 | 2025-12-11 | Phase 1 (Recording Control) complete - 5 tools added: RecordingManager.ts, tools/recording.ts |
 | 3.1 | 2025-12-11 | Removed headless option from recording tools - browser always visible during recording |
+| 4.0 | 2025-12-13 | Added 2 markdown tools: session_get_markdown, session_regenerate_markdown. Total: 20 tools |

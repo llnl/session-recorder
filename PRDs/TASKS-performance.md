@@ -1,8 +1,8 @@
 # TASKS-Performance: Performance Optimization Implementation Tasks
 
 **PRD:** [PRD-performance.md](./PRD-performance.md)
-**Last Updated:** 2025-12-10
-**Overall Status:** ⚠️ Partial (Sprint 5c Quick Wins Done, Core Tasks Pending)
+**Last Updated:** 2025-12-13
+**Overall Status:** ✅ Sprint 5c Complete (ResourceCaptureQueue implemented)
 
 ---
 
@@ -25,13 +25,13 @@ This document breaks down performance optimization objectives into actionable ta
 
 ---
 
-## Sprint 5c: Recorder Performance Fix (2 hours) - 🔴 CRITICAL
+## Sprint 5c: Recorder Performance Fix (2 hours) - ✅ COMPLETE
 
 **Goal:** Eliminate blocking resource capture that causes 6-25 second page load delays
 **Deliverable:** Instant page navigation with background async resource capture
-**Priority:** IMMEDIATE - Recording is currently unusable
+**Status:** ✅ COMPLETE (2025-12-11)
 
-### Partial Progress (2025-12-09)
+### Implementation Summary
 
 **Quick wins implemented:**
 - ✅ Converted all `fs.writeFileSync` to async `fsPromises.writeFile` in hot paths
@@ -41,11 +41,15 @@ This document breaks down performance optimization objectives into actionable ta
 - ✅ Removed visibility change events (tab switching) - eliminates snapshot overhead
 - ✅ Removed volumechange from media events - reduces event noise
 
-**Still TODO for full implementation:**
+**Core implementation completed:**
 
-- [ ] Task 5c.1: ResourceCaptureQueue (priority queue with concurrency limits)
-- [ ] Task 5c.2: Non-blocking response handler (fire-and-forget pattern)
-- [ ] Task 5c.3: Background SHA1 hashing with setImmediate
+- [x] Task 5c.1: ResourceCaptureQueue (priority queue with concurrency limits)
+- [x] Task 5c.2: Non-blocking response handler (fire-and-forget pattern)
+- [x] Task 5c.3: Background SHA1 hashing with setImmediate
+
+**Implementation Files:**
+- `src/storage/ResourceCaptureQueue.ts` - Queue class with concurrency limits, batch processing, `flush()` method
+- `src/node/SessionRecorder.ts` - Integrated queue with `enqueue()` for non-blocking capture
 
 ### Problem Analysis
 
@@ -1107,3 +1111,4 @@ describe('Incremental Snapshots', () => {
 |---------|------|---------|
 | 1.0 | 2025-12-05 | Extracted performance tasks from TASKS-3.md |
 | 1.1 | 2025-12-10 | Updated to follow template, added Table of Contents |
+| 2.0 | 2025-12-13 | **Sprint 5c Complete:** ResourceCaptureQueue implemented in `src/storage/ResourceCaptureQueue.ts`. Non-blocking response handler integrated in SessionRecorder. Background processing with `setImmediate`, batch processing, and `flush()` method for graceful shutdown. |

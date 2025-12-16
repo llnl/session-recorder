@@ -18,6 +18,7 @@ import { ResourceStorage } from '../storage/resourceStorage';
 import { ResourceCaptureQueue } from '../storage/ResourceCaptureQueue';
 import { VoiceRecorder } from '../voice/VoiceRecorder';
 import { createTrayManager, TrayManagerBase, TrayManagerOptions } from './TrayManager';
+import { generateMarkdownExports } from '../export';
 
 // Extend Window interface for session recorder flags
 declare global {
@@ -1134,7 +1135,15 @@ export class SessionRecorder {
         const alignedVoiceCount = this.sessionData.actions.filter(
           a => a.type === 'voice_transcript'
         ).length;
-        console.log(`🎙️  Added ${voiceActions.length} voice segments → ${alignedVoiceCount} aligned segments`);
+
+        // Merge consecutive voice transcripts (reduces clutter in action list)
+        this.sessionData.actions = this._mergeConsecutiveVoiceTranscripts(this.sessionData.actions);
+
+        const mergedVoiceCount = this.sessionData.actions.filter(
+          a => a.type === 'voice_transcript'
+        ).length;
+
+        console.log(`🎙️  Voice segments: ${voiceActions.length} raw → ${alignedVoiceCount} aligned → ${mergedVoiceCount} merged`);
       } else {
         console.error(`❌ Transcription failed: ${transcript?.error || 'Unknown error'}`);
       }
@@ -1170,6 +1179,14 @@ export class SessionRecorder {
       JSON.stringify(sessionDataWithResources, null, 2),
       'utf-8'
     );
+
+    // Generate markdown exports (FR-6: Auto-Generation)
+    try {
+      await generateMarkdownExports(this.sessionDir);
+    } catch (err) {
+      console.error('⚠️  Markdown export failed (non-blocking):', err);
+      // Don't fail recording if export fails (QA-3: Robustness)
+    }
 
     // Log session statistics
     console.log(`🛑 Recording stopped`);
@@ -1365,6 +1382,86 @@ export class SessionRecorder {
     });
 
     return result;
+  }
+
+  /**
+   * Merge consecutive voice transcript actions that have no browser actions between them.
+   * This reduces clutter in the action list while preserving all word-level data for playback.
+   */
+  private _mergeConsecutiveVoiceTranscripts(actions: AnyAction[]): AnyAction[] {
+    const result: AnyAction[] = [];
+    let voiceRun: VoiceTranscriptAction[] = [];
+
+    const flushVoiceRun = () => {
+      if (voiceRun.length === 0) return;
+
+      if (voiceRun.length === 1) {
+        result.push(voiceRun[0]);
+      } else {
+        result.push(this._mergeVoiceSegments(voiceRun));
+      }
+      voiceRun = [];
+    };
+
+    for (const action of actions) {
+      if (action.type === 'voice_transcript') {
+        voiceRun.push(action as VoiceTranscriptAction);
+      } else {
+        flushVoiceRun();
+        result.push(action);
+      }
+    }
+
+    flushVoiceRun(); // Don't forget trailing voice segments
+    return result;
+  }
+
+  /**
+   * Merge multiple voice segments into a single combined segment.
+   * Preserves all word-level timing data for accurate playback highlighting.
+   */
+  private _mergeVoiceSegments(segments: VoiceTranscriptAction[]): VoiceTranscriptAction {
+    if (segments.length === 0) throw new Error('Cannot merge empty segments');
+    if (segments.length === 1) return segments[0];
+
+    const first = segments[0];
+    const last = segments[segments.length - 1];
+
+    // Concatenate text with space separator
+    const combinedText = segments
+      .map(s => s.transcript.text.trim())
+      .join(' ');
+
+    // Combine all word arrays (already have absolute timestamps)
+    const combinedWords = segments
+      .flatMap(s => s.transcript.words || []);
+
+    // Calculate weighted average confidence
+    const totalWords = combinedWords.length || segments.length;
+    const weightedConfidence = segments.reduce((sum, s) => {
+      const wordCount = s.transcript.words?.length || 1;
+      return sum + (s.transcript.confidence * wordCount);
+    }, 0) / totalWords;
+
+    return {
+      id: first.id,
+      type: 'voice_transcript',
+      timestamp: first.timestamp,
+      transcript: {
+        text: combinedText,
+        startTime: first.transcript.startTime,
+        endTime: last.transcript.endTime,
+        confidence: weightedConfidence,
+        words: combinedWords.length > 0 ? combinedWords : undefined,
+        mergedSegments: {
+          count: segments.length,
+          originalIds: segments.map(s => s.id)
+        }
+      },
+      audioFile: first.audioFile,
+      nearestSnapshotId: first.nearestSnapshotId,
+      associatedActionId: last.associatedActionId // Use last segment's association
+    };
   }
 
   /**

@@ -69,6 +69,11 @@ export interface VoiceTranscriptAction {
       endTime: string;    // ISO 8601 UTC
       probability: number;
     }>;
+    // Merged segment metadata (for consecutive voice transcript merging)
+    mergedSegments?: {
+      count: number;           // Number of original segments merged
+      originalIds: string[];   // Original segment IDs for debugging
+    };
   };
   audioFile?: string;  // Relative path to audio segment
   nearestSnapshotId?: string;

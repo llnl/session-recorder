@@ -13,7 +13,7 @@
  * - stop_recording: Stop current recording and create zip
  * - get_recording_status: Get current recording status
  *
- * Phase 2 - Session Query (13 tools):
+ * Phase 2 - Session Query (15 tools):
  * - session_load: Load a session.zip into memory
  * - session_unload: Unload a session from memory
  * - session_get_summary: Get detailed session summary
@@ -27,6 +27,8 @@
  * - session_get_errors: Get all errors (console + network)
  * - session_search_network: Search network requests
  * - session_search_console: Search console logs
+ * - session_get_markdown: Get pre-generated markdown summaries
+ * - session_regenerate_markdown: Regenerate markdown exports
  */
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
@@ -434,6 +436,39 @@ const toolDefinitions = [
       required: ['sessionId'],
     },
   },
+  {
+    name: 'session_get_markdown',
+    description: 'Get pre-generated markdown summaries from a session. Returns token-efficient markdown instead of raw JSON. Available types: transcript (voice transcript), actions (user actions with context), console (grouped console logs), network (network request summary).',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        sessionId: {
+          type: 'string',
+          description: 'Session ID (from session_load)',
+        },
+        type: {
+          type: 'string',
+          enum: ['transcript', 'actions', 'console', 'network', 'all'],
+          description: 'Type of markdown to return (default: all)',
+        },
+      },
+      required: ['sessionId'],
+    },
+  },
+  {
+    name: 'session_regenerate_markdown',
+    description: 'Regenerate markdown exports for a session. Useful when session data has been edited or markdown files are missing. Generates: transcript.md, actions.md, console-summary.md, network-summary.md.',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        sessionId: {
+          type: 'string',
+          description: 'Session ID (from session_load)',
+        },
+      },
+      required: ['sessionId'],
+    },
+  },
 ];
 
 // Handle list tools request
@@ -556,6 +591,17 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           level?: 'error' | 'warn' | 'log' | 'info' | 'debug';
           pattern?: string;
           limit?: number;
+        });
+        break;
+      case 'session_get_markdown':
+        result = tools.sessionGetMarkdown(store, args as {
+          sessionId: string;
+          type?: 'transcript' | 'actions' | 'console' | 'network' | 'all';
+        });
+        break;
+      case 'session_regenerate_markdown':
+        result = await tools.sessionRegenerateMarkdown(store, args as {
+          sessionId: string;
         });
         break;
       default:
