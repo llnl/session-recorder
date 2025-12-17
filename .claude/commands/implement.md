@@ -98,6 +98,18 @@ After verification with screenshots:
 
 Update the `summary` counts in the JSON file.
 
+Update PROGRESS.md, and related initiative and epic (only update as it pertains to the md's purpose)
+
+For any files updated, build any projects updated using the root package.json (using build scripts).
+
+## Step 8: Report and Stop
+
+Report what was done:
+- Feature ID and description
+- Files changed
+- Test results
+- Any issues encountered
+
 ## Step 7: Commit Progress
 
 ```bash
@@ -108,14 +120,6 @@ git commit -m "feat: [feature description]
 - Added e2e test: [test file]
 - Status: [feature-id] → tested"
 ```
-
-## Step 8: Report and Stop
-
-Report what was done:
-- Feature ID and description
-- Files changed
-- Test results
-- Any issues encountered
 
 **STOP** unless `--continue` flag was provided.
 
