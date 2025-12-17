@@ -69,7 +69,7 @@ export interface SessionStore {
   selectedActionIndex: number | null;
   shouldScrollToAction: boolean; // Whether selection change should trigger auto-scroll
   timelineSelection: TimelineSelection | null;
-  activeTab: 'information' | 'console' | 'network' | 'metadata' | 'voice';
+  activeTab: 'information' | 'console' | 'network' | 'metadata' | 'voice' | 'transcript';
   loading: boolean;
   error: string | null;
 
@@ -80,7 +80,7 @@ export interface SessionStore {
   selectActionById: (actionId: string, scroll?: boolean) => boolean;
   clearScrollFlag: () => void;
   setTimelineSelection: (selection: TimelineSelection | null) => void;
-  setActiveTab: (tab: 'information' | 'console' | 'network' | 'metadata' | 'voice') => void;
+  setActiveTab: (tab: 'information' | 'console' | 'network' | 'metadata' | 'voice' | 'transcript') => void;
   clearSession: () => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
@@ -280,7 +280,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
     set({ timelineSelection: selection });
   },
 
-  setActiveTab: (tab: 'information' | 'console' | 'network' | 'metadata' | 'voice') => {
+  setActiveTab: (tab: 'information' | 'console' | 'network' | 'metadata' | 'voice' | 'transcript') => {
     set({ activeTab: tab });
   },
 

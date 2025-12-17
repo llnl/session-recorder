@@ -96,7 +96,11 @@
     {
       "id": "FEAT-06",
       "name": "Viewer Transcript Panel Updates",
-      "status": "todo",
+      "status": "tested",
+      "history": [
+        {"date": "2025-12-17", "from": "todo", "to": "implementing"},
+        {"date": "2025-12-17", "from": "implementing", "to": "tested"}
+      ],
       "steps": [
         "Load session with dual audio → Transcript panel shows all segments",
         "Voice segments have microphone icon",
@@ -104,7 +108,8 @@
         "Search finds text in both voice and system segments",
         "Click transcript segment → Timeline navigates to that time",
         "Transcript segments interleave correctly by time"
-      ]
+      ],
+      "notes": "Created TranscriptPanel component (viewer/src/components/TranscriptPanel/) with source-specific icons (🎤 Voice in blue, 🔊 System in green). Added search with highlight, source filter buttons (All/Voice/System), and click-to-navigate via selectActionById. Updated sessionStore activeTab type. Added Transcript tab to TabPanel. Test session: output/test-dual-audio."
     },
     {
       "id": "FEAT-07",

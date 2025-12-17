@@ -9,6 +9,7 @@ import { useFilteredConsole } from '@/hooks/useFilteredConsole';
 import { useFilteredNetwork } from '@/hooks/useFilteredNetwork';
 import type { VoiceTranscriptAction, NavigationAction, RecordedAction, PageVisibilityAction, MediaAction, DownloadAction, FullscreenAction, PrintAction, AnyAction } from '@/types/session';
 import { VoiceTranscriptViewer } from '@/components/VoiceTranscriptViewer';
+import { TranscriptPanel } from '@/components/TranscriptPanel';
 import './TabPanel.css';
 
 // Helper function to render action-specific details
@@ -393,6 +394,18 @@ export const TabPanel = () => {
         )}
         <button
           type="button"
+          className={`tab-button ${activeTab === 'transcript' ? 'active' : ''}`}
+          onClick={() => setActiveTab('transcript')}
+        >
+          📝 Transcript
+          {sessionData?.actions.filter(a => a.type === 'voice_transcript').length ? (
+            <span className="tab-badge">
+              {sessionData.actions.filter(a => a.type === 'voice_transcript').length}
+            </span>
+          ) : null}
+        </button>
+        <button
+          type="button"
           className={`tab-button ${activeTab === 'metadata' ? 'active' : ''}`}
           onClick={() => setActiveTab('metadata')}
         >
@@ -440,6 +453,12 @@ export const TabPanel = () => {
                 </p>
               </div>
             )}
+          </div>
+        )}
+
+        {activeTab === 'transcript' && (
+          <div className="tab-content tab-content-transcript">
+            <TranscriptPanel />
           </div>
         )}
 

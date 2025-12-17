@@ -46,6 +46,12 @@
   height: 100%;
 }
 
+/* Transcript tab needs no padding - TranscriptPanel handles its own layout */
+.tab-content-transcript {
+  padding: 0;
+  overflow: hidden;
+}
+
 .tab-empty {
   display: flex;
   align-items: center;
