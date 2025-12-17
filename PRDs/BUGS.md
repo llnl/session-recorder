@@ -1,3 +1,0 @@
-1. The Network tab always shows 0ms and 0ms on the far right of each request panel. Are we missing something? Also how hard would it be to capture network requests and responses in our recorder?
-2. When you click on a snapshot that is outside of the selected area, it does show the html snapshot, but it doesn't clear the timeline selection. I think it should clear the timeline selection when you click on a snapshot outside of the selected area because we want to see the action selected and the selected area filters it out.
-3. When I click on a transcript, I want the html snapshot to be the closest html snapshot that happened BEFORE the transcription because most likely its talking about the last action.

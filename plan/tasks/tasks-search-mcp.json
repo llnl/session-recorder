@@ -1,0 +1,185 @@
+{
+  "epic": "epic-search-mcp",
+  "initiative": "session-search",
+  "total_features": 8,
+  "original_tasks": "PRDs/TASKS-MCP.md",
+
+  "summary": {
+    "todo": 0,
+    "planning": 0,
+    "implementing": 0,
+    "implemented": 0,
+    "tested": 8,
+    "regression": 0,
+    "debug": 0
+  },
+
+  "features": [
+    {
+      "id": "MCP-FUNC-01",
+      "category": "functional",
+      "phase": "server-setup",
+      "description": "MCP server project structure and configuration",
+      "status": "tested",
+      "steps": [
+        "CHECK: mcp-server/ directory exists with src/, dist/ → If exists, check configuration",
+        "IF NEEDED: Create mcp-server directory with npm init → Project initialized",
+        "IF NEEDED: Install @modelcontextprotocol/sdk dependency → SDK installed",
+        "IF NEEDED: Configure tsconfig.json for ES2022 target → Config created",
+        "IF NEEDED: Create src/index.ts entry point → Entry point created",
+        "VERIFY: npm run build → TypeScript compiles without errors",
+        "VERIFY: npm start → Server starts and listens on stdio"
+      ],
+      "tests": { "unit": [], "integration": [], "e2e": [] },
+      "files": ["mcp-server/package.json", "mcp-server/tsconfig.json", "mcp-server/src/index.ts"],
+      "history": [{"date": "2025-12-11", "from": "todo", "to": "tested"}]
+    },
+    {
+      "id": "MCP-FUNC-02",
+      "category": "functional",
+      "phase": "recording-tools",
+      "description": "start_browser_recording tool implementation",
+      "status": "tested",
+      "steps": [
+        "CHECK: start_browser_recording tool registered → If registered, test functionality",
+        "IF NEEDED: Create RecordingManager class → Class created",
+        "IF NEEDED: Implement browser launch via Playwright → Browser launches",
+        "IF NEEDED: Integrate SessionRecorder from parent package → Integration complete",
+        "IF NEEDED: Add browserType parameter (chromium/firefox/webkit) → Parameter works",
+        "VERIFY: Call start_browser_recording → Browser window opens",
+        "VERIFY: Browser recording captures actions → Actions recorded to session"
+      ],
+      "tests": { "unit": [], "integration": [], "e2e": [] },
+      "files": ["mcp-server/src/recording/RecordingManager.ts", "mcp-server/src/tools/recording.ts"],
+      "history": [{"date": "2025-12-11", "from": "todo", "to": "tested"}]
+    },
+    {
+      "id": "MCP-FUNC-03",
+      "category": "functional",
+      "phase": "recording-tools",
+      "description": "Voice recording tools (start_voice, start_combined)",
+      "status": "tested",
+      "steps": [
+        "CHECK: start_voice_recording tool works → If works, check combined",
+        "IF NEEDED: Add voice recording to RecordingManager → Voice support added",
+        "IF NEEDED: Implement whisperModel parameter → Model selection works",
+        "IF NEEDED: Implement start_combined_recording → Combined mode works",
+        "VERIFY: start_voice_recording → Audio recording begins",
+        "VERIFY: start_combined_recording → Browser + voice recording together",
+        "VERIFY: Voice transcription runs after stop → Transcript generated"
+      ],
+      "tests": { "unit": [], "integration": [], "e2e": [] },
+      "files": ["mcp-server/src/recording/RecordingManager.ts"],
+      "history": [{"date": "2025-12-11", "from": "todo", "to": "tested"}]
+    },
+    {
+      "id": "MCP-FUNC-04",
+      "category": "functional",
+      "phase": "recording-tools",
+      "description": "Recording control tools (stop, status)",
+      "status": "tested",
+      "steps": [
+        "CHECK: stop_recording creates zip → If works, check status",
+        "IF NEEDED: Implement stop_recording in RecordingManager → Stop works",
+        "IF NEEDED: Create session.zip on stop → Zip created",
+        "IF NEEDED: Implement get_recording_status → Status returned",
+        "VERIFY: stop_recording → Session zip created, path returned",
+        "VERIFY: get_recording_status during recording → Shows mode, duration, action count",
+        "VERIFY: get_recording_status when idle → Shows last session info"
+      ],
+      "tests": { "unit": [], "integration": [], "e2e": [] },
+      "files": ["mcp-server/src/recording/RecordingManager.ts", "mcp-server/src/tools/recording.ts"],
+      "history": [{"date": "2025-12-11", "from": "todo", "to": "tested"}]
+    },
+    {
+      "id": "MCP-FUNC-05",
+      "category": "functional",
+      "phase": "query-tools",
+      "description": "Session loading and summary tools",
+      "status": "tested",
+      "steps": [
+        "CHECK: session_load parses zip files → If works, check summary",
+        "IF NEEDED: Create SessionStore class with LRU cache → Store created",
+        "IF NEEDED: Implement session_load with JSZip → Load works",
+        "IF NEEDED: Implement session_unload → Unload frees memory",
+        "IF NEEDED: Implement session_get_summary → Summary returns stats",
+        "VERIFY: session_load with valid zip → Returns session overview",
+        "VERIFY: session_get_summary → Returns action counts, URLs, voice info"
+      ],
+      "tests": { "unit": [], "integration": [], "e2e": [] },
+      "files": ["mcp-server/src/session/SessionStore.ts", "mcp-server/src/tools/session.ts"],
+      "history": [{"date": "2025-12-11", "from": "todo", "to": "tested"}]
+    },
+    {
+      "id": "MCP-FUNC-06",
+      "category": "functional",
+      "phase": "query-tools",
+      "description": "Search and navigation tools",
+      "status": "tested",
+      "steps": [
+        "CHECK: session_search finds matches → If works, check navigation tools",
+        "IF NEEDED: Implement session_search with full-text matching → Search works",
+        "IF NEEDED: Implement session_get_actions with filters → Filtered list returned",
+        "IF NEEDED: Implement session_get_action for single action → Detail returned",
+        "IF NEEDED: Implement session_get_range for action spans → Range returned",
+        "IF NEEDED: Implement session_get_urls for URL structure → URLs mapped",
+        "VERIFY: session_search for 'login' → Returns matching actions/transcripts",
+        "VERIFY: session_get_actions with type filter → Returns filtered list"
+      ],
+      "tests": { "unit": [], "integration": [], "e2e": [] },
+      "files": ["mcp-server/src/tools/search.ts", "mcp-server/src/tools/navigation.ts"],
+      "history": [{"date": "2025-12-11", "from": "todo", "to": "tested"}]
+    },
+    {
+      "id": "MCP-FUNC-07",
+      "category": "functional",
+      "phase": "query-tools",
+      "description": "Context and error tools",
+      "status": "tested",
+      "steps": [
+        "CHECK: session_get_timeline returns events → If works, check errors",
+        "IF NEEDED: Implement session_get_timeline with interleaving → Timeline works",
+        "IF NEEDED: Implement session_get_context for action context → Context returned",
+        "IF NEEDED: Implement session_get_errors for console/network errors → Errors found",
+        "IF NEEDED: Implement session_search_network with filters → Network filtered",
+        "IF NEEDED: Implement session_search_console with filters → Console filtered",
+        "VERIFY: session_get_timeline → Returns chronological action+voice events",
+        "VERIFY: session_get_errors → Returns console errors and 4xx/5xx responses"
+      ],
+      "tests": { "unit": [], "integration": [], "e2e": [] },
+      "files": ["mcp-server/src/tools/context.ts"],
+      "history": [{"date": "2025-12-11", "from": "todo", "to": "tested"}]
+    },
+    {
+      "id": "MCP-FUNC-08",
+      "category": "functional",
+      "phase": "query-tools",
+      "description": "Markdown export tools",
+      "status": "tested",
+      "steps": [
+        "CHECK: session_get_markdown returns md content → If works, check regenerate",
+        "IF NEEDED: Implement session_get_markdown → Markdown content returned",
+        "IF NEEDED: Support type parameter (transcript/actions/console/network/all) → Types work",
+        "IF NEEDED: Implement session_regenerate_markdown → Regeneration works",
+        "VERIFY: session_get_markdown type=transcript → Returns transcript.md content",
+        "VERIFY: session_get_markdown type=all → Returns all markdown files",
+        "VERIFY: session_regenerate_markdown → Re-generates markdown from session data"
+      ],
+      "tests": { "unit": [], "integration": [], "e2e": [] },
+      "files": ["mcp-server/src/tools/session.ts"],
+      "history": [{"date": "2025-12-13", "from": "todo", "to": "tested"}]
+    }
+  ],
+
+  "_documentation": {
+    "status_lifecycle": {
+      "todo": "Not started - waiting to be implemented",
+      "planning": "Being planned in plan mode",
+      "implementing": "Currently being implemented",
+      "implemented": "Code complete, needs e2e verification",
+      "tested": "All tests passing, verified working",
+      "regression": "Being retested after changes",
+      "debug": "Test failed - needs investigation and fix"
+    }
+  }
+}

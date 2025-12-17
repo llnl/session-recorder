@@ -1,0 +1,155 @@
+{
+  "epic": "epic-recorder-export",
+  "initiative": "session-recorder",
+  "total_features": 6,
+  "original_tasks": "PRDs/TASKS-markdown-export.md",
+
+  "summary": {
+    "todo": 0,
+    "planning": 0,
+    "implementing": 0,
+    "implemented": 0,
+    "tested": 6,
+    "regression": 0,
+    "debug": 0
+  },
+
+  "features": [
+    {
+      "id": "EXPORT-FUNC-01",
+      "category": "functional",
+      "phase": "element-context",
+      "description": "Element context extraction from DOM snapshots",
+      "status": "tested",
+      "steps": [
+        "CHECK: src/export/elementContext.ts exists → If exists, check functionality",
+        "IF NEEDED: Add cheerio dependency to package.json → Dependency installed",
+        "IF NEEDED: Implement findRecordedElement() → Function finds data-recorded-el",
+        "IF NEEDED: Implement walkAncestors() → Function traverses DOM tree upward",
+        "IF NEEDED: Add ancestor rules (table, form, modal, nav, list) → Rules implemented",
+        "IF NEEDED: Format element descriptions ('Submit button', 'email input') → Descriptions work",
+        "VERIFY: Parse snapshot with button in form → Returns 'Submit button in login form'",
+        "VERIFY: Parse deeply nested element → Returns chain of ancestors"
+      ],
+      "tests": { "unit": [], "integration": [], "e2e": [] },
+      "files": ["src/export/elementContext.ts"],
+      "history": [{"date": "2025-12-13", "from": "todo", "to": "tested"}]
+    },
+    {
+      "id": "EXPORT-FUNC-02",
+      "category": "functional",
+      "phase": "transcript",
+      "description": "Transcript to markdown converter",
+      "status": "tested",
+      "steps": [
+        "CHECK: src/export/transcriptToMarkdown.ts exists → If exists, check output",
+        "IF NEEDED: Create transcriptToMarkdown.ts → File created",
+        "IF NEEDED: Parse transcript.json file → JSON parsed",
+        "IF NEEDED: Extract metadata (duration, language) → Metadata extracted",
+        "IF NEEDED: Format narrative text section → Text formatted",
+        "IF NEEDED: Generate timestamped segments table → Table generated",
+        "VERIFY: Generate transcript.md → File contains narrative and timestamps",
+        "VERIFY: Handle missing transcript.json → Skip gracefully"
+      ],
+      "tests": { "unit": [], "integration": [], "e2e": [] },
+      "files": ["src/export/transcriptToMarkdown.ts"],
+      "history": [{"date": "2025-12-13", "from": "todo", "to": "tested"}]
+    },
+    {
+      "id": "EXPORT-FUNC-03",
+      "category": "functional",
+      "phase": "actions",
+      "description": "Actions to markdown converter with voice integration",
+      "status": "tested",
+      "steps": [
+        "CHECK: src/export/actionsToMarkdown.ts exists → If exists, check output",
+        "IF NEEDED: Create actionsToMarkdown.ts → File created",
+        "IF NEEDED: Parse session.json and extract actions → Actions parsed",
+        "IF NEEDED: Format navigation actions with URL → Navigation formatted",
+        "IF NEEDED: Format click/input/change actions with element context → Actions formatted",
+        "IF NEEDED: Link voice_transcript to associated actions → Voice linked",
+        "IF NEEDED: Generate relative paths for screenshots/snapshots → Paths generated",
+        "VERIFY: Generate actions.md → File contains chronological action list",
+        "VERIFY: Actions with voice → Include blockquote with transcript text"
+      ],
+      "tests": { "unit": [], "integration": [], "e2e": [] },
+      "files": ["src/export/actionsToMarkdown.ts"],
+      "history": [{"date": "2025-12-13", "from": "todo", "to": "tested"}]
+    },
+    {
+      "id": "EXPORT-FUNC-04",
+      "category": "functional",
+      "phase": "console",
+      "description": "Console log summary with pattern grouping",
+      "status": "tested",
+      "steps": [
+        "CHECK: src/export/consoleSummary.ts exists → If exists, check output",
+        "IF NEEDED: Create consoleSummary.ts → File created",
+        "IF NEEDED: Parse session.console JSON Lines file → Lines parsed",
+        "IF NEEDED: Count entries by level (error, warn, info, debug) → Counts calculated",
+        "IF NEEDED: Normalize patterns (URLs, numbers, UUIDs, timestamps to *) → Patterns normalized",
+        "IF NEEDED: Group by normalized pattern with occurrence counts → Patterns grouped",
+        "IF NEEDED: Include stack traces for error entries → Traces included",
+        "VERIFY: Generate console-summary.md → File contains grouped errors/warnings",
+        "VERIFY: Repeated errors → Show count instead of duplicates"
+      ],
+      "tests": { "unit": [], "integration": [], "e2e": [] },
+      "files": ["src/export/consoleSummary.ts"],
+      "history": [{"date": "2025-12-13", "from": "todo", "to": "tested"}]
+    },
+    {
+      "id": "EXPORT-FUNC-05",
+      "category": "functional",
+      "phase": "network",
+      "description": "Network request summary with statistics",
+      "status": "tested",
+      "steps": [
+        "CHECK: src/export/networkSummary.ts exists → If exists, check output",
+        "IF NEEDED: Create networkSummary.ts → File created",
+        "IF NEEDED: Parse session.network JSON Lines file → Lines parsed",
+        "IF NEEDED: Calculate total requests, success rate → Stats calculated",
+        "IF NEEDED: Calculate total size transferred → Size calculated",
+        "IF NEEDED: Group by resource type (document, script, xhr, etc.) → Types grouped",
+        "IF NEEDED: Identify failed requests (status >= 400) → Failures identified",
+        "IF NEEDED: Sort by response time for slowest list → Sorted by time",
+        "VERIFY: Generate network-summary.md → File contains stats and tables",
+        "VERIFY: Failed requests section → Shows URLs with error status codes"
+      ],
+      "tests": { "unit": [], "integration": [], "e2e": [] },
+      "files": ["src/export/networkSummary.ts"],
+      "history": [{"date": "2025-12-13", "from": "todo", "to": "tested"}]
+    },
+    {
+      "id": "EXPORT-FUNC-06",
+      "category": "functional",
+      "phase": "integration",
+      "description": "Auto-generation hook in SessionRecorder.stop()",
+      "status": "tested",
+      "steps": [
+        "CHECK: stopRecording() calls generateMarkdownExports() → If called, check files",
+        "IF NEEDED: Create src/export/index.ts barrel file → Barrel created",
+        "IF NEEDED: Export all generator functions → Functions exported",
+        "IF NEEDED: Implement generateMarkdownExports() method → Method created",
+        "IF NEEDED: Call from SessionRecorder.stop() → Hook added",
+        "IF NEEDED: Handle errors gracefully (don't fail recording) → Errors handled",
+        "VERIFY: Stop recording → All 4 markdown files generated in session directory",
+        "VERIFY: Generation time → <5 seconds for typical sessions"
+      ],
+      "tests": { "unit": [], "integration": [], "e2e": [] },
+      "files": ["src/export/index.ts", "src/node/SessionRecorder.ts"],
+      "history": [{"date": "2025-12-13", "from": "todo", "to": "tested"}]
+    }
+  ],
+
+  "_documentation": {
+    "status_lifecycle": {
+      "todo": "Not started - waiting to be implemented",
+      "planning": "Being planned in plan mode",
+      "implementing": "Currently being implemented",
+      "implemented": "Code complete, needs e2e verification",
+      "tested": "All tests passing, verified working",
+      "regression": "Being retested after changes",
+      "debug": "Test failed - needs investigation and fix"
+    }
+  }
+}

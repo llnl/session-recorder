@@ -1,0 +1,122 @@
+{
+  "epic": "epic-ai-image-analysis",
+  "initiative": "session-editor",
+  "generated": "2025-12-17",
+  "features": [
+    {
+      "id": "FEAT-01",
+      "name": "Screenshot Catalog Export",
+      "status": "todo",
+      "steps": [
+        "Export session → screenshots.md file created in output",
+        "screenshots.md lists all screenshots with relative paths",
+        "Each entry includes action type (click, input, navigation)",
+        "Each entry includes timestamp in readable format",
+        "Each entry includes URL where screenshot was captured",
+        "Screenshots grouped by action with before/after labels",
+        "Quick reference table at top lists all image filenames"
+      ]
+    },
+    {
+      "id": "FEAT-02",
+      "name": "AI Provider Configuration UI",
+      "status": "todo",
+      "steps": [
+        "Click settings icon → AI Analysis Settings section visible",
+        "Provider dropdown shows: Claude, OpenAI, Custom",
+        "Select Claude → Model dropdown shows claude-3-sonnet, claude-3-opus",
+        "API key input field is masked (password type)",
+        "Click 'Test Connection' → Shows success/failure message",
+        "Concurrency slider allows 1-10 parallel requests",
+        "'Skip existing notes' checkbox is functional",
+        "Custom prompt textarea allows override",
+        "Save → Settings persist in localStorage"
+      ]
+    },
+    {
+      "id": "FEAT-03",
+      "name": "Batch Analysis with Progress",
+      "status": "todo",
+      "steps": [
+        "Click 'Analyze Images with AI' → Progress modal opens",
+        "Modal shows progress bar (e.g., 35%)",
+        "Modal shows 'Analyzing image 15 of 42...'",
+        "Modal shows thumbnail of current image being analyzed",
+        "Modal shows counts: completed, failed, remaining",
+        "Cancel button stops analysis mid-process",
+        "Completed analyses saved even if cancelled",
+        "Analysis respects concurrency setting"
+      ]
+    },
+    {
+      "id": "FEAT-04",
+      "name": "AI-Generated Notes",
+      "status": "todo",
+      "steps": [
+        "After analysis → Notes appear in ActionList",
+        "AI notes have robot icon to distinguish from user notes",
+        "AI notes show 'Analyzed Dec 10, 2025 3:45 PM' footer",
+        "AI notes show model name (e.g., 'claude-3-sonnet')",
+        "AI notes have 'Re-analyze' button",
+        "AI notes editable like regular notes",
+        "AI notes deletable like regular notes",
+        "AI notes included in session export"
+      ]
+    },
+    {
+      "id": "FEAT-05",
+      "name": "Re-analyze Single Image",
+      "status": "todo",
+      "steps": [
+        "Click 'Re-analyze' on AI note → Prompt editor opens",
+        "Current prompt shown with option to modify",
+        "Option to 'Replace' or 'Append' to existing note",
+        "Click Analyze → Single image sent to AI provider",
+        "Progress indicator shows during analysis",
+        "Result updates the existing note",
+        "Re-analysis uses current provider settings"
+      ]
+    },
+    {
+      "id": "FEAT-06",
+      "name": "Full Analysis Mode",
+      "status": "todo",
+      "steps": [
+        "Click 'Full Analysis' option → All screenshots processed",
+        "No deduplication - every screenshot analyzed",
+        "Output: image-analysis.md file created",
+        "File includes session summary with key observations",
+        "File includes detailed description for each screenshot",
+        "Progress modal shows estimated time remaining",
+        "Analysis can be cancelled without losing completed work",
+        "Estimated cost shown before starting"
+      ]
+    },
+    {
+      "id": "FEAT-07",
+      "name": "Provider Error Handling",
+      "status": "todo",
+      "steps": [
+        "Invalid API key → Error message shown, analysis stops",
+        "Rate limited → Automatic retry with backoff",
+        "Network error → Retry with message 'Retrying in N seconds'",
+        "Single image failure → Skip and continue to next",
+        "All failures → Summary shows 'Analysis failed for all images'",
+        "Partial success → Report shows 'N successful, M failed'"
+      ]
+    },
+    {
+      "id": "FEAT-08",
+      "name": "MCP Tool Integration",
+      "status": "todo",
+      "steps": [
+        "session_generate_screenshot_docs tool available",
+        "Tool accepts sessionId parameter",
+        "Tool generates screenshots.md in session directory",
+        "Tool returns path to generated file",
+        "session_analyze_images tool available (future)",
+        "Tool accepts sessionId and optional model parameter"
+      ]
+    }
+  ]
+}
