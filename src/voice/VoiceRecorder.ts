@@ -370,16 +370,24 @@ export class VoiceRecorder {
 
   /**
    * Convert Whisper transcript to SessionRecorder voice actions
+   * @param transcript - The Whisper transcript result
+   * @param audioFile - Relative path to the audio file
+   * @param nearestSnapshotFinder - Optional function to find nearest snapshot
+   * @param source - Audio source: 'voice' for microphone, 'system' for display audio
+   * @param idPrefix - Prefix for action IDs (default: 'voice')
    */
   convertToVoiceActions(
     transcript: TranscriptResult,
     audioFile: string,
-    nearestSnapshotFinder?: (timestamp: string) => string | undefined
+    nearestSnapshotFinder?: (timestamp: string) => string | undefined,
+    source?: 'voice' | 'system',
+    idPrefix?: string
   ): VoiceTranscriptAction[] {
     if (!transcript.success || !transcript.segments) {
       return [];
     }
 
+    const prefix = idPrefix || (source === 'system' ? 'system' : 'voice');
     const actions: VoiceTranscriptAction[] = [];
     let actionCounter = 1;
 
@@ -397,7 +405,7 @@ export class VoiceRecorder {
       }));
 
       const action: VoiceTranscriptAction = {
-        id: `voice-${actionCounter++}`,
+        id: `${prefix}-${actionCounter++}`,
         type: 'voice_transcript',
         timestamp: startTime.toISOString(),
         transcript: {
@@ -407,7 +415,8 @@ export class VoiceRecorder {
           confidence: Math.exp(segment.confidence), // Convert log prob to probability
           words
         },
-        audioFile
+        audioFile,
+        ...(source && { source })  // Only include source if defined
       };
 
       // Find nearest snapshot if finder provided
@@ -423,5 +432,151 @@ export class VoiceRecorder {
 
   isRecording(): boolean {
     return this.recording;
+  }
+
+  /**
+   * Transcribe an existing audio file using Whisper
+   * This is a static-like method that doesn't require recording state
+   *
+   * @param audioFilePath - Absolute path to the audio file
+   * @param options - Transcription options
+   * @returns TranscriptResult
+   */
+  async transcribeFile(
+    audioFilePath: string,
+    options?: {
+      model?: 'tiny' | 'base' | 'small' | 'medium' | 'large';
+      device?: 'cuda' | 'mps' | 'cpu';
+    }
+  ): Promise<TranscriptResult> {
+    const model = options?.model || this.options.model || 'base';
+    const device = options?.device || this.options.device;
+
+    // Use Python script for transcription only (using --transcribe-only flag)
+    const projectRoot = path.join(__dirname, '..', '..');
+    const srcVoiceDir = path.join(projectRoot, 'src', 'voice');
+    const pythonScript = path.join(srcVoiceDir, 'record_and_transcribe.py');
+
+    if (!fs.existsSync(pythonScript)) {
+      return {
+        success: false,
+        error: `Python script not found: ${pythonScript}`
+      };
+    }
+
+    // Use Python from .venv
+    const venvDir = path.join(srcVoiceDir, '.venv');
+    const pythonExecutable = process.platform === 'win32'
+      ? path.join(venvDir, 'Scripts', 'python.exe')
+      : path.join(venvDir, 'bin', 'python');
+
+    const pythonCmd = fs.existsSync(pythonExecutable) ? pythonExecutable : 'python3';
+
+    const args = [
+      pythonScript,
+      audioFilePath,
+      '--model', model,
+      '--transcribe-only'
+    ];
+
+    if (device) {
+      args.push('--device', device);
+    }
+
+    console.log(`🎙️  Transcribing audio file: ${audioFilePath}`);
+    console.log(`   Using model: ${model}, device: ${device || 'auto'}`);
+
+    return new Promise((resolve) => {
+      const pythonProcess = spawn(pythonCmd, args, {
+        stdio: ['pipe', 'pipe', 'pipe']
+      });
+
+      let outputBuffer = '';
+
+      pythonProcess.stdout?.on('data', (data) => {
+        outputBuffer += data.toString();
+      });
+
+      pythonProcess.stderr?.on('data', (data) => {
+        const errors = data.toString().split('\n').filter((l: string) => l.trim());
+        errors.forEach((err: string) => console.error(`⚠️  Whisper stderr: ${err}`));
+      });
+
+      pythonProcess.on('close', (code) => {
+        if (code !== 0 && code !== null) {
+          console.error(`❌ Transcription failed (exit code: ${code})`);
+          resolve({
+            success: false,
+            error: `Process exited with code ${code}`
+          });
+          return;
+        }
+
+        try {
+          // Parse result from output
+          const successMatch = outputBuffer.match(/\{\s*\n?\s*"success":\s*true[\s\S]*?"segments":\s*\[[\s\S]*?\]\s*\}/);
+
+          if (successMatch) {
+            const result = JSON.parse(successMatch[0]);
+            console.log(`✅ Transcription complete: ${result.text?.slice(0, 80)}...`);
+            resolve(result);
+          } else {
+            // Try to find any JSON with segments (single line)
+            const lines = outputBuffer.split('\n').filter(l => l.trim());
+            for (let i = lines.length - 1; i >= 0; i--) {
+              const line = lines[i];
+              if (line.trim().startsWith('{')) {
+                try {
+                  const parsed = JSON.parse(line);
+                  if (parsed.segments !== undefined || parsed.success !== undefined) {
+                    if (parsed.success) {
+                      console.log(`✅ Transcription complete: ${parsed.text?.slice(0, 80)}...`);
+                    }
+                    resolve(parsed);
+                    return;
+                  }
+                } catch {
+                  continue;
+                }
+              }
+            }
+
+            console.error('❌ Could not parse transcription result');
+            resolve({
+              success: false,
+              error: 'Failed to parse transcription result'
+            });
+          }
+        } catch (error) {
+          console.error(`❌ Parse error: ${error}`);
+          resolve({
+            success: false,
+            error: `Failed to parse transcription: ${error}`
+          });
+        }
+      });
+
+      pythonProcess.on('error', (error) => {
+        console.error('❌ Transcription process error:', error);
+        resolve({
+          success: false,
+          error: `Process error: ${error.message}`
+        });
+      });
+    });
+  }
+
+  /**
+   * Set session start time (used for timestamp alignment when transcribing external files)
+   */
+  setSessionStartTime(startTime: number): void {
+    this.sessionStartTime = startTime;
+  }
+
+  /**
+   * Get session start time
+   */
+  getSessionStartTime(): number {
+    return this.sessionStartTime;
   }
 }

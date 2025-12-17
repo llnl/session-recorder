@@ -1147,13 +1147,16 @@ export class SessionRecorder {
     const queueStats = this.resourceQueue.getStats();
     console.log(`📦 Resource queue: ${queueStats.completed} captured, ${queueStats.failed} failed, ${(queueStats.totalBytes / 1024).toFixed(1)}KB total`);
 
+    // Collect all voice/transcript actions for merging (FEAT-04)
+    let allVoiceActions: VoiceTranscriptAction[] = [];
+
     // Stop voice recording if enabled
     if (this.options.voice_record && this.voiceRecorder) {
       console.log('🎙️  Stopping voice recording...');
       const transcript = await this.voiceRecorder.stopRecording();
 
       if (transcript && transcript.success) {
-        console.log(`✅ Transcription successful: ${transcript.text?.slice(0, 100)}...`);
+        console.log(`✅ Voice transcription successful: ${transcript.text?.slice(0, 100)}...`);
 
         // Save full transcript as JSON
         const transcriptPath = path.join(this.sessionDir, 'transcript.json');
@@ -1168,36 +1171,19 @@ export class SessionRecorder {
           this.sessionData.voiceRecording.device = transcript.device;
         }
 
-        // Convert transcript to voice actions and merge with browser actions
+        // Convert transcript to voice actions with source='voice' (FEAT-04)
         const voiceActions = this.voiceRecorder.convertToVoiceActions(
           transcript,
           'audio/recording.wav',
-          (timestamp: string) => this._findNearestSnapshot(timestamp)
+          (timestamp: string) => this._findNearestSnapshot(timestamp),
+          'voice',  // source attribution
+          'voice'   // id prefix
         );
 
-        // Merge and sort all actions chronologically
-        const allActions = [...this.sessionData.actions, ...voiceActions];
-        allActions.sort((a, b) =>
-          new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-        );
-
-        // Align voice segments with browser actions (split at action boundaries)
-        this.sessionData.actions = this._alignVoiceWithActions(allActions);
-
-        const alignedVoiceCount = this.sessionData.actions.filter(
-          a => a.type === 'voice_transcript'
-        ).length;
-
-        // Merge consecutive voice transcripts (reduces clutter in action list)
-        this.sessionData.actions = this._mergeConsecutiveVoiceTranscripts(this.sessionData.actions);
-
-        const mergedVoiceCount = this.sessionData.actions.filter(
-          a => a.type === 'voice_transcript'
-        ).length;
-
-        console.log(`🎙️  Voice segments: ${voiceActions.length} raw → ${alignedVoiceCount} aligned → ${mergedVoiceCount} merged`);
+        allVoiceActions.push(...voiceActions);
+        console.log(`🎙️  Voice segments: ${voiceActions.length} (source: voice)`);
       } else {
-        console.error(`❌ Transcription failed: ${transcript?.error || 'Unknown error'}`);
+        console.error(`❌ Voice transcription failed: ${transcript?.error || 'Unknown error'}`);
       }
     }
 
@@ -1215,11 +1201,91 @@ export class SessionRecorder {
           this.sessionData.systemAudioRecording.duration = result.duration;
           this.sessionData.systemAudioRecording.chunks = result.chunks;
         }
+
+        // FEAT-04: Transcribe system audio file using Whisper
+        const systemAudioPath = path.join(this.audioDir, result.audioFile);
+        console.log('🔊 Transcribing system audio...');
+
+        // Create a temporary VoiceRecorder for transcription (or use existing if available)
+        const transcriber = this.voiceRecorder || new VoiceRecorder({
+          model: this.options.whisper_model,
+          device: this.options.whisper_device
+        });
+
+        // Set session start time for timestamp alignment
+        transcriber.setSessionStartTime(this.sessionStartTime);
+
+        const systemTranscript = await transcriber.transcribeFile(systemAudioPath, {
+          model: this.options.whisper_model,
+          device: this.options.whisper_device
+        });
+
+        if (systemTranscript && systemTranscript.success) {
+          console.log(`✅ System audio transcription successful: ${systemTranscript.text?.slice(0, 100)}...`);
+
+          // Save system transcript as JSON
+          const systemTranscriptPath = path.join(this.sessionDir, 'system-transcript.json');
+          fs.writeFileSync(systemTranscriptPath, JSON.stringify(systemTranscript, null, 2), 'utf-8');
+
+          // Update session metadata
+          if (this.sessionData.systemAudioRecording) {
+            this.sessionData.systemAudioRecording.transcriptFile = 'system-transcript.json';
+          }
+
+          // Convert transcript to voice actions with source='system' (FEAT-04)
+          const systemActions = transcriber.convertToVoiceActions(
+            systemTranscript,
+            `audio/${result.audioFile}`,
+            (timestamp: string) => this._findNearestSnapshot(timestamp),
+            'system',  // source attribution
+            'system'   // id prefix
+          );
+
+          allVoiceActions.push(...systemActions);
+          console.log(`🔊 System segments: ${systemActions.length} (source: system)`);
+        } else {
+          console.error(`❌ System audio transcription failed: ${systemTranscript?.error || 'Unknown error'}`);
+        }
       } else {
         console.error(`❌ System audio recording failed: ${result.error || 'Unknown error'}`);
       }
 
       this.systemAudioStarted = false;
+    }
+
+    // FEAT-04: Merge all voice/transcript actions with browser actions
+    if (allVoiceActions.length > 0) {
+      // Merge and sort all actions chronologically
+      const allActions = [...this.sessionData.actions, ...allVoiceActions];
+      allActions.sort((a, b) =>
+        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+      );
+
+      // Align voice segments with browser actions (split at action boundaries)
+      this.sessionData.actions = this._alignVoiceWithActions(allActions);
+
+      const alignedVoiceCount = this.sessionData.actions.filter(
+        a => a.type === 'voice_transcript'
+      ).length;
+
+      // Merge consecutive voice transcripts from SAME source (reduces clutter in action list)
+      this.sessionData.actions = this._mergeConsecutiveVoiceTranscripts(this.sessionData.actions);
+
+      const mergedVoiceCount = this.sessionData.actions.filter(
+        a => a.type === 'voice_transcript'
+      ).length;
+
+      const voiceSourceCount = this.sessionData.actions.filter(
+        (a): a is VoiceTranscriptAction => a.type === 'voice_transcript' && a.source === 'voice'
+      ).length;
+
+      const systemSourceCount = this.sessionData.actions.filter(
+        (a): a is VoiceTranscriptAction => a.type === 'voice_transcript' && a.source === 'system'
+      ).length;
+
+      console.log(`🎵 Transcript segments: ${allVoiceActions.length} raw → ${alignedVoiceCount} aligned → ${mergedVoiceCount} merged`);
+      console.log(`   - Voice source: ${voiceSourceCount}`);
+      console.log(`   - System source: ${systemSourceCount}`);
     }
 
     this.sessionData.endTime = new Date().toISOString();
@@ -1471,6 +1537,7 @@ export class SessionRecorder {
   private _mergeConsecutiveVoiceTranscripts(actions: AnyAction[]): AnyAction[] {
     const result: AnyAction[] = [];
     let voiceRun: VoiceTranscriptAction[] = [];
+    let currentSource: 'voice' | 'system' | undefined = undefined;
 
     const flushVoiceRun = () => {
       if (voiceRun.length === 0) return;
@@ -1481,11 +1548,18 @@ export class SessionRecorder {
         result.push(this._mergeVoiceSegments(voiceRun));
       }
       voiceRun = [];
+      currentSource = undefined;
     };
 
     for (const action of actions) {
       if (action.type === 'voice_transcript') {
-        voiceRun.push(action as VoiceTranscriptAction);
+        const voiceAction = action as VoiceTranscriptAction;
+        // FEAT-04: Only merge consecutive segments from the SAME source
+        if (voiceRun.length > 0 && voiceAction.source !== currentSource) {
+          flushVoiceRun();
+        }
+        voiceRun.push(voiceAction);
+        currentSource = voiceAction.source;
       } else {
         flushVoiceRun();
         result.push(action);
@@ -1540,7 +1614,8 @@ export class SessionRecorder {
       },
       audioFile: first.audioFile,
       nearestSnapshotId: first.nearestSnapshotId,
-      associatedActionId: last.associatedActionId // Use last segment's association
+      associatedActionId: last.associatedActionId, // Use last segment's association
+      source: first.source // FEAT-04: Preserve source attribution
     };
   }
 

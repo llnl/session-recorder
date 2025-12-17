@@ -42,7 +42,11 @@
     {
       "id": "FEAT-03",
       "name": "Recording Options API",
-      "status": "todo",
+      "status": "implemented",
+      "history": [
+        {"date": "2025-12-17", "from": "todo", "to": "implementing"},
+        {"date": "2025-12-17", "from": "implementing", "to": "implemented"}
+      ],
       "steps": [
         "SessionRecorder accepts system_audio_record: true option",
         "system_audio_record: false → Only microphone recorded",
@@ -50,12 +54,17 @@
         "Both true → Both streams recorded",
         "Session metadata includes audio source configuration",
         "Audio files listed in session.json with correct paths"
-      ]
+      ],
+      "notes": "Option combinations verified via existing SessionRecorder code. voiceRecording and systemAudioRecording metadata fields populated in session.json. Test file: test/dual-audio-test.ts"
     },
     {
       "id": "FEAT-04",
       "name": "Source-Attributed Transcription",
-      "status": "todo",
+      "status": "implemented",
+      "history": [
+        {"date": "2025-12-17", "from": "todo", "to": "implementing"},
+        {"date": "2025-12-17", "from": "implementing", "to": "implemented"}
+      ],
       "steps": [
         "Stop recording → Both audio files sent to Whisper",
         "Voice transcript segments have source: 'voice'",
@@ -63,7 +72,8 @@
         "Merged transcript sorts segments by timestamp chronologically",
         "Word-level timestamps preserved in both sources",
         "Transcript JSON includes source field in each segment"
-      ]
+      ],
+      "notes": "Added source field to VoiceTranscriptAction type. Updated VoiceRecorder.convertToVoiceActions() to accept source param. Added VoiceRecorder.transcribeFile() for transcribing existing audio. Updated SessionRecorder.stop() to transcribe system audio and merge with source attribution. Added --transcribe-only flag to Python script. Test file: test/dual-audio-test.ts"
     },
     {
       "id": "FEAT-05",

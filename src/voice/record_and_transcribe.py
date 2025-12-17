@@ -324,7 +324,7 @@ def transcribe_audio(audio_path: str, model_size: str = "base",
 
 def main():
     parser = argparse.ArgumentParser(description="Record audio and transcribe using Whisper")
-    parser.add_argument("output_path", help="Path to save audio recording (WAV or MP3)")
+    parser.add_argument("output_path", help="Path to save audio recording (WAV or MP3), or existing audio file with --transcribe-only")
     parser.add_argument("--model", default="base", choices=["tiny", "base", "small", "medium", "large"],
                         help="Whisper model size (default: base)")
     parser.add_argument("--device", choices=["cuda", "mps", "cpu"],
@@ -340,8 +340,57 @@ def main():
                         help="MP3 bitrate (default: 64k, TR-1 target)")
     parser.add_argument("--mp3-sample-rate", type=int, default=22050,
                         help="MP3 sample rate (default: 22050 Hz, TR-1 target)")
+    # FEAT-04: Transcribe-only mode for existing audio files
+    parser.add_argument("--transcribe-only", action="store_true",
+                        help="Skip recording, just transcribe existing audio file")
+    parser.add_argument("--transcript-output", type=str, default=None,
+                        help="Path to save transcript JSON (default: {audio_path}-transcript.json)")
 
     args = parser.parse_args()
+
+    # Handle transcribe-only mode (FEAT-04)
+    if args.transcribe_only:
+        audio_path = Path(args.output_path)
+
+        if not audio_path.exists():
+            print(json.dumps({
+                "success": False,
+                "error": f"Audio file not found: {audio_path}",
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }), flush=True)
+            sys.exit(1)
+
+        print(json.dumps({
+            "type": "status",
+            "message": f"Transcribe-only mode: {audio_path}",
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }), flush=True)
+
+        # Transcribe the audio file
+        transcription_result = transcribe_audio(
+            str(audio_path),
+            model_size=args.model,
+            device=args.device
+        )
+
+        # Add audio path to result
+        transcription_result["audio_path"] = str(audio_path)
+
+        # Output result
+        print(json.dumps(transcription_result), flush=True)
+
+        # Optionally save to file
+        if args.transcript_output:
+            transcript_path = Path(args.transcript_output)
+            transcript_path.parent.mkdir(parents=True, exist_ok=True)
+            transcript_path.write_text(json.dumps(transcription_result, indent=2))
+            print(json.dumps({
+                "type": "status",
+                "message": f"Transcript saved to {transcript_path}",
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }), flush=True)
+
+        sys.exit(0 if transcription_result["success"] else 1)
 
     # Create output directory if needed
     output_path = Path(args.output_path)
