@@ -6,7 +6,11 @@
     {
       "id": "FEAT-01",
       "name": "Browser Audio Capture API",
-      "status": "todo",
+      "status": "tested",
+      "history": [
+        {"date": "2025-12-17", "from": "todo", "to": "implementing"},
+        {"date": "2025-12-17", "from": "implementing", "to": "tested"}
+      ],
       "steps": [
         "Call getDisplayMedia with audio option → Browser permission dialog appears",
         "User selects screen/tab with 'Share audio' enabled → Audio track obtained",
@@ -14,7 +18,8 @@
         "Audio capture works in Chrome browser",
         "Audio capture works in Edge browser",
         "Missing audio permission → Graceful error message displayed"
-      ]
+      ],
+      "notes": "Verified via test:system-audio. Created SystemAudioCapture browser module and SystemAudioRecorder Node module."
     },
     {
       "id": "FEAT-02",
