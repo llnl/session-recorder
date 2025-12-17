@@ -11,6 +11,7 @@
     "test:console": "node dist/test/console-test.js",
     "test:voice": "node dist/test/voice-test.js",
     "test:system-audio": "node dist/test/system-audio-test.js",
+    "test:dual-stream": "node dist/test/dual-stream-test.js",
     "session-recorder:install:windows": "npm ci && npm run playwright:install && npm run voice:install:windows",
     "session-recorder:install:mac-linux": "npm ci && npm run playwright:install && npm run voice:install:mac-linux",
     "session-viewer:install": "cd viewer && npm i",

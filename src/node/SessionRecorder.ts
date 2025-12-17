@@ -17,6 +17,7 @@ import { SessionData, RecordedAction, NavigationAction, HarEntry, SnapshotterBlo
 import { ResourceStorage } from '../storage/resourceStorage';
 import { ResourceCaptureQueue } from '../storage/ResourceCaptureQueue';
 import { VoiceRecorder } from '../voice/VoiceRecorder';
+import { SystemAudioRecorder, SystemAudioResult } from './SystemAudioRecorder';
 import { createTrayManager, TrayManagerBase, TrayManagerOptions } from './TrayManager';
 import { generateMarkdownExports } from '../export';
 
@@ -32,7 +33,8 @@ declare global {
 
 export interface SessionRecorderOptions {
   browser_record?: boolean;  // Capture DOM + actions (default: true)
-  voice_record?: boolean;    // Capture audio + transcript (default: false)
+  voice_record?: boolean;    // Capture microphone audio + transcript (default: false)
+  system_audio_record?: boolean;  // Capture system/display audio (default: false)
   whisper_model?: 'tiny' | 'base' | 'small' | 'medium' | 'large';
   whisper_device?: 'cuda' | 'mps' | 'cpu';
 
@@ -84,22 +86,25 @@ export class SessionRecorder {
   private resourceQueue: ResourceCaptureQueue; // Non-blocking resource capture (TR-4)
   private voiceRecorder: VoiceRecorder | null = null;
   private voiceStarted: boolean = false;
+  private systemAudioRecorder: SystemAudioRecorder | null = null;
+  private systemAudioStarted: boolean = false;
   private audioDir: string;
   private options: SessionRecorderOptions;
   private trayManager: TrayManagerBase | null = null;
 
   constructor(sessionId?: string, options: SessionRecorderOptions = {}) {
     // Validate options - at least one must be true
-    const {browser_record: browserRecord, voice_record: voiceRecord} = options;
-    console.log('browser_record:', browserRecord, 'voice_record:', voiceRecord);
+    const {browser_record: browserRecord, voice_record: voiceRecord, system_audio_record: systemAudioRecord} = options;
+    console.log('browser_record:', browserRecord, 'voice_record:', voiceRecord, 'system_audio_record:', systemAudioRecord);
 
-    if (!browserRecord && !voiceRecord) {
-      throw new Error('At least one of browser_record or voice_record must be true');
+    if (!browserRecord && !voiceRecord && !systemAudioRecord) {
+      throw new Error('At least one of browser_record, voice_record, or system_audio_record must be true');
     }
 
     this.options = {
       browser_record: browserRecord,
       voice_record: voiceRecord,
+      system_audio_record: systemAudioRecord,
       whisper_model: options.whisper_model || 'base',
       whisper_device: options.whisper_device,
       // Compression defaults (TR-1)
@@ -150,6 +155,21 @@ export class SessionRecorder {
         enabled: true,
         model: this.options.whisper_model,
         device: this.options.whisper_device
+      };
+    }
+
+    // Initialize system audio recorder if enabled
+    // Note: SystemAudioRecorder requires page attachment, so we create it here
+    // but start recording in start() method after page is available
+    if (this.options.system_audio_record) {
+      this.systemAudioRecorder = new SystemAudioRecorder({
+        outputDir: this.audioDir,
+        audioBitsPerSecond: 128000,
+        timeslice: 1000
+      });
+
+      this.sessionData.systemAudioRecording = {
+        enabled: true
       };
     }
 
@@ -239,6 +259,37 @@ export class SessionRecorder {
       console.log(`📹 Browser recording started: ${this.sessionData.sessionId}`);
     }
 
+    // Start system audio recording if enabled (requires browser_record for page access)
+    if (this.options.system_audio_record && this.systemAudioRecorder && !this.systemAudioStarted) {
+      // Ensure audio directory exists
+      fs.mkdirSync(this.audioDir, { recursive: true });
+
+      console.log(`🔊 Initializing system audio capture...`);
+      try {
+        // Attach to page
+        await this.systemAudioRecorder.attach(page);
+
+        // Request capture (shows screen sharing dialog to user)
+        const status = await this.systemAudioRecorder.requestCapture();
+
+        if (status.state === 'recording' || status.state === 'requesting') {
+          // Start recording
+          const started = await this.systemAudioRecorder.startRecording();
+          if (started) {
+            this.systemAudioStarted = true;
+            console.log(`✅ System audio recording active`);
+          } else {
+            console.warn(`⚠️ System audio recording failed to start`);
+          }
+        } else {
+          console.warn(`⚠️ System audio capture not available: ${status.error || status.state}`);
+        }
+      } catch (err: any) {
+        console.error(`❌ System audio initialization failed: ${err.message}`);
+        // Don't fail the session - continue without system audio
+      }
+    }
+
     // Initialize and start tray manager for visual recording indicator (FR-3.1)
     if (this.trayManager) {
       await this.trayManager.initialize();
@@ -248,6 +299,7 @@ export class SessionRecorder {
     console.log(`📹 Session recording started: ${this.sessionData.sessionId}`);
     console.log(`   Browser: ${this.options.browser_record ? '✅' : '❌'}`);
     console.log(`   Voice: ${this.options.voice_record ? '✅' : '❌'}`);
+    console.log(`   System Audio: ${this.systemAudioStarted ? '✅' : '❌'}`);
     console.log(`📁 Output: ${this.sessionDir}`);
   }
 
@@ -1149,6 +1201,27 @@ export class SessionRecorder {
       }
     }
 
+    // Stop system audio recording if enabled
+    if (this.options.system_audio_record && this.systemAudioRecorder && this.systemAudioStarted) {
+      console.log('🔊 Stopping system audio recording...');
+      const result = await this.systemAudioRecorder.stopRecording();
+
+      if (result.success && result.audioFile) {
+        console.log(`✅ System audio saved: ${result.audioFile} (${result.duration}ms, ${result.chunks} chunks)`);
+
+        // Update session metadata
+        if (this.sessionData.systemAudioRecording) {
+          this.sessionData.systemAudioRecording.audioFile = `audio/${result.audioFile}`;
+          this.sessionData.systemAudioRecording.duration = result.duration;
+          this.sessionData.systemAudioRecording.chunks = result.chunks;
+        }
+      } else {
+        console.error(`❌ System audio recording failed: ${result.error || 'Unknown error'}`);
+      }
+
+      this.systemAudioStarted = false;
+    }
+
     this.sessionData.endTime = new Date().toISOString();
 
     // Add network metadata (only if browser recording enabled)
@@ -1210,6 +1283,13 @@ export class SessionRecorder {
       console.log(`   - Duration: ${this.sessionData.voiceRecording.duration?.toFixed(1) || 0}s`);
       console.log(`   - Model: ${this.sessionData.voiceRecording.model}`);
       console.log(`   - Device: ${this.sessionData.voiceRecording.device}`);
+    }
+
+    if (this.options.system_audio_record && this.sessionData.systemAudioRecording) {
+      console.log(`🔊 System audio:`);
+      console.log(`   - File: ${this.sessionData.systemAudioRecording.audioFile || 'none'}`);
+      console.log(`   - Duration: ${((this.sessionData.systemAudioRecording.duration || 0) / 1000).toFixed(1)}s`);
+      console.log(`   - Chunks: ${this.sessionData.systemAudioRecording.chunks || 0}`);
     }
 
     console.log(`📄 Session data: ${sessionJsonPath}`);

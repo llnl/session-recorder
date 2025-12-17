@@ -36,6 +36,13 @@ export interface SessionData {
     language?: string;    // Detected language
     duration?: number;    // Total audio duration in seconds
   };
+  systemAudioRecording?: {
+    enabled: boolean;
+    audioFile?: string;   // Relative path to audio file: audio/system.webm
+    transcriptFile?: string;  // Relative path to transcript: system-transcript.json
+    duration?: number;    // Total audio duration in ms
+    chunks?: number;      // Number of audio chunks recorded
+  };
 }
 
 export interface RecordedAction {

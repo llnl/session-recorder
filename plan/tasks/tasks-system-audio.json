@@ -24,7 +24,11 @@
     {
       "id": "FEAT-02",
       "name": "Dual-Stream Recording Infrastructure",
-      "status": "todo",
+      "status": "tested",
+      "history": [
+        {"date": "2025-12-17", "from": "todo", "to": "implementing"},
+        {"date": "2025-12-17", "from": "implementing", "to": "tested"}
+      ],
       "steps": [
         "Start recording with system_audio_record: true → Two audio streams initialize",
         "Microphone stream captures user voice",
@@ -32,7 +36,8 @@
         "Both streams record simultaneously without blocking",
         "Timestamps synchronized between streams (< 100ms drift)",
         "Stop recording → Two separate audio files saved (voice.wav, system.wav)"
-      ]
+      ],
+      "notes": "Verified via test:dual-stream. Both voice (recording.wav) and system audio (system.webm) files created. SessionRecorder now supports system_audio_record option."
     },
     {
       "id": "FEAT-03",
