@@ -154,29 +154,69 @@ export const Timeline = () => {
       ctx.fill();
     });
 
-    // Draw voice transcript segments
+    // Draw voice transcript segments with source-based coloring (FEAT-05)
     const voiceActions = sessionData.actions.filter(
       (action): action is VoiceTranscriptAction => action.type === 'voice_transcript'
     );
 
-    voiceActions.forEach((voiceAction) => {
+    // Separate voice and system segments for stacking (overlapping support)
+    const voiceSegments = voiceActions.filter(a => a.source !== 'system');  // 'voice' or undefined (backward compat)
+    const systemSegments = voiceActions.filter(a => a.source === 'system');
+
+    // Draw voice segments (microphone) in blue at y=2
+    voiceSegments.forEach((voiceAction) => {
       const startTime = new Date(voiceAction.transcript.startTime).getTime();
       const endTime = new Date(voiceAction.transcript.endTime).getTime();
       const sessionStart = new Date(sessionData.startTime).getTime();
 
       const startX = ((startTime - sessionStart) / 1000) * PIXELS_PER_SECOND;
       const endX = ((endTime - sessionStart) / 1000) * PIXELS_PER_SECOND;
-      const width = endX - startX;
+      const width = Math.max(endX - startX, 4);  // Minimum 4px width for visibility
 
-      // Draw green bar for voice segment
-      ctx.fillStyle = 'rgba(76, 175, 80, 0.6)';
+      // Blue for voice (microphone)
+      ctx.fillStyle = 'rgba(59, 130, 246, 0.6)';  // Blue-500
+      ctx.strokeStyle = '#3B82F6';
+      ctx.lineWidth = 1;
+
+      // Rounded rectangle
+      const radius = 3;
+      const y = 2;
+      const height = 12;
+
+      ctx.beginPath();
+      ctx.moveTo(startX + radius, y);
+      ctx.lineTo(startX + width - radius, y);
+      ctx.quadraticCurveTo(startX + width, y, startX + width, y + radius);
+      ctx.lineTo(startX + width, y + height - radius);
+      ctx.quadraticCurveTo(startX + width, y + height, startX + width - radius, y + height);
+      ctx.lineTo(startX + radius, y + height);
+      ctx.quadraticCurveTo(startX, y + height, startX, y + height - radius);
+      ctx.lineTo(startX, y + radius);
+      ctx.quadraticCurveTo(startX, y, startX + radius, y);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+    });
+
+    // Draw system segments (display audio) in green at y=16
+    systemSegments.forEach((voiceAction) => {
+      const startTime = new Date(voiceAction.transcript.startTime).getTime();
+      const endTime = new Date(voiceAction.transcript.endTime).getTime();
+      const sessionStart = new Date(sessionData.startTime).getTime();
+
+      const startX = ((startTime - sessionStart) / 1000) * PIXELS_PER_SECOND;
+      const endX = ((endTime - sessionStart) / 1000) * PIXELS_PER_SECOND;
+      const width = Math.max(endX - startX, 4);  // Minimum 4px width for visibility
+
+      // Green for system (display audio)
+      ctx.fillStyle = 'rgba(76, 175, 80, 0.6)';  // Green-500
       ctx.strokeStyle = '#4CAF50';
       ctx.lineWidth = 1;
 
       // Rounded rectangle
       const radius = 3;
-      const y = 5;
-      const height = 15;
+      const y = 16;
+      const height = 12;
 
       ctx.beginPath();
       ctx.moveTo(startX + radius, y);
@@ -273,25 +313,53 @@ export const Timeline = () => {
     if (isDragging) {
       setDragEnd(x);
     } else {
-      // Check if hovering over voice segment
+      // Check if hovering over voice/system transcript segments (FEAT-05)
       const voiceActions = sessionData.actions.filter(
         (action): action is VoiceTranscriptAction => action.type === 'voice_transcript'
       );
 
+      // Separate by source for Y-position checking
+      const voiceSegments = voiceActions.filter(a => a.source !== 'system');
+      const systemSegments = voiceActions.filter(a => a.source === 'system');
+
       let foundVoice = false;
-      for (const voiceAction of voiceActions) {
-        const startTime = new Date(voiceAction.transcript.startTime).getTime();
-        const endTime = new Date(voiceAction.transcript.endTime).getTime();
-        const sessionStart = new Date(sessionData.startTime).getTime();
+      const mouseY = e.clientY - rect.top;
 
-        const startX = ((startTime - sessionStart) / 1000) * PIXELS_PER_SECOND;
-        const endX = ((endTime - sessionStart) / 1000) * PIXELS_PER_SECOND;
+      // Check voice segments (blue, y=2-14)
+      if (mouseY >= 0 && mouseY <= 18) {
+        for (const voiceAction of voiceSegments) {
+          const startTime = new Date(voiceAction.transcript.startTime).getTime();
+          const endTime = new Date(voiceAction.transcript.endTime).getTime();
+          const sessionStart = new Date(sessionData.startTime).getTime();
 
-        if (x >= startX && x <= endX && e.clientY - rect.top < 25) {
-          setHoveredVoiceAction(voiceAction);
-          setVoiceHoverPosition({ x: e.clientX, y: e.clientY });
-          foundVoice = true;
-          break;
+          const startX = ((startTime - sessionStart) / 1000) * PIXELS_PER_SECOND;
+          const endX = ((endTime - sessionStart) / 1000) * PIXELS_PER_SECOND;
+
+          if (x >= startX && x <= endX) {
+            setHoveredVoiceAction(voiceAction);
+            setVoiceHoverPosition({ x: e.clientX, y: e.clientY });
+            foundVoice = true;
+            break;
+          }
+        }
+      }
+
+      // Check system segments (green, y=16-28)
+      if (!foundVoice && mouseY >= 12 && mouseY <= 32) {
+        for (const voiceAction of systemSegments) {
+          const startTime = new Date(voiceAction.transcript.startTime).getTime();
+          const endTime = new Date(voiceAction.transcript.endTime).getTime();
+          const sessionStart = new Date(sessionData.startTime).getTime();
+
+          const startX = ((startTime - sessionStart) / 1000) * PIXELS_PER_SECOND;
+          const endX = ((endTime - sessionStart) / 1000) * PIXELS_PER_SECOND;
+
+          if (x >= startX && x <= endX) {
+            setHoveredVoiceAction(voiceAction);
+            setVoiceHoverPosition({ x: e.clientX, y: e.clientY });
+            foundVoice = true;
+            break;
+          }
         }
       }
 
@@ -640,15 +708,23 @@ export const Timeline = () => {
           </div>
         )}
 
-        {/* Voice Segment Hover Tooltip */}
+        {/* Voice/System Segment Hover Tooltip (FEAT-05) */}
         {hoveredVoiceAction && voiceHoverPosition && (
           <div
-            className="timeline-voice-tooltip"
+            className={`timeline-voice-tooltip ${hoveredVoiceAction.source === 'system' ? 'timeline-voice-tooltip--system' : 'timeline-voice-tooltip--voice'}`}
             style={{
               left: `${voiceHoverPosition.x}px`,
               top: `${voiceHoverPosition.y + 10}px`,
             }}
           >
+            <div className="timeline-voice-tooltip-header">
+              <span className="timeline-voice-tooltip-icon">
+                {hoveredVoiceAction.source === 'system' ? '🔊' : '🎤'}
+              </span>
+              <span className="timeline-voice-tooltip-source">
+                {hoveredVoiceAction.source === 'system' ? 'System Audio' : 'Voice'}
+              </span>
+            </div>
             <div className="timeline-voice-tooltip-time">
               {((new Date(hoveredVoiceAction.transcript.startTime).getTime() -
                  new Date(sessionData.startTime).getTime()) / 1000).toFixed(2)}s

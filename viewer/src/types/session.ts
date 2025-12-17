@@ -143,6 +143,8 @@ export interface VoiceTranscriptAction {
   nearestSnapshotId?: string;
   // Action alignment - which browser action follows this voice segment
   associatedActionId?: string;
+  // Source attribution for dual-stream recording (FEAT-04)
+  source?: 'voice' | 'system';  // 'voice' for microphone, 'system' for display audio
 }
 
 /**

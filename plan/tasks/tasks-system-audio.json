@@ -78,7 +78,11 @@
     {
       "id": "FEAT-05",
       "name": "Viewer Timeline Updates",
-      "status": "todo",
+      "status": "tested",
+      "history": [
+        {"date": "2025-12-17", "from": "todo", "to": "implementing"},
+        {"date": "2025-12-17", "from": "implementing", "to": "tested"}
+      ],
       "steps": [
         "Load session with dual audio → Timeline shows both sources",
         "Voice segments display in blue color",
@@ -86,7 +90,8 @@
         "Hovering segment shows source label (Voice/System)",
         "Segments appear at correct timestamps on timeline",
         "Overlapping segments from different sources both visible"
-      ]
+      ],
+      "notes": "Updated viewer VoiceTranscriptAction type with source field. Modified Timeline.tsx to render voice segments in blue (y=2-14) and system segments in green (y=16-28). Added source label to hover tooltip with icons (🎤 Voice / 🔊 System Audio). Updated Timeline.css with source-specific tooltip background colors. Test session: output/test-dual-audio."
     },
     {
       "id": "FEAT-06",
