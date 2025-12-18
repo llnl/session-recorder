@@ -285,12 +285,54 @@ Separate package providing Claude MCP integration for:
 - Loading and searching session data
 - Querying actions, network requests, console logs
 
+## Dual Audio Recording (System + Voice)
+
+The recorder supports capturing both microphone (voice) and system audio (display/tab audio) simultaneously. This is useful for recording web meetings, tutorials, etc.
+
+### Audio Configuration
+
+**Microphone (Voice) Audio** - Uses default browser settings:
+- Echo cancellation: enabled (default)
+- Noise suppression: enabled (default)
+- Auto gain control: enabled (default)
+
+**System (Display) Audio** - Optimized for clean capture:
+- Echo cancellation: **disabled** - prevents feedback interference
+- Noise suppression: **disabled** - preserves original audio quality
+- Auto gain control: **disabled** - maintains consistent volume levels
+- Sample rate: 48000 Hz
+- Channels: 2 (stereo)
+
+### Best Practices for Dual Recording
+
+1. **Use headphones** when recording to prevent speaker audio from being captured by the microphone
+2. **Select the correct tab/window** when prompted for screen sharing - ensure "Share audio" checkbox is enabled
+3. **Monitor audio levels** - the system audio may be louder than microphone; use the viewer's volume controls to balance
+4. **Test before recording** - do a short test recording to verify both audio streams are capturing correctly
+
+### Audio Files
+
+When dual recording is enabled, the session includes:
+- `audio/recording.wav` - Voice/microphone audio
+- `audio/system.webm` - System/display audio (Opus codec)
+- `transcript.json` - Voice transcription
+- `system-transcript.json` - System audio transcription (if enabled)
+
+### Viewer Playback
+
+The Session Viewer supports dual-stream playback with:
+- Source selection: Both, Voice Only, System Only
+- Independent volume controls for each stream
+- Synchronized seeking across both streams
+- Playback speed control (0.5x to 2x)
+
 ## Session Output Structure
 
 ```
 output/session-{id}/
 ├── session.json           # Metadata with action references
 ├── transcript.json        # Full Whisper output (if voice enabled)
+├── system-transcript.json # System audio transcription (if system audio enabled)
 ├── session.network        # JSON Lines network log
 ├── session.console        # JSON Lines console log
 ├── snapshots/             # HTML snapshots (gzipped)
@@ -300,7 +342,9 @@ output/session-{id}/
 │   ├── action-1-before.jpg
 │   └── action-1-after.jpg
 ├── resources/             # SHA1-named CSS, images, fonts
-├── audio/                 # Voice recordings (if enabled)
+├── audio/                 # Audio recordings
+│   ├── recording.wav      # Voice/microphone audio
+│   └── system.webm        # System/display audio
 ├── transcript.md          # Generated markdown
 ├── actions.md
 ├── console-summary.md

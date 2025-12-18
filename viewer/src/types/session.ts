@@ -74,6 +74,13 @@ export interface SessionData {
     language?: string;    // Detected language
     duration?: number;    // Total audio duration in seconds
   };
+  systemAudioRecording?: {
+    enabled: boolean;
+    audioFile?: string;   // Relative path to audio file: audio/system.webm
+    transcriptFile?: string;  // Relative path to transcript: system-transcript.json
+    duration?: number;    // Total audio duration in ms
+    chunks?: number;      // Number of audio chunks recorded
+  };
 }
 
 export interface RecordedAction {
@@ -316,7 +323,8 @@ export interface LoadedSessionData {
   consoleEntries: ConsoleEntry[];
   // Resource blobs loaded from zip or directory
   resources: Map<string, Blob>;
-  audioBlob?: Blob;  // Audio file if voice recording enabled
+  audioBlob?: Blob;  // Voice audio file (microphone) if voice recording enabled
+  systemAudioBlob?: Blob;  // System audio file (display audio) if system audio recording enabled
   // Whether lazy loading is enabled for this session (FR-4.7)
   lazyLoadEnabled?: boolean;
 }

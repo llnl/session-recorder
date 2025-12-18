@@ -69,13 +69,24 @@ export async function importSessionFromZip(
       consoleEntries = parseJSONLines<ConsoleEntry>(consoleText);
     }
 
-    // Load audio file (always load immediately - needed for playback)
+    // Load voice audio file (always load immediately - needed for playback)
     let audioBlob: Blob | undefined;
-    const audioFiles = ['audio/recording.wav', 'audio/recording.mp3'];
-    for (const audioPath of audioFiles) {
+    const voiceAudioFiles = ['audio/recording.wav', 'audio/recording.mp3'];
+    for (const audioPath of voiceAudioFiles) {
       const audioFile = zipData.file(audioPath);
       if (audioFile) {
         audioBlob = await audioFile.async('blob');
+        break;
+      }
+    }
+
+    // Load system audio file (for dual-stream playback)
+    let systemAudioBlob: Blob | undefined;
+    const systemAudioFiles = ['audio/system.webm', 'audio/system.wav', 'audio/system.mp3'];
+    for (const audioPath of systemAudioFiles) {
+      const audioFile = zipData.file(audioPath);
+      if (audioFile) {
+        systemAudioBlob = await audioFile.async('blob');
         break;
       }
     }
@@ -123,6 +134,7 @@ export async function importSessionFromZip(
       consoleEntries,
       resources,
       audioBlob,
+      systemAudioBlob,
       lazyLoadEnabled: shouldLazyLoad,
     };
   } catch (error) {

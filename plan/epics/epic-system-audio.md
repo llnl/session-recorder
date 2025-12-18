@@ -3,7 +3,7 @@
 <epic>
   <id>system-audio</id>
   <name>System Audio Recording</name>
-  <status>todo</status>
+  <status>tested</status>
   <initiative>session-recorder</initiative>
   <depends_on>recorder-voice</depends_on>
   <estimated_effort>20 hours</estimated_effort>

@@ -554,3 +554,44 @@
   font-weight: 600;
   margin-left: 0.5rem;
 }
+
+.tab-badge-small {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 0.3rem;
+  background-color: #22c55e;
+  color: white;
+  border-radius: 8px;
+  font-size: 0.6rem;
+  font-weight: 600;
+  margin-left: 0.4rem;
+}
+
+/* Voice/Audio Tab Styles */
+.tab-content-voice {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  overflow-y: auto;
+}
+
+.voice-audio-player-section,
+.voice-transcript-section {
+  background: #242830;
+  border: 1px solid #3a3f4b;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.voice-audio-player-section h4,
+.voice-transcript-section h4 {
+  margin: 0 0 1rem 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #9ca3af;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #3a3f4b;
+}

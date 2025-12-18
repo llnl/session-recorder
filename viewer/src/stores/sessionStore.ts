@@ -56,7 +56,8 @@ export interface SessionStore {
   consoleEntries: ConsoleEntry[];
   resources: Map<string, Blob>;
   resourceStorage: Map<string, StoredResource>; // SHA1 -> resource
-  audioBlob: Blob | null; // Audio file for voice recording
+  audioBlob: Blob | null; // Voice audio file (microphone) for voice recording
+  systemAudioBlob: Blob | null; // System audio file (display audio) for system recording
 
   // Lazy loading state (FR-4.7)
   lazyLoadEnabled: boolean;
@@ -132,6 +133,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
   resources: new Map(),
   resourceStorage: new Map(),
   audioBlob: null,
+  systemAudioBlob: null,
   lazyLoadEnabled: false,
   loadingResources: new Set(),
   editState: null,
@@ -162,6 +164,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       resources: data.resources,
       resourceStorage,
       audioBlob: data.audioBlob || null,
+      systemAudioBlob: data.systemAudioBlob || null,
       lazyLoadEnabled: data.lazyLoadEnabled || false,
       loadingResources: new Set(),
       selectedActionIndex: null,
@@ -232,6 +235,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
         resources: loadedData.resources,
         resourceStorage,
         audioBlob: loadedData.audioBlob || null,
+        systemAudioBlob: loadedData.systemAudioBlob || null,
         lazyLoadEnabled: loadedData.lazyLoadEnabled || false,
         loadingResources: new Set(),
         selectedActionIndex: null,
@@ -295,6 +299,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       resources: new Map(),
       resourceStorage: new Map(),
       audioBlob: null,
+      systemAudioBlob: null,
       lazyLoadEnabled: false,
       loadingResources: new Set(),
       editState: null,

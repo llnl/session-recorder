@@ -8,7 +8,7 @@
 
 | Initiative | Status | Epics | Progress |
 |------------|--------|-------|----------|
-| [Session Recorder](initiatives/INITIATIVE-session-recorder.md) | tested | 7 | 86% (6/7 tested) |
+| [Session Recorder](initiatives/INITIATIVE-session-recorder.md) | tested | 7 | 100% (7/7 tested) |
 | [Session Viewer](initiatives/INITIATIVE-session-viewer.md) | tested | 2 | 100% |
 | [Session Editor](initiatives/INITIATIVE-session-editor.md) | tested | 2 | 50% (1/2 tested) |
 | [Session Search MCP](initiatives/INITIATIVE-session-search.md) | tested | 2 | 100% |
@@ -161,10 +161,10 @@ npm run viewer
 | desktop-poc | [tasks-desktop-poc.json](tasks/tasks-desktop-poc.json) | 8 | 6 | 2 |
 | markdown-export | [tasks-markdown-export.json](tasks/tasks-markdown-export.json) | 6 | 6 | 0 |
 | desktop-full | [tasks-desktop-full.json](tasks/tasks-desktop-full.json) | 8 | 0 | 8 |
-| system-audio | [tasks-system-audio.json](tasks/tasks-system-audio.json) | 8 | 4 | 4 |
+| system-audio | [tasks-system-audio.json](tasks/tasks-system-audio.json) | 8 | 8 | 0 |
 | ai-image-analysis | [tasks-ai-image-analysis.json](tasks/tasks-ai-image-analysis.json) | 8 | 0 | 8 |
 | angular-migration | [tasks-angular-migration.json](tasks/tasks-angular-migration.json) | 16 | 0 | 16 |
-| **Total** | | **92** | **54** | **38** |
+| **Total** | | **92** | **58** | **34** |
 
 ---
 
@@ -193,6 +193,8 @@ The session-recorder folder will become its own standalone repository containing
 
 | Date | Changes |
 |------|---------|
+| 2025-12-17 | FEAT-07/FEAT-08: Added AudioPlayer component with dual-stream playback and echo prevention documentation |
+| 2025-12-17 | System Audio epic complete: All 8 features tested |
 | 2025-12-17 | FEAT-06: Added TranscriptPanel with source icons, search, and click-to-navigate |
 | 2025-12-17 | Added Angular Migration initiative with epic and 16 features (40h estimate) |
 | 2025-12-17 | Added future work epics: desktop-full, system-audio, ai-image-analysis with task files |

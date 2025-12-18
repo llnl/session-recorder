@@ -10,6 +10,7 @@ import { useFilteredNetwork } from '@/hooks/useFilteredNetwork';
 import type { VoiceTranscriptAction, NavigationAction, RecordedAction, PageVisibilityAction, MediaAction, DownloadAction, FullscreenAction, PrintAction, AnyAction } from '@/types/session';
 import { VoiceTranscriptViewer } from '@/components/VoiceTranscriptViewer';
 import { TranscriptPanel } from '@/components/TranscriptPanel';
+import { AudioPlayer } from '@/components/AudioPlayer';
 import './TabPanel.css';
 
 // Helper function to render action-specific details
@@ -270,6 +271,12 @@ export const TabPanel = () => {
   const sessionData = useSessionStore((state) => state.sessionData);
   const selectedAction = useSessionStore((state) => state.getSelectedAction());
   const audioBlob = useSessionStore((state) => state.audioBlob);
+  const systemAudioBlob = useSessionStore((state) => state.systemAudioBlob);
+
+  // Check if we have any audio available
+  const hasVoiceAudio = !!audioBlob;
+  const hasSystemAudio = !!systemAudioBlob;
+  const hasAnyAudio = hasVoiceAudio || hasSystemAudio;
 
   const consoleLogs = useFilteredConsole();
   const networkRequests = useFilteredNetwork();
@@ -383,13 +390,14 @@ export const TabPanel = () => {
             <span className="tab-badge">{networkRequests.length}</span>
           )}
         </button>
-        {sessionData?.voiceRecording?.enabled && (
+        {(sessionData?.voiceRecording?.enabled || sessionData?.systemAudioRecording?.enabled || hasAnyAudio) && (
           <button
             type="button"
             className={`tab-button ${activeTab === 'voice' ? 'active' : ''}`}
             onClick={() => setActiveTab('voice')}
           >
-            🎙️ Voice
+            🎙️ Audio
+            {hasSystemAudio && hasVoiceAudio && <span className="tab-badge-small">2</span>}
           </button>
         )}
         <button
@@ -438,20 +446,30 @@ export const TabPanel = () => {
         )}
 
         {activeTab === 'voice' && (
-          <div className="tab-content">
-            {selectedAction && selectedAction.type === 'voice_transcript' ? (
-              <VoiceTranscriptViewer
-                voiceAction={selectedAction as VoiceTranscriptAction}
-                audioUrl={audioBlob ? URL.createObjectURL(audioBlob) : null}
-              />
-            ) : (
-              <div className="tab-empty">
-                <p>
-                  {sessionData?.voiceRecording?.enabled
-                    ? 'Select a voice transcript action to view details'
-                    : 'Voice recording not enabled for this session'}
-                </p>
+          <div className="tab-content tab-content-voice">
+            {/* Audio Player for dual-stream playback */}
+            {hasAnyAudio && (
+              <div className="voice-audio-player-section">
+                <h4>Audio Playback</h4>
+                <AudioPlayer />
               </div>
+            )}
+
+            {/* Voice transcript viewer for selected action */}
+            {selectedAction && selectedAction.type === 'voice_transcript' ? (
+              <div className="voice-transcript-section">
+                <h4>Selected Transcript</h4>
+                <VoiceTranscriptViewer
+                  voiceAction={selectedAction as VoiceTranscriptAction}
+                  audioUrl={audioBlob ? URL.createObjectURL(audioBlob) : null}
+                />
+              </div>
+            ) : (
+              !hasAnyAudio && (
+                <div className="tab-empty">
+                  <p>No audio recordings available for this session</p>
+                </div>
+              )
             )}
           </div>
         )}

@@ -114,7 +114,11 @@
     {
       "id": "FEAT-07",
       "name": "Audio Playback Controls",
-      "status": "todo",
+      "status": "tested",
+      "history": [
+        {"date": "2025-12-17", "from": "todo", "to": "implementing"},
+        {"date": "2025-12-17", "from": "implementing", "to": "tested"}
+      ],
       "steps": [
         "Play button plays both audio streams mixed",
         "Toggle 'Voice Only' → Only microphone audio plays",
@@ -122,19 +126,25 @@
         "Toggle 'Both' → Both streams play simultaneously",
         "Volume controls affect selected streams",
         "Seeking works correctly for both streams"
-      ]
+      ],
+      "notes": "Created AudioPlayer component (viewer/src/components/AudioPlayer/) with dual-stream support. Updated sessionStore and zipHandler to load systemAudioBlob. Updated TabPanel to show Audio tab with AudioPlayer and source selection (Both/Voice Only/System Only). Added master volume, per-stream volume controls, progress bar seeking, and playback rate selector. CSS styling matches viewer theme."
     },
     {
       "id": "FEAT-08",
       "name": "Echo Prevention",
-      "status": "todo",
+      "status": "tested",
+      "history": [
+        {"date": "2025-12-17", "from": "todo", "to": "implementing"},
+        {"date": "2025-12-17", "from": "implementing", "to": "tested"}
+      ],
       "steps": [
         "Recording config disables echo cancellation for system audio",
         "Recording config disables noise suppression for system audio",
         "Microphone stream uses normal echo cancellation settings",
         "No feedback loop when recording web meeting audio",
         "Documentation includes best practices for dual recording"
-      ]
+      ],
+      "notes": "System audio capture in systemAudioCapture.ts already has echoCancellation: false, noiseSuppression: false, autoGainControl: false. Microphone uses default browser settings (echo cancellation enabled). Added comprehensive documentation to CLAUDE.md with Audio Configuration section and Best Practices for Dual Recording."
     }
   ]
 }
