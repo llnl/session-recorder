@@ -259,6 +259,19 @@ export class RecordingOrchestrator extends EventEmitter {
       if (this.sessionRecorder) {
         await this.sessionRecorder.stop();
 
+        // Close browser immediately after session recorder stops
+        // This happens before the slow zip/copy operations so user doesn't wait
+        if (this.browser) {
+          try {
+            await this.browser.close();
+          } catch (error) {
+            console.error('Error closing browser:', error);
+          }
+          this.browser = null;
+          this.context = null;
+          this.page = null;
+        }
+
         // Create zip archive using real SessionRecorder (now includes transcript)
         const zipPath = await this.sessionRecorder.createZip();
         const recorderSessionDir = this.sessionRecorder.getSessionDir();

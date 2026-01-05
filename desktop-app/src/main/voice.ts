@@ -126,16 +126,9 @@ export class VoiceRecorderProcess extends EventEmitter {
     this.process.stdin?.write('STOP\n');
 
     // Wait for process to exit and parse final output
-    return new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        // Force kill if not responding
-        this.process?.kill('SIGKILL');
-        reject(new Error('Voice recorder stop timed out'));
-      }, 120000);  // 2 minute timeout for transcription
-
+    // No timeout - transcription of long recordings can take significant time
+    return new Promise((resolve) => {
       this.process?.on('exit', () => {
-        clearTimeout(timeout);
-
         // Parse final result from output
         const result = this.parseFinalResult();
         resolve(result);

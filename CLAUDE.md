@@ -357,3 +357,7 @@ output/session-{id}/
 - Strict mode enabled
 - Output: `dist/` directory
 - Browser code compiled to JS then injected (not run as TypeScript)
+
+## Tips
+
+- Discovered ELECTRON_RUN_AS_NODE=1 environment variable (from VS Code/Claude Code) was preventing Electron API from loading. Fixed by adding env -u ELECTRON_RUN_AS_NODE to npm scripts.

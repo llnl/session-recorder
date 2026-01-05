@@ -18,6 +18,7 @@
     <epic id="performance" status="tested" blocks="core">Performance Optimizations (PRD-performance.md)</epic>
     <epic id="export" status="tested" blocks="completion">Markdown Export (PRD-markdown-export.md)</epic>
     <epic id="system-audio" status="todo" blocks="voice">System Audio Recording (PRD-5.md)</epic>
+    <epic id="ux" status="implementing" blocks="core">Recording UX Improvements (viewport, jitter)</epic>
   </epics>
 
   <success_criteria>
@@ -29,6 +30,8 @@
     <criterion status="done">Non-blocking resource capture queue</criterion>
     <criterion status="done">Visual recording indicator (TrayManager)</criterion>
     <criterion status="done">Markdown export auto-generation</criterion>
+    <criterion status="todo">Dynamic viewport (not fixed 1280x720)</criterion>
+    <criterion status="todo">Non-blocking screenshot capture (no jitter)</criterion>
   </success_criteria>
 </initiative>
 
@@ -45,6 +48,7 @@
 | [performance](../epics/epic-recorder-performance.md) | tested | [tasks](../tasks/tasks-recorder-performance.json) | Compression, non-blocking capture |
 | [export](../epics/epic-recorder-export.md) | tested | [tasks](../tasks/tasks-recorder-export.json) | Markdown generation |
 | [system-audio](../epics/epic-system-audio.md) | todo | [tasks](../tasks/tasks-system-audio.json) | System audio capture |
+| [ux](../epics/epic-recorder-ux.md) | implementing | [tasks](../tasks/tasks-recorder-ux.json) | Viewport flexibility, screenshot jitter fix |
 
 ---
 
@@ -139,3 +143,4 @@ src/
 | 2025-12-13 | TASKS-performance.md | Sprint 5c Complete: ResourceCaptureQueue implemented |
 | 2025-12-13 | PRD-markdown-export.md | Marked as complete - all features implemented |
 | 2025-12-13 | TASKS-markdown-export.md | All tasks implemented: FR-1 through FR-6 |
+| 2025-12-17 | epic-recorder-ux.md | Added new epic for UX improvements: viewport fix, screenshot jitter |

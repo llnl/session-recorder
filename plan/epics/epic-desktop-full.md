@@ -46,9 +46,8 @@ Full-featured desktop application with polished UI for non-technical users. Buil
 ### F1: Main Window UI
 - Recording title input (optional)
 - Recording mode selection (Browser Only / Voice Only / Browser + Voice)
-- Browser selection dropdown
-- Start URL input (optional)
-- Start/Stop recording button
+- Browser selection with button toggles (Chromium / Firefox / WebKit)
+- Start/Stop/Pause recording buttons
 - Status bar with state indicator
 
 ### F2: Recording Status View
@@ -56,6 +55,7 @@ Full-featured desktop application with polished UI for non-technical users. Buil
 - Action count
 - Voice level indicator
 - Current URL display
+- Pause/Resume button
 - Stop button
 - Tips/guidance text
 

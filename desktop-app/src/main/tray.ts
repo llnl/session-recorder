@@ -96,6 +96,7 @@ export interface TrayManagerOptions {
   onStartRecording: (browserType: BrowserType) => Promise<void>;
   onStopRecording: () => Promise<void>;
   onOpenOutputFolder: () => void;
+  onShowWindow: () => void;
   onQuit: () => void;
   onToggleVoice: (enabled: boolean) => void;
   config: AppConfig;
@@ -123,6 +124,11 @@ export class TrayManager {
     this.tray.setToolTip('Session Recorder - Ready');
     this.updateMenu();
 
+    // Double-click to show main window
+    this.tray.on('double-click', () => {
+      this.options.onShowWindow();
+    });
+
     console.log('Tray initialized');
   }
 
@@ -130,6 +136,13 @@ export class TrayManager {
     if (!this.tray) return;
 
     const menuTemplate: MenuItemConstructorOptions[] = [];
+
+    // Show window option at the top
+    menuTemplate.push({
+      label: 'Show Window',
+      click: () => this.options.onShowWindow()
+    });
+    menuTemplate.push({ type: 'separator' });
 
     if (this.isRecording) {
       // Recording active - show stop option

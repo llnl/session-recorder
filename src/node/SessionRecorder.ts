@@ -1017,6 +1017,7 @@ export class SessionRecorder {
       `${actionId}-before${screenshotExt}`
     );
 
+    // Take BEFORE screenshot
     try {
       await page.screenshot({
         path: beforeScreenshotPath,
@@ -1101,6 +1102,7 @@ export class SessionRecorder {
       `${actionId}-after${screenshotExt}`
     );
 
+    // Take AFTER screenshot
     try {
       await page.screenshot({
         path: afterScreenshotPath,

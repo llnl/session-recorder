@@ -39,7 +39,7 @@
     "record:voice": "node dist/test/record-session.js --mode voice",
     "prerecord:full": "npm run build",
     "record:full": "node dist/test/record-session.js --mode full",
-    "prerecord:connect": "node dist/test/record-session.js",
+    "prerecord:connect": "npm run build",
     "record:connect": "node dist/test/record-session.js --mode full --connect 9222",
     "viewer-old": "node dist/src/viewer/server.js",
     "viewer": "cd viewer && npm run dev",

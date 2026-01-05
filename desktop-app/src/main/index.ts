@@ -95,6 +95,12 @@ if (!gotTheLock) {
         shell.openPath(config.outputDir);
       },
 
+      onShowWindow: () => {
+        if (mainWindow) {
+          mainWindow.show();
+        }
+      },
+
       onQuit: () => {
         // Stop recording if active
         if (orchestrator?.isRecording()) {
