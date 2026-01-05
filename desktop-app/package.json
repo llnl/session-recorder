@@ -6,8 +6,8 @@
   "author": "Session Recorder",
   "license": "MIT",
   "scripts": {
-    "start": "npm run build && electron .",
-    "dev": "npm run build && electron .",
+    "start": "npm run build && env -u ELECTRON_RUN_AS_NODE electron .",
+    "dev": "npm run build && env -u ELECTRON_RUN_AS_NODE electron .",
     "build": "tsc && npm run copy-renderer",
     "copy-renderer": "node -e \"const fs=require('fs');const p=require('path');const src='src/renderer';const dst='dist/renderer';fs.mkdirSync(dst,{recursive:true});['index.html','styles.css'].forEach(f=>fs.copyFileSync(p.join(src,f),p.join(dst,f)))\"",
     "clean": "rimraf dist",
@@ -25,7 +25,7 @@
   "devDependencies": {
     "@types/archiver": "^7.0.0",
     "@types/node": "^20.10.0",
-    "electron": "^33.0.0",
+    "electron": "^33.4.11",
     "electron-builder": "^25.0.0",
     "rimraf": "^5.0.0",
     "typescript": "^5.3.0"
@@ -44,18 +44,24 @@
       {
         "from": "resources/${os}/voice-recorder",
         "to": "voice-recorder",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       }
     ],
     "win": {
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         },
         {
           "target": "portable",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "icon": "src/assets/icon.ico"
@@ -64,7 +70,10 @@
       "target": [
         {
           "target": "dmg",
-          "arch": ["x64", "arm64"]
+          "arch": [
+            "x64",
+            "arm64"
+          ]
         }
       ],
       "icon": "src/assets/icon.icns",
@@ -76,11 +85,15 @@
       "target": [
         {
           "target": "AppImage",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         },
         {
           "target": "deb",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "icon": "src/assets/icon.png",

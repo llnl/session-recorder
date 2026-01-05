@@ -1,6 +1,6 @@
 # Session Recorder - Progress Tracker
 
-**Last Updated:** 2025-12-17
+**Last Updated:** 2026-01-05
 
 ---
 
@@ -12,27 +12,41 @@
 | [Session Viewer](initiatives/INITIATIVE-session-viewer.md) | tested | 2 | 100% |
 | [Session Editor](initiatives/INITIATIVE-session-editor.md) | tested | 2 | 50% (1/2 tested) |
 | [Session Search MCP](initiatives/INITIATIVE-session-search.md) | tested | 2 | 100% |
-| [Desktop App](initiatives/INITIATIVE-desktop-app.md) | implementing | 2 | ~45% (POC ~90%) |
+| [Desktop App](initiatives/INITIATIVE-desktop-app.md) | implementing | 2 | ~50% (POC ~90%, Full UI 12.5%) |
 | [Angular Migration](initiatives/INITIATIVE-angular-migration.md) | draft | 1 | 0% |
 
 ---
 
-## Current Focus: Desktop App POC
+## Current Focus: Desktop App Full UI
 
-**Goal:** Standalone cross-platform app that records browser + voice without requiring Python/Node.js installation
+**Goal:** Full-featured desktop UI with main window, recording controls, settings, and recent recordings
 
-**Status:** ~90% Complete
+**Status:** FEAT-02 Tested ✅ (2/8 features complete)
 
-- Voice recorder bundle working (PyInstaller, 964 MB)
-- Electron shell with system tray
-- Real SessionRecorder integration
-- Windows tray icons fixed
-- Remaining: Clean VM testing and final packaging
+- FEAT-01: Main Window UI - **tested** (2026-01-05)
+  - Main window with recording title, mode, and browser selection
+  - Hide to tray on close (X button hides, doesn't quit)
+  - Double-click tray icon to show window
+  - "Show Window" menu item in tray context menu
+- FEAT-02: Recording Controls Flow - **tested** (2026-01-05)
+  - Timer display (HH:MM:SS format) with real-time updates
+  - Action count tracking from SessionRecorder
+  - Current URL display with truncation and tooltip
+  - Pause/Resume with correct timer handling
+  - Fixed ELECTRON_RUN_AS_NODE environment issue
+- FEAT-03 through FEAT-08 - todo
 
-**Next Actions:**
-1. Test on clean Windows VM
-2. Build final distributable package
-3. Update documentation
+**Next Task:**
+
+| ID | Description | Tasks File |
+|---|---|---|
+| FEAT-03 | Recording Status View | [tasks-desktop-full.json](tasks/tasks-desktop-full.json) |
+
+**FEAT-03 test steps:**
+- During recording → Recording indicator shows red dot
+- Timer shows elapsed time in HH:MM:SS format
+- Voice indicator shows audio level bars when microphone active
+- Window title bar shows 'Recording' or 'Paused' state indicator
 
 ---
 
@@ -160,11 +174,11 @@ npm run viewer
 | search-mcp | [tasks-search-mcp.json](tasks/tasks-search-mcp.json) | 8 | 8 | 0 |
 | desktop-poc | [tasks-desktop-poc.json](tasks/tasks-desktop-poc.json) | 8 | 6 | 2 |
 | markdown-export | [tasks-markdown-export.json](tasks/tasks-markdown-export.json) | 6 | 6 | 0 |
-| desktop-full | [tasks-desktop-full.json](tasks/tasks-desktop-full.json) | 8 | 0 | 8 |
+| desktop-full | [tasks-desktop-full.json](tasks/tasks-desktop-full.json) | 8 | 2 | 6 |
 | system-audio | [tasks-system-audio.json](tasks/tasks-system-audio.json) | 8 | 8 | 0 |
 | ai-image-analysis | [tasks-ai-image-analysis.json](tasks/tasks-ai-image-analysis.json) | 8 | 0 | 8 |
 | angular-migration | [tasks-angular-migration.json](tasks/tasks-angular-migration.json) | 16 | 0 | 16 |
-| **Total** | | **92** | **58** | **34** |
+| **Total** | | **92** | **60** | **32** |
 
 ---
 
@@ -193,6 +207,8 @@ The session-recorder folder will become its own standalone repository containing
 
 | Date | Changes |
 |------|---------|
+| 2026-01-05 | FEAT-02 (desktop-full): Recording Controls Flow tested - timer, action count, URL tracking, pause/resume |
+| 2026-01-05 | FEAT-01 (desktop-full): Main Window UI tested - recording controls, hide-to-tray, double-click tray to show |
 | 2025-12-17 | FEAT-07/FEAT-08: Added AudioPlayer component with dual-stream playback and echo prevention documentation |
 | 2025-12-17 | System Audio epic complete: All 8 features tested |
 | 2025-12-17 | FEAT-06: Added TranscriptPanel with source icons, search, and click-to-navigate |

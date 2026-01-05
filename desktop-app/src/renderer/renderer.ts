@@ -6,6 +6,13 @@
 
 export {}; // Make this a module
 
+// Recording stats from main process
+interface RecordingStats {
+  duration: number;
+  actionCount: number;
+  currentUrl: string;
+}
+
 // Type definitions for the exposed API
 interface ElectronAPI {
   // Recording control
@@ -22,11 +29,12 @@ interface ElectronAPI {
   getRecordingState: () => Promise<{
     state: 'idle' | 'starting' | 'recording' | 'paused' | 'stopping' | 'processing';
     duration?: number;
-    actionCount?: number;
+    isPaused?: boolean;
   }>;
 
   // Event listeners
   onStateChange: (callback: (state: string) => void) => void;
+  onStats: (callback: (stats: RecordingStats) => void) => void;
   onError: (callback: (error: string) => void) => void;
 }
 
@@ -54,6 +62,32 @@ const startBtn = document.getElementById('start-btn') as HTMLButtonElement;
 const pauseBtn = document.getElementById('pause-btn') as HTMLButtonElement;
 const statusIndicator = document.getElementById('status-indicator') as HTMLSpanElement;
 const statusText = document.getElementById('status-text') as HTMLSpanElement;
+
+// Recording status elements
+const recordingStatusSection = document.getElementById('recording-status') as HTMLElement;
+const timerDisplay = document.getElementById('timer') as HTMLSpanElement;
+const actionCountDisplay = document.getElementById('action-count') as HTMLSpanElement;
+const currentUrlDisplay = document.getElementById('current-url') as HTMLSpanElement;
+
+// Format milliseconds as HH:MM:SS
+function formatDuration(ms: number): string {
+  const totalSeconds = Math.floor(ms / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  return [
+    hours.toString().padStart(2, '0'),
+    minutes.toString().padStart(2, '0'),
+    seconds.toString().padStart(2, '0')
+  ].join(':');
+}
+
+// Truncate URL for display
+function truncateUrl(url: string, maxLength: number = 50): string {
+  if (!url || url.length <= maxLength) return url;
+  return url.slice(0, maxLength - 3) + '...';
+}
 
 // Initialize
 function init(): void {
@@ -194,6 +228,11 @@ function setupIPCListeners(): void {
         isRecording = false;
         isPaused = false;
         setStatus('ready', 'Ready to record');
+        // Reset stats display
+        timerDisplay.textContent = '00:00:00';
+        actionCountDisplay.textContent = '0';
+        currentUrlDisplay.textContent = '—';
+        currentUrlDisplay.title = '';
         break;
       case 'starting':
         setStatus('starting', 'Starting recording...');
@@ -214,6 +253,24 @@ function setupIPCListeners(): void {
     }
 
     updateUI();
+  });
+
+  // Handle recording stats updates (timer, action count, URL)
+  window.electronAPI.onStats((stats: RecordingStats) => {
+    // Update timer display
+    timerDisplay.textContent = formatDuration(stats.duration);
+
+    // Update action count
+    actionCountDisplay.textContent = stats.actionCount.toString();
+
+    // Update current URL
+    if (stats.currentUrl) {
+      currentUrlDisplay.textContent = truncateUrl(stats.currentUrl);
+      currentUrlDisplay.title = stats.currentUrl;  // Full URL on hover
+    } else {
+      currentUrlDisplay.textContent = '—';
+      currentUrlDisplay.title = '';
+    }
   });
 
   window.electronAPI.onError((error: string) => {
@@ -245,6 +302,13 @@ function updateUI(): void {
     pauseBtn.innerHTML = '<span class="btn-icon">&#9658;</span> Resume';
   } else {
     pauseBtn.innerHTML = '<span class="btn-icon">&#10074;&#10074;</span> Pause';
+  }
+
+  // Show/hide recording status section
+  if (isRecording) {
+    recordingStatusSection.classList.remove('hidden');
+  } else {
+    recordingStatusSection.classList.add('hidden');
   }
 
   // Disable mode and browser selection during recording

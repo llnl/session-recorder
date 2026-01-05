@@ -21,7 +21,13 @@ import { VoiceRecorderProcess } from './voice';
 // Import real SessionRecorder from parent session-recorder package
 import { SessionRecorder } from 'session-recorder';
 
-export type RecordingState = 'idle' | 'starting' | 'recording' | 'stopping' | 'processing';
+export type RecordingState = 'idle' | 'starting' | 'recording' | 'paused' | 'stopping' | 'processing';
+
+export interface RecordingStats {
+  duration: number;  // milliseconds since recording started
+  actionCount: number;
+  currentUrl: string;
+}
 
 export class RecordingOrchestrator extends EventEmitter {
   private config: AppConfig;
@@ -33,6 +39,12 @@ export class RecordingOrchestrator extends EventEmitter {
   private state: RecordingState = 'idle';
   private voiceEnabled: boolean;
   private sessionId: string | null = null;
+  private recordingStartTime: number = 0;
+  private pausedDuration: number = 0;  // Total time spent paused
+  private pauseStartTime: number = 0;  // When pause started
+  private statsInterval: NodeJS.Timeout | null = null;
+  private lastActionCount: number = 0;
+  private lastUrl: string = '';
 
   constructor(config: AppConfig) {
     super();
@@ -54,9 +66,9 @@ export class RecordingOrchestrator extends EventEmitter {
       // Launch browser
       this.browser = await this.launchBrowser(browserType);
 
-      // Create browser context
+      // Create browser context with dynamic viewport (uses full browser window)
       this.context = await this.browser.newContext({
-        viewport: { width: 1280, height: 720 }
+        viewport: null  // UX-01: Use full browser window, responds to resize
       });
 
       // Create initial page
@@ -94,6 +106,15 @@ export class RecordingOrchestrator extends EventEmitter {
       // Navigate to a starting page
       await this.page.goto('about:blank');
 
+      // Start recording timer
+      this.recordingStartTime = Date.now();
+      this.pausedDuration = 0;
+      this.lastActionCount = 0;
+      this.lastUrl = '';
+
+      // Start periodic stats updates (every second)
+      this.startStatsInterval();
+
       this.setState('recording');
       this.emit('started', { sessionId: this.sessionId, browserType });
     } catch (error) {
@@ -103,11 +124,112 @@ export class RecordingOrchestrator extends EventEmitter {
     }
   }
 
-  async stopRecording(): Promise<string | null> {
+  /**
+   * Start the stats update interval
+   */
+  private startStatsInterval(): void {
+    if (this.statsInterval) {
+      clearInterval(this.statsInterval);
+    }
+
+    this.statsInterval = setInterval(() => {
+      if (this.state === 'recording') {
+        this.emitStats();
+      }
+    }, 1000);
+  }
+
+  /**
+   * Stop the stats update interval
+   */
+  private stopStatsInterval(): void {
+    if (this.statsInterval) {
+      clearInterval(this.statsInterval);
+      this.statsInterval = null;
+    }
+  }
+
+  /**
+   * Emit current recording stats
+   */
+  private emitStats(): void {
+    // Get action count from session recorder
+    const actionCount = this.sessionRecorder?.getSessionData()?.actions?.length || 0;
+
+    // Get current URL from page
+    let currentUrl = '';
+    try {
+      currentUrl = this.page?.url() || '';
+      if (currentUrl === 'about:blank') {
+        currentUrl = '';
+      }
+    } catch {
+      // Page might be closed
+    }
+
+    // Calculate duration (excluding paused time)
+    const now = Date.now();
+    const duration = now - this.recordingStartTime - this.pausedDuration;
+
+    const stats: RecordingStats = {
+      duration,
+      actionCount,
+      currentUrl
+    };
+
+    this.emit('stats', stats);
+
+    // Also emit specific events for action count and URL changes
+    if (actionCount !== this.lastActionCount) {
+      this.lastActionCount = actionCount;
+      this.emit('actionRecorded', actionCount);
+    }
+
+    if (currentUrl !== this.lastUrl) {
+      this.lastUrl = currentUrl;
+      this.emit('urlChanged', currentUrl);
+    }
+  }
+
+  /**
+   * Pause the recording
+   */
+  async pauseRecording(): Promise<void> {
     if (this.state !== 'recording') {
+      throw new Error(`Cannot pause recording in state: ${this.state}`);
+    }
+
+    this.pauseStartTime = Date.now();
+    this.setState('paused');
+    this.emit('paused');
+    console.log('Recording paused');
+  }
+
+  /**
+   * Resume the recording
+   */
+  async resumeRecording(): Promise<void> {
+    if (this.state !== 'paused') {
+      throw new Error(`Cannot resume recording in state: ${this.state}`);
+    }
+
+    // Add paused time to total paused duration
+    this.pausedDuration += Date.now() - this.pauseStartTime;
+    this.pauseStartTime = 0;
+
+    this.setState('recording');
+    this.emit('resumed');
+    console.log('Recording resumed');
+  }
+
+  async stopRecording(): Promise<string | null> {
+    if (this.state !== 'recording' && this.state !== 'paused') {
       console.warn(`Cannot stop recording in state: ${this.state}`);
       return null;
     }
+
+    // Stop stats updates
+    this.stopStatsInterval();
 
     this.setState('stopping');
 
@@ -262,6 +384,9 @@ export class RecordingOrchestrator extends EventEmitter {
   }
 
   private async cleanup(): Promise<void> {
+    // Stop stats interval
+    this.stopStatsInterval();
+
     // Close browser
     if (this.browser) {
       try {
@@ -277,6 +402,13 @@ export class RecordingOrchestrator extends EventEmitter {
     // Cleanup session recorder
     this.sessionRecorder = null;
     this.sessionId = null;
+
+    // Reset timing state
+    this.recordingStartTime = 0;
+    this.pausedDuration = 0;
+    this.pauseStartTime = 0;
+    this.lastActionCount = 0;
+    this.lastUrl = '';
   }
 
   private setState(state: RecordingState): void {
@@ -289,7 +421,28 @@ export class RecordingOrchestrator extends EventEmitter {
   }
 
   isRecording(): boolean {
-    return this.state === 'recording';
+    return this.state === 'recording' || this.state === 'paused';
+  }
+
+  isPaused(): boolean {
+    return this.state === 'paused';
+  }
+
+  /**
+   * Get current recording duration in milliseconds
+   */
+  getDuration(): number {
+    if (!this.recordingStartTime) return 0;
+
+    const now = Date.now();
+    let pauseTime = this.pausedDuration;
+
+    // If currently paused, add the current pause duration
+    if (this.state === 'paused' && this.pauseStartTime) {
+      pauseTime += now - this.pauseStartTime;
+    }
+
+    return now - this.recordingStartTime - pauseTime;
   }
 
   setVoiceEnabled(enabled: boolean): void {

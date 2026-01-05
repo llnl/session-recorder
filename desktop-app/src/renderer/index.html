@@ -47,6 +47,24 @@
         </div>
       </section>
 
+      <!-- Recording Status (shown during recording) -->
+      <section class="section recording-status hidden" id="recording-status">
+        <div class="status-grid">
+          <div class="status-item">
+            <span class="status-label">Timer</span>
+            <span class="status-value timer" id="timer">00:00:00</span>
+          </div>
+          <div class="status-item">
+            <span class="status-label">Actions</span>
+            <span class="status-value" id="action-count">0</span>
+          </div>
+        </div>
+        <div class="status-url">
+          <span class="status-label">Current URL</span>
+          <span class="status-value url-text" id="current-url" title="">—</span>
+        </div>
+      </section>
+
       <!-- Controls -->
       <section class="section controls-section">
         <button type="button" id="start-btn" class="btn btn-primary">

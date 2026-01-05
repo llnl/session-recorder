@@ -7,7 +7,7 @@
 
 import { BrowserWindow, ipcMain, dialog, shell } from 'electron';
 import * as path from 'path';
-import { RecordingOrchestrator, RecordingState } from './recorder';
+import { RecordingOrchestrator, RecordingState, RecordingStats } from './recorder';
 import { AppConfig, BrowserType, getConfig, saveConfig } from './config';
 
 export interface MainWindowOptions {
@@ -19,6 +19,7 @@ export class MainWindow {
   private window: BrowserWindow | null = null;
   private orchestrator: RecordingOrchestrator;
   private config: AppConfig;
+  private isQuitting = false;
 
   constructor(options: MainWindowOptions) {
     this.orchestrator = options.orchestrator;
@@ -45,14 +46,40 @@ export class MainWindow {
       show: false
     });
 
+    // Track if window has been shown
+    let windowShown = false;
+
+    // Show window when ready - MUST be registered BEFORE loadFile
+    this.window.once('ready-to-show', () => {
+      if (!windowShown) {
+        windowShown = true;
+        console.log('Main window ready to show');
+        this.window?.show();
+        this.window?.focus();
+      }
+    });
+
+    // Fallback: show window after timeout if ready-to-show doesn't fire
+    setTimeout(() => {
+      if (!windowShown && this.window && !this.window.isDestroyed()) {
+        windowShown = true;
+        console.log('Main window fallback show (ready-to-show did not fire)');
+        this.window.show();
+        this.window.focus();
+      }
+    }, 3000);
+
     // Load the renderer HTML
     const htmlPath = path.join(__dirname, '..', 'renderer', 'index.html');
-    await this.window.loadFile(htmlPath);
+    console.log('Loading renderer from:', htmlPath);
 
-    // Show window when ready
-    this.window.once('ready-to-show', () => {
-      this.window?.show();
-    });
+    try {
+      await this.window.loadFile(htmlPath);
+      console.log('Renderer loaded successfully');
+    } catch (error) {
+      console.error('Failed to load renderer HTML:', error);
+      throw error;
+    }
 
     // Setup IPC handlers
     this.setupIpcHandlers();
@@ -60,7 +87,18 @@ export class MainWindow {
     // Listen for orchestrator events
     this.setupOrchestratorEvents();
 
-    // Handle window close
+    // Hide to tray instead of closing when X is clicked (unless app is quitting)
+    this.window.on('close', (event) => {
+      if (!this.isQuitting && this.window && !this.window.isDestroyed()) {
+        // Prevent the window from closing, just hide it
+        event.preventDefault();
+        this.window.hide();
+        console.log('Main window hidden to tray');
+      }
+      // If isQuitting is true, allow the window to close normally
+    });
+
+    // Handle when window is actually destroyed (app quit)
     this.window.on('closed', () => {
       this.window = null;
     });
@@ -117,23 +155,34 @@ export class MainWindow {
       }
     });
 
-    // Pause recording (placeholder - needs implementation in orchestrator)
+    // Pause recording
     ipcMain.handle('recording:pause', async () => {
-      // TODO: Implement pause functionality in RecordingOrchestrator
-      console.log('Pause requested - not yet implemented');
+      try {
+        await this.orchestrator.pauseRecording();
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        this.sendToRenderer('recording:error', message);
+        throw error;
+      }
     });
 
-    // Resume recording (placeholder - needs implementation in orchestrator)
+    // Resume recording
     ipcMain.handle('recording:resume', async () => {
-      // TODO: Implement resume functionality in RecordingOrchestrator
-      console.log('Resume requested - not yet implemented');
+      try {
+        await this.orchestrator.resumeRecording();
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        this.sendToRenderer('recording:error', message);
+        throw error;
+      }
     });
 
     // Get recording state
     ipcMain.handle('recording:getState', async () => {
       return {
         state: this.orchestrator.getState(),
-        // TODO: Add duration and action count
+        duration: this.orchestrator.getDuration(),
+        isPaused: this.orchestrator.isPaused()
       };
     });
   }
@@ -142,6 +191,11 @@ export class MainWindow {
     // State changes
     this.orchestrator.on('stateChange', (state: RecordingState) => {
       this.sendToRenderer('recording:stateChange', state);
+    });
+
+    // Recording stats (timer, action count, URL)
+    this.orchestrator.on('stats', (stats: RecordingStats) => {
+      this.sendToRenderer('recording:stats', stats);
     });
 
     // Errors
@@ -187,6 +241,9 @@ export class MainWindow {
     ipcMain.removeHandler('recording:pause');
     ipcMain.removeHandler('recording:resume');
     ipcMain.removeHandler('recording:getState');
+
+    // Set quitting flag so close handler allows actual close
+    this.isQuitting = true;
 
     if (this.window) {
       this.window.destroy();

@@ -33,6 +33,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
     return () => ipcRenderer.removeListener('recording:stateChange', subscription);
   },
 
+  onStats: (callback: (stats: { duration: number; actionCount: number; currentUrl: string }) => void) => {
+    const subscription = (_event: Electron.IpcRendererEvent, stats: { duration: number; actionCount: number; currentUrl: string }) => callback(stats);
+    ipcRenderer.on('recording:stats', subscription);
+    return () => ipcRenderer.removeListener('recording:stats', subscription);
+  },
+
   onError: (callback: (error: string) => void) => {
     const subscription = (_event: Electron.IpcRendererEvent, error: string) => callback(error);
     ipcRenderer.on('recording:error', subscription);
