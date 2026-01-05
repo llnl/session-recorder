@@ -49,19 +49,48 @@
 
       <!-- Recording Status (shown during recording) -->
       <section class="section recording-status hidden" id="recording-status">
+        <!-- Recording indicator with red dot -->
+        <div class="recording-header" id="recording-header">
+          <span class="recording-dot" id="recording-dot"></span>
+          <span class="recording-state-text" id="recording-state-text">Recording</span>
+        </div>
+
         <div class="status-grid">
           <div class="status-item">
             <span class="status-label">Timer</span>
             <span class="status-value timer" id="timer">00:00:00</span>
+            <span class="paused-badge hidden" id="paused-badge">PAUSED</span>
           </div>
           <div class="status-item">
             <span class="status-label">Actions</span>
-            <span class="status-value" id="action-count">0</span>
+            <span class="status-value"><span id="action-count">0</span> <span class="action-label">actions</span></span>
           </div>
         </div>
+
+        <!-- Voice indicator -->
+        <div class="voice-indicator hidden" id="voice-indicator">
+          <div class="voice-icon">🎤</div>
+          <span class="voice-status">Voice Recording Active</span>
+          <div class="voice-bars">
+            <span class="voice-bar"></span>
+            <span class="voice-bar"></span>
+            <span class="voice-bar"></span>
+          </div>
+        </div>
+
         <div class="status-url">
           <span class="status-label">Current URL</span>
           <span class="status-value url-text" id="current-url" title="">—</span>
+        </div>
+
+        <!-- Tips section -->
+        <div class="tips-section">
+          <span class="tips-label">Tips</span>
+          <ul class="tips-list">
+            <li>Click and interact in the browser to record actions</li>
+            <li>Speak to add voice narration (if enabled)</li>
+            <li>Press Pause to temporarily stop recording</li>
+          </ul>
         </div>
       </section>
 

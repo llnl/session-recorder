@@ -3,10 +3,10 @@
   "initiative": "desktop-app",
   "generated": "2025-12-17",
   "summary": {
-    "todo": 6,
+    "todo": 5,
     "planning": 0,
     "implementing": 0,
-    "implemented": 0,
+    "implemented": 1,
     "tested": 2,
     "regression": 0,
     "debug": 0
@@ -68,7 +68,7 @@
     {
       "id": "FEAT-03",
       "name": "Recording Status View",
-      "status": "todo",
+      "status": "implemented",
       "steps": [
         "During recording → Recording indicator shows red dot",
         "Timer shows elapsed time in HH:MM:SS format",
@@ -80,6 +80,10 @@
         "When paused → Timer display shows 'Paused' state",
         "Tips section shows helpful guidance text",
         "Window title bar shows 'Recording' or 'Paused' state indicator"
+      ],
+      "history": [
+        {"date": "2026-01-05", "from": "todo", "to": "implementing"},
+        {"date": "2026-01-05", "from": "implementing", "to": "implemented", "notes": "Added recording header with pulsing red dot, paused badge, voice indicator with animated bars, tips section, window title state indicators. Voice bars animate to simulate activity when voice mode enabled."}
       ]
     },
     {

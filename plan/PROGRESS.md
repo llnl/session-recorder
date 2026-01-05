@@ -21,7 +21,7 @@
 
 **Goal:** Full-featured desktop UI with main window, recording controls, settings, and recent recordings
 
-**Status:** FEAT-02 Tested ✅ (2/8 features complete)
+**Status:** FEAT-03 Implemented (2 tested, 1 implemented, 5 todo)
 
 - FEAT-01: Main Window UI - **tested** (2026-01-05)
   - Main window with recording title, mode, and browser selection
@@ -35,18 +35,29 @@
   - Pause/Resume with correct timer handling
   - Fixed ELECTRON_RUN_AS_NODE environment issue
   - Fixed renderer.ts module compilation for browser context
-- FEAT-03 through FEAT-08 - todo
+- FEAT-03: Recording Status View - **implemented** (2026-01-05) ⏳ awaiting user test
+  - Recording header with pulsing red dot indicator
+  - Actions counter shows "N actions" label
+  - Voice indicator with animated level bars (when voice mode enabled)
+  - PAUSED badge appears when recording is paused
+  - Tips section with helpful guidance text
+  - Window title shows 🔴/⏸ state indicators
+- FEAT-04 through FEAT-08 - todo
 
 **Next Task:**
 
 | ID | Description | Tasks File |
 |---|---|---|
-| FEAT-03 | Recording Status View | [tasks-desktop-full.json](tasks/tasks-desktop-full.json) |
+| FEAT-03 | Recording Status View (test) | [tasks-desktop-full.json](tasks/tasks-desktop-full.json) |
 
-**FEAT-03 test steps:**
+**FEAT-03 test steps (user verification needed):**
 - During recording → Recording indicator shows red dot
 - Timer shows elapsed time in HH:MM:SS format
+- Actions counter shows 'N actions' label
 - Voice indicator shows audio level bars when microphone active
+- When paused → Recording indicator changes to yellow/orange
+- When paused → Timer display shows 'Paused' state
+- Tips section shows helpful guidance text
 - Window title bar shows 'Recording' or 'Paused' state indicator
 
 ---
@@ -208,6 +219,7 @@ The session-recorder folder will become its own standalone repository containing
 
 | Date | Changes |
 |------|---------|
+| 2026-01-05 | FEAT-03 (desktop-full): Recording Status View implemented - red dot indicator, voice level bars, paused badge, tips section, window title states |
 | 2026-01-05 | FEAT-02 (desktop-full): Recording Controls Flow tested - timer, action count, URL tracking, pause/resume |
 | 2026-01-05 | FEAT-01 (desktop-full): Main Window UI tested - recording controls, hide-to-tray, double-click tray to show |
 | 2025-12-17 | FEAT-07/FEAT-08: Added AudioPlayer component with dual-stream playback and echo prevention documentation |

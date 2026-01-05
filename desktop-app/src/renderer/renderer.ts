@@ -66,6 +66,15 @@ const timerDisplay = document.getElementById('timer') as HTMLSpanElement;
 const actionCountDisplay = document.getElementById('action-count') as HTMLSpanElement;
 const currentUrlDisplay = document.getElementById('current-url') as HTMLSpanElement;
 
+// FEAT-03: New status elements
+const recordingDot = document.getElementById('recording-dot') as HTMLSpanElement;
+const recordingStateText = document.getElementById('recording-state-text') as HTMLSpanElement;
+const pausedBadge = document.getElementById('paused-badge') as HTMLSpanElement;
+const voiceIndicator = document.getElementById('voice-indicator') as HTMLElement;
+
+// Original window title
+const originalTitle = document.title;
+
 // Format milliseconds as HH:MM:SS
 function formatDuration(ms: number): string {
   const totalSeconds = Math.floor(ms / 1000);
@@ -306,6 +315,37 @@ function updateUI(): void {
     recordingStatusSection.classList.remove('hidden');
   } else {
     recordingStatusSection.classList.add('hidden');
+  }
+
+  // FEAT-03: Update recording dot and state text
+  if (isRecording) {
+    if (isPaused) {
+      recordingDot.classList.add('paused');
+      recordingStateText.textContent = 'Paused';
+      pausedBadge.classList.remove('hidden');
+    } else {
+      recordingDot.classList.remove('paused');
+      recordingStateText.textContent = 'Recording';
+      pausedBadge.classList.add('hidden');
+    }
+  }
+
+  // FEAT-03: Update window title based on recording state
+  if (isRecording) {
+    if (isPaused) {
+      document.title = `⏸ Paused - ${originalTitle}`;
+    } else {
+      document.title = `🔴 Recording - ${originalTitle}`;
+    }
+  } else {
+    document.title = originalTitle;
+  }
+
+  // FEAT-03: Show/hide voice indicator based on selected mode
+  if (isRecording && (selectedMode === 'voice' || selectedMode === 'combined')) {
+    voiceIndicator.classList.remove('hidden');
+  } else {
+    voiceIndicator.classList.add('hidden');
   }
 
   // Disable mode and browser selection during recording
