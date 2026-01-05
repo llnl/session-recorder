@@ -49,6 +49,7 @@ let selectedMode: RecordingMode = 'combined';
 let selectedBrowser: BrowserType = 'chromium';
 let isRecording = false;
 let isPaused = false;
+let isProcessing = false;
 
 // DOM Elements
 const recordingTitleInput = document.getElementById('recording-title') as HTMLInputElement;
@@ -164,7 +165,7 @@ async function handleStartStop(): Promise<void> {
 async function startRecording(): Promise<void> {
   try {
     setStatus('starting', 'Starting recording...');
-    disableControls(true);
+    startBtn.disabled = true;  // Temporarily disable while starting
 
     await electronAPI.startRecording({
       title: recordingTitleInput.value || `Recording ${new Date().toLocaleString()}`,
@@ -174,24 +175,26 @@ async function startRecording(): Promise<void> {
 
     isRecording = true;
     isPaused = false;
-    updateUI();
+    updateUI();  // This will re-enable the button as "Stop Recording"
   } catch (error) {
     console.error('Failed to start recording:', error);
     setStatus('ready', 'Ready to record');
-    disableControls(false);
+    startBtn.disabled = false;  // Re-enable on error
     alert(`Failed to start recording: ${error}`);
   }
 }
 
 async function stopRecording(): Promise<void> {
   try {
+    isProcessing = true;
     setStatus('processing', 'Processing recording...');
-    disableControls(true);
+    updateUI();
 
     const outputPath = await electronAPI.stopRecording();
 
     isRecording = false;
     isPaused = false;
+    isProcessing = false;
     setStatus('ready', 'Ready to record');
     updateUI();
 
@@ -200,6 +203,7 @@ async function stopRecording(): Promise<void> {
     }
   } catch (error) {
     console.error('Failed to stop recording:', error);
+    isProcessing = false;
     setStatus('ready', 'Ready to record');
     updateUI();
     alert(`Failed to stop recording: ${error}`);
@@ -233,6 +237,7 @@ function setupIPCListeners(): void {
       case 'idle':
         isRecording = false;
         isPaused = false;
+        isProcessing = false;
         setStatus('ready', 'Ready to record');
         // Reset stats display
         timerDisplay.textContent = '00:00:00';
@@ -246,6 +251,7 @@ function setupIPCListeners(): void {
       case 'recording':
         isRecording = true;
         isPaused = false;
+        isProcessing = false;
         setStatus('recording', 'Recording...');
         break;
       case 'paused':
@@ -254,6 +260,7 @@ function setupIPCListeners(): void {
         break;
       case 'stopping':
       case 'processing':
+        isProcessing = true;
         setStatus('processing', 'Processing recording...');
         break;
     }
@@ -291,7 +298,7 @@ function setupIPCListeners(): void {
 
 // UI Updates
 function updateUI(): void {
-  // Update start/stop button
+  // Update start/stop button text and style
   if (isRecording) {
     startBtn.innerHTML = '<span class="btn-icon">&#9632;</span> Stop Recording';
     startBtn.classList.remove('btn-primary');
@@ -302,23 +309,32 @@ function updateUI(): void {
     startBtn.classList.remove('btn-danger');
   }
 
+  // Enable/disable start button based on processing state
+  // Button should be enabled when recording (to stop) or idle (to start)
+  // Button should be disabled only when processing
+  startBtn.disabled = isProcessing;
+
   // Update pause button
-  pauseBtn.disabled = !isRecording;
+  pauseBtn.disabled = !isRecording || isProcessing;
   if (isPaused) {
     pauseBtn.innerHTML = '<span class="btn-icon">&#9658;</span> Resume';
   } else {
     pauseBtn.innerHTML = '<span class="btn-icon">&#10074;&#10074;</span> Pause';
   }
 
-  // Show/hide recording status section
-  if (isRecording) {
+  // Show/hide recording status section (also show during processing)
+  if (isRecording || isProcessing) {
     recordingStatusSection.classList.remove('hidden');
   } else {
     recordingStatusSection.classList.add('hidden');
   }
 
   // FEAT-03: Update recording dot and state text
-  if (isRecording) {
+  if (isProcessing) {
+    recordingDot.classList.add('paused');  // Use orange color for processing
+    recordingStateText.textContent = 'Processing...';
+    pausedBadge.classList.add('hidden');
+  } else if (isRecording) {
     if (isPaused) {
       recordingDot.classList.add('paused');
       recordingStateText.textContent = 'Paused';
@@ -331,7 +347,9 @@ function updateUI(): void {
   }
 
   // FEAT-03: Update window title based on recording state
-  if (isRecording) {
+  if (isProcessing) {
+    document.title = `⏳ Processing - ${originalTitle}`;
+  } else if (isRecording) {
     if (isPaused) {
       document.title = `⏸ Paused - ${originalTitle}`;
     } else {
@@ -342,25 +360,25 @@ function updateUI(): void {
   }
 
   // FEAT-03: Show/hide voice indicator based on selected mode
-  if (isRecording && (selectedMode === 'voice' || selectedMode === 'combined')) {
+  if (isRecording && !isProcessing && (selectedMode === 'voice' || selectedMode === 'combined')) {
     voiceIndicator.classList.remove('hidden');
   } else {
     voiceIndicator.classList.add('hidden');
   }
 
-  // Disable mode and browser selection during recording
+  // Disable mode and browser selection during recording or processing
   const modeButtons = recordingModeGroup.querySelectorAll('.toggle-btn');
   const browserButtons = browserTypeGroup.querySelectorAll('.toggle-btn');
 
   modeButtons.forEach(btn => {
-    (btn as HTMLButtonElement).disabled = isRecording;
+    (btn as HTMLButtonElement).disabled = isRecording || isProcessing;
   });
 
   browserButtons.forEach(btn => {
-    (btn as HTMLButtonElement).disabled = isRecording;
+    (btn as HTMLButtonElement).disabled = isRecording || isProcessing;
   });
 
-  recordingTitleInput.disabled = isRecording;
+  recordingTitleInput.disabled = isRecording || isProcessing;
 }
 
 function setStatus(state: 'ready' | 'starting' | 'recording' | 'paused' | 'processing', text: string): void {
@@ -383,10 +401,6 @@ function setStatus(state: 'ready' | 'starting' | 'recording' | 'paused' | 'proce
   }
 
   statusText.textContent = text;
-}
-
-function disableControls(disabled: boolean): void {
-  startBtn.disabled = disabled;
 }
 
 // Start the app
