@@ -4,7 +4,7 @@
  * Handles UI interactions and communicates with main process via IPC.
  */
 
-export {}; // Make this a module
+// Note: This file runs in browser context, not as a Node.js module
 
 // Recording stats from main process
 interface RecordingStats {
@@ -38,11 +38,8 @@ interface ElectronAPI {
   onError: (callback: (error: string) => void) => void;
 }
 
-declare global {
-  interface Window {
-    electronAPI: ElectronAPI;
-  }
-}
+// electronAPI is exposed globally by preload script via contextBridge
+declare const electronAPI: ElectronAPI;
 
 // State
 type RecordingMode = 'browser' | 'voice' | 'combined';
@@ -160,7 +157,7 @@ async function startRecording(): Promise<void> {
     setStatus('starting', 'Starting recording...');
     disableControls(true);
 
-    await window.electronAPI.startRecording({
+    await electronAPI.startRecording({
       title: recordingTitleInput.value || `Recording ${new Date().toLocaleString()}`,
       mode: selectedMode,
       browserType: selectedBrowser
@@ -182,7 +179,7 @@ async function stopRecording(): Promise<void> {
     setStatus('processing', 'Processing recording...');
     disableControls(true);
 
-    const outputPath = await window.electronAPI.stopRecording();
+    const outputPath = await electronAPI.stopRecording();
 
     isRecording = false;
     isPaused = false;
@@ -205,10 +202,10 @@ async function handlePauseResume(): Promise<void> {
 
   try {
     if (isPaused) {
-      await window.electronAPI.resumeRecording();
+      await electronAPI.resumeRecording();
       isPaused = false;
     } else {
-      await window.electronAPI.pauseRecording();
+      await electronAPI.pauseRecording();
       isPaused = true;
     }
     updateUI();
@@ -220,7 +217,7 @@ async function handlePauseResume(): Promise<void> {
 
 // IPC event listeners
 function setupIPCListeners(): void {
-  window.electronAPI.onStateChange((state: string) => {
+  electronAPI.onStateChange((state: string) => {
     console.log('State changed:', state);
 
     switch (state) {
@@ -256,7 +253,7 @@ function setupIPCListeners(): void {
   });
 
   // Handle recording stats updates (timer, action count, URL)
-  window.electronAPI.onStats((stats: RecordingStats) => {
+  electronAPI.onStats((stats: RecordingStats) => {
     // Update timer display
     timerDisplay.textContent = formatDuration(stats.duration);
 
@@ -273,7 +270,7 @@ function setupIPCListeners(): void {
     }
   });
 
-  window.electronAPI.onError((error: string) => {
+  electronAPI.onError((error: string) => {
     console.error('Recording error:', error);
     alert(`Recording error: ${error}`);
     setStatus('ready', 'Ready to record');
