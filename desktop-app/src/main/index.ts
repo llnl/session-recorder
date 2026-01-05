@@ -2,12 +2,13 @@
  * Session Recorder Desktop App - Main Process
  *
  * Entry point for the Electron application.
- * Handles app lifecycle, system tray, and recording orchestration.
+ * Handles app lifecycle, main window, system tray, and recording orchestration.
  */
 
 import { app, dialog, shell } from 'electron';
 import * as path from 'path';
 import { TrayManager } from './tray';
+import { MainWindow } from './mainWindow';
 import { RecordingOrchestrator } from './recorder';
 import { getConfig, saveConfig, AppConfig } from './config';
 
@@ -17,13 +18,16 @@ const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
   app.quit();
 } else {
+  let mainWindow: MainWindow | null = null;
   let trayManager: TrayManager | null = null;
   let orchestrator: RecordingOrchestrator | null = null;
 
   app.on('second-instance', () => {
-    // Focus tray or show notification when second instance is launched
-    if (trayManager) {
-      trayManager.showNotification('Session Recorder', 'Already running in system tray');
+    // Show main window when second instance is launched
+    if (mainWindow) {
+      mainWindow.show();
+    } else if (trayManager) {
+      trayManager.showNotification('Session Recorder', 'Already running');
     }
   });
 
@@ -36,7 +40,14 @@ if (!gotTheLock) {
     // Create orchestrator
     orchestrator = new RecordingOrchestrator(config);
 
-    // Create tray manager
+    // Create and show main window
+    mainWindow = new MainWindow({
+      orchestrator,
+      config
+    });
+    await mainWindow.create();
+
+    // Create tray manager (for quick access when window is minimized)
     trayManager = new TrayManager({
       onStartRecording: async (browserType) => {
         if (!orchestrator) return;
@@ -111,6 +122,16 @@ if (!gotTheLock) {
     // Listen for recording state changes from orchestrator
     orchestrator.on('stateChange', (state) => {
       console.log('Recording state:', state);
+
+      // Sync tray state
+      if (state === 'recording') {
+        trayManager?.setRecordingState(true);
+      } else if (state === 'idle') {
+        trayManager?.setRecordingState(false);
+        trayManager?.setProcessingState(false);
+      } else if (state === 'processing' || state === 'stopping') {
+        trayManager?.setProcessingState(true);
+      }
     });
 
     orchestrator.on('error', (error) => {
@@ -130,14 +151,23 @@ if (!gotTheLock) {
     console.log('Session Recorder ready');
   });
 
-  // Hide dock icon on macOS (tray-only app)
-  if (process.platform === 'darwin') {
-    app.dock?.hide();
-  }
+  // On macOS, show dock icon since we now have a main window
+  // (previously hidden for tray-only mode)
 
-  // Prevent app from quitting when all windows are closed (tray app stays running)
+  // When all windows are closed
   app.on('window-all-closed', () => {
-    // Do nothing - keep app running in tray
+    // On macOS, apps typically stay in menu bar
+    // On Windows/Linux, quit the app
+    if (process.platform !== 'darwin') {
+      app.quit();
+    }
+  });
+
+  // Re-create window on macOS when dock icon is clicked
+  app.on('activate', () => {
+    if (mainWindow) {
+      mainWindow.show();
+    }
   });
 
   app.on('before-quit', async () => {
@@ -145,6 +175,7 @@ if (!gotTheLock) {
     if (orchestrator?.isRecording()) {
       await orchestrator.stopRecording();
     }
+    mainWindow?.destroy();
     trayManager?.destroy();
   });
 }

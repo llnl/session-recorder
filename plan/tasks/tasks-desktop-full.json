@@ -2,20 +2,41 @@
   "epic": "epic-desktop-full",
   "initiative": "desktop-app",
   "generated": "2025-12-17",
+  "summary": {
+    "todo": 7,
+    "planning": 0,
+    "implementing": 0,
+    "implemented": 1,
+    "tested": 0,
+    "regression": 0,
+    "debug": 0
+  },
   "features": [
     {
       "id": "FEAT-01",
       "name": "Main Window UI",
-      "status": "todo",
+      "status": "implemented",
       "steps": [
         "Launch desktop app → Main window displays with title 'Session Recorder'",
         "Recording title input field is visible and accepts text",
         "Recording mode has 3 options: 'Browser Only', 'Voice Only', 'Browser + Voice'",
         "Select 'Browser + Voice' mode → Mode button shows selected state",
-        "Browser dropdown shows at least 'Chromium' option",
-        "Start URL input accepts 'https://example.com'",
+        "Browser selection shows 3 toggle buttons: 'Chromium', 'Firefox', 'WebKit'",
+        "Click 'Firefox' toggle → Firefox button shows selected state, others deselected",
         "Start Recording button is visible and enabled",
+        "Pause button is visible (disabled until recording starts)",
         "Status bar shows 'Ready to record' text"
+      ],
+      "files": [
+        "desktop-app/src/renderer/index.html",
+        "desktop-app/src/renderer/styles.css",
+        "desktop-app/src/renderer/renderer.ts",
+        "desktop-app/src/main/mainWindow.ts",
+        "desktop-app/src/main/preload.ts",
+        "desktop-app/src/main/index.ts"
+      ],
+      "history": [
+        {"date": "2026-01-05", "from": "todo", "to": "implemented"}
       ]
     },
     {
@@ -29,6 +50,9 @@
         "Action count increments when clicking in browser",
         "Voice level indicator shows activity when speaking",
         "Current URL updates as browser navigates",
+        "Pause button is enabled during recording",
+        "Click Pause → Timer stops, Pause button changes to Resume",
+        "Click Resume → Timer continues from paused time",
         "Stop Recording button is visible and enabled"
       ]
     },
@@ -42,8 +66,11 @@
         "Actions counter shows 'N actions' label",
         "Voice indicator shows audio level bars when microphone active",
         "URL display shows current page URL (truncated if needed)",
+        "Pause/Resume button visible next to Stop button",
+        "When paused → Recording indicator changes to yellow/orange",
+        "When paused → Timer display shows 'Paused' state",
         "Tips section shows helpful guidance text",
-        "Window title bar shows 'Recording' state indicator"
+        "Window title bar shows 'Recording' or 'Paused' state indicator"
       ]
     },
     {

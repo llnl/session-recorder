@@ -7,8 +7,9 @@
   "license": "MIT",
   "scripts": {
     "start": "npm run build && electron .",
-    "dev": "tsc && electron .",
-    "build": "tsc",
+    "dev": "npm run build && electron .",
+    "build": "tsc && npm run copy-renderer",
+    "copy-renderer": "node -e \"const fs=require('fs');const p=require('path');const src='src/renderer';const dst='dist/renderer';fs.mkdirSync(dst,{recursive:true});['index.html','styles.css'].forEach(f=>fs.copyFileSync(p.join(src,f),p.join(dst,f)))\"",
     "clean": "rimraf dist",
     "electron:build": "npm run build && electron-builder",
     "electron:build:win": "npm run build && electron-builder --win",
