@@ -50,7 +50,7 @@
       "status": "tested",
       "history": [
         {"date": "2026-01-05", "from": "todo", "to": "implementing"},
-        {"date": "2026-01-05", "from": "implementing", "to": "tested", "notes": "Core controls implemented: timer, action count, URL tracking, pause/resume. Voice level indicator deferred to FEAT-03."}
+        {"date": "2026-01-05", "from": "implementing", "to": "tested", "notes": "Core controls implemented: timer, action count, URL tracking, pause/resume. Fixed renderer.ts module compilation (removed export{}, use declare const for preload API). Voice level indicator deferred to FEAT-03."}
       ],
       "steps": [
         "Click Start Recording → Browser window opens within 3 seconds",
