@@ -1,0 +1,235 @@
+.voice-transcript-viewer {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem;
+  background-color: #1e2128;
+  border-radius: 8px;
+  max-height: 100%;
+  overflow-y: auto;
+}
+
+.voice-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #3a3f4b;
+}
+
+.voice-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  font-size: 0.875rem;
+  color: #9ca3af;
+}
+
+.voice-meta-item strong {
+  color: #e4e6eb;
+  margin-right: 0.25rem;
+}
+
+.copy-btn {
+  padding: 0.5rem 1rem;
+  background-color: #3a3f4b;
+  color: #e4e6eb;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.copy-btn:hover {
+  background-color: #4a5568;
+}
+
+.copy-btn:active {
+  background-color: #667eea;
+}
+
+.transcript-text {
+  background-color: #252830;
+  padding: 1rem;
+  border-radius: 6px;
+  line-height: 1.8;
+  font-size: 1rem;
+  color: #d4d4d4;
+  min-height: 100px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.transcript-text .word {
+  cursor: pointer;
+  padding: 2px 0;
+  transition: all 0.2s;
+  border-radius: 2px;
+}
+
+.transcript-text .word:hover {
+  background-color: rgba(102, 126, 234, 0.2);
+  color: #fff;
+}
+
+.transcript-text .word.active {
+  background-color: rgba(76, 175, 80, 0.4);
+  color: #fff;
+  font-weight: 600;
+  padding: 2px 4px;
+}
+
+.transcript-fallback {
+  font-style: italic;
+  color: #9ca3af;
+  margin: 0;
+}
+
+.audio-player {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  background-color: #252830;
+  border-radius: 6px;
+}
+
+.audio-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.control-btn {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #667eea;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.control-btn:hover {
+  background-color: #5568d3;
+  transform: scale(1.05);
+}
+
+.control-btn:active {
+  transform: scale(0.95);
+}
+
+.play-pause-btn {
+  width: 48px;
+  height: 48px;
+  font-size: 1.5rem;
+}
+
+.time-display {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-family: 'Courier New', monospace;
+  font-size: 0.875rem;
+  color: #9ca3af;
+  margin-left: 0.5rem;
+}
+
+.time-separator {
+  color: #6b7280;
+}
+
+.playback-rate {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+  font-size: 0.875rem;
+  color: #9ca3af;
+}
+
+.playback-rate label {
+  font-weight: 600;
+}
+
+.playback-rate select {
+  padding: 0.25rem 0.5rem;
+  background-color: #3a3f4b;
+  color: #e4e6eb;
+  border: 1px solid #4a5568;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.playback-rate select:hover {
+  background-color: #4a5568;
+}
+
+.audio-progress {
+  width: 100%;
+  height: 6px;
+  background-color: #3a3f4b;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.audio-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #667eea 0%, #4CAF50 100%);
+  transition: width 0.1s linear;
+}
+
+.no-audio-message {
+  padding: 1.5rem;
+  text-align: center;
+  background-color: #2a2e38;
+  border-radius: 6px;
+  color: #9ca3af;
+  font-size: 0.875rem;
+}
+
+.no-audio-message p {
+  margin: 0;
+}
+
+/* Scrollbar styling */
+.transcript-text::-webkit-scrollbar {
+  width: 8px;
+}
+
+.transcript-text::-webkit-scrollbar-track {
+  background: #1a1d23;
+}
+
+.transcript-text::-webkit-scrollbar-thumb {
+  background: #3a3f4b;
+  border-radius: 4px;
+}
+
+.transcript-text::-webkit-scrollbar-thumb:hover {
+  background: #4a5568;
+}
+
+.voice-transcript-viewer::-webkit-scrollbar {
+  width: 8px;
+}
+
+.voice-transcript-viewer::-webkit-scrollbar-track {
+  background: #1a1d23;
+}
+
+.voice-transcript-viewer::-webkit-scrollbar-thumb {
+  background: #3a3f4b;
+  border-radius: 4px;
+}
+
+.voice-transcript-viewer::-webkit-scrollbar-thumb:hover {
+  background: #4a5568;
+}

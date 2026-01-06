@@ -1,0 +1,247 @@
+{
+  "epic": "epic-angular-migration",
+  "initiative": "angular-migration",
+  "generated": "2025-12-17",
+  "features": [
+    {
+      "id": "FEAT-01",
+      "name": "Angular Module Structure",
+      "status": "todo",
+      "steps": [
+        "Create session-editor.module.ts with @NgModule decorator",
+        "Create session-editor-routing.module.ts with Routes config",
+        "Import CommonModule, ReactiveFormsModule in module",
+        "Import ScrollingModule from @angular/cdk/scrolling",
+        "Import DragDropModule from @angular/cdk/drag-drop",
+        "Import MaterialModule (shared Material imports)",
+        "Add lazy loading route in parent app routing",
+        "Navigate to /session-editor → Module loads without errors"
+      ]
+    },
+    {
+      "id": "FEAT-02",
+      "name": "Session Editor Layout Component",
+      "status": "todo",
+      "steps": [
+        "Create SessionEditorComponent with mat-sidenav-container",
+        "Left panel contains ActionListComponent",
+        "Main content contains SnapshotViewerComponent",
+        "Bottom panel contains TimelineComponent",
+        "Right panel contains TabPanelComponent",
+        "Toolbar shows session name and action buttons",
+        "Panels are resizable using ResizablePanelDirective",
+        "Layout responsive - collapses sidebar on mobile"
+      ]
+    },
+    {
+      "id": "FEAT-03",
+      "name": "Timeline Component",
+      "status": "todo",
+      "steps": [
+        "Create TimelineComponent with canvas element",
+        "Canvas renders action markers at correct positions",
+        "Voice transcript segments render as waveform blocks",
+        "Click on timeline → Selects nearest action",
+        "Drag on timeline → Scrubs through actions at 60fps",
+        "Current time indicator follows selected action",
+        "Zoom controls adjust timeline scale",
+        "Component uses OnPush change detection"
+      ]
+    },
+    {
+      "id": "FEAT-04",
+      "name": "Action List Component",
+      "status": "todo",
+      "steps": [
+        "Create ActionListComponent with cdk-virtual-scroll-viewport",
+        "Virtual scroll renders 1000+ actions without lag",
+        "Each action shows type icon, description, timestamp",
+        "Click action → Becomes selected (highlight visible)",
+        "Selected action scrolls into view",
+        "Filter by action type shows filtered results",
+        "Search input filters by action content",
+        "trackBy function uses action.id"
+      ]
+    },
+    {
+      "id": "FEAT-05",
+      "name": "Snapshot Viewer Component",
+      "status": "todo",
+      "steps": [
+        "Create SnapshotViewerComponent with mat-card",
+        "Before/After toggle switches displayed snapshot",
+        "HTML snapshot renders in sandboxed iframe",
+        "Acted element highlighted with overlay",
+        "Screenshot thumbnail shows preview",
+        "Click thumbnail → Opens full-size screenshot",
+        "Loading spinner shows while snapshot loads",
+        "Lazy loads snapshot content on selection"
+      ]
+    },
+    {
+      "id": "FEAT-06",
+      "name": "Tab Panel Component",
+      "status": "todo",
+      "steps": [
+        "Create TabPanelComponent with mat-tab-group",
+        "Console tab shows console log entries",
+        "Network tab shows network requests",
+        "Info tab shows action metadata",
+        "FilteredConsolePipe filters by log level",
+        "FilteredNetworkPipe filters by request type",
+        "Console entries show appropriate level colors",
+        "Network entries show status code badges"
+      ]
+    },
+    {
+      "id": "FEAT-07",
+      "name": "Session State Service",
+      "status": "todo",
+      "steps": [
+        "Create SessionStateService with BehaviorSubject for session$",
+        "session$ emits SessionData when loaded",
+        "selectedAction$ emits currently selected action ID",
+        "actions$ emits array of all actions",
+        "setSelectedAction(id) updates selectedAction$",
+        "loadSession(data) parses and emits session data",
+        "clearSession() resets all state to initial",
+        "Service is providedIn: 'root'"
+      ]
+    },
+    {
+      "id": "FEAT-08",
+      "name": "Edit State Service",
+      "status": "todo",
+      "steps": [
+        "Create EditStateService with operations$, undoStack$, redoStack$",
+        "addNote(afterActionId, content) adds AddNoteOperation",
+        "editField(actionId, field, value) adds EditFieldOperation",
+        "deleteAction(actionId) adds DeleteActionOperation",
+        "undo() pops from operations, pushes to redoStack",
+        "redo() pops from redoStack, pushes to operations",
+        "hasUnsavedChanges$ emits true when operations.length > 0",
+        "Service integrates with IndexedDBService for persistence"
+      ]
+    },
+    {
+      "id": "FEAT-09",
+      "name": "IndexedDB Service",
+      "status": "todo",
+      "steps": [
+        "Create IndexedDBService for local persistence",
+        "Database name: 'session-editor-db'",
+        "Object stores: sessionEdits, sessionMetadata, sessionBlobs",
+        "saveEdits(sessionId, operations) persists edit state",
+        "loadEdits(sessionId) retrieves stored operations",
+        "saveSessionBlob(sessionId, blob) stores original session",
+        "clearSession(sessionId) removes all data for session",
+        "getAllSessions() returns list of stored sessions"
+      ]
+    },
+    {
+      "id": "FEAT-10",
+      "name": "Note Editor Dialog",
+      "status": "todo",
+      "steps": [
+        "Create NoteEditorDialogComponent with mat-dialog",
+        "Dialog opens via MatDialog.open()",
+        "Textarea input for note content with mat-form-field",
+        "Save button enabled when content is not empty",
+        "Cancel button closes dialog without saving",
+        "Edit mode pre-fills existing note content",
+        "Dialog returns {action: 'save'|'cancel', content: string}",
+        "Keyboard shortcut Ctrl+Enter saves and closes"
+      ]
+    },
+    {
+      "id": "FEAT-11",
+      "name": "Action Editor Component",
+      "status": "todo",
+      "steps": [
+        "Create ActionEditorComponent for inline editing",
+        "Click edit icon → Field becomes editable input",
+        "Transcript field editable for voice_transcript actions",
+        "Value field editable for input/change actions",
+        "Enter key saves changes",
+        "Escape key cancels editing",
+        "Blur saves changes automatically",
+        "Changes emit via EditStateService.editField()"
+      ]
+    },
+    {
+      "id": "FEAT-12",
+      "name": "Editor Toolbar Component",
+      "status": "todo",
+      "steps": [
+        "Create EditorToolbarComponent with mat-toolbar",
+        "Undo button enabled when operations.length > 0",
+        "Redo button enabled when redoStack.length > 0",
+        "Export button enabled when session is loaded",
+        "Click Undo → Calls EditStateService.undo()",
+        "Click Redo → Calls EditStateService.redo()",
+        "Click Export → Downloads modified session.zip",
+        "Keyboard shortcuts Ctrl+Z (undo), Ctrl+Y (redo)"
+      ]
+    },
+    {
+      "id": "FEAT-13",
+      "name": "Session Loader Component",
+      "status": "todo",
+      "steps": [
+        "Create SessionLoaderComponent with file input",
+        "Drag and drop zone accepts .zip files",
+        "Click zone opens file picker dialog",
+        "Invalid file shows mat-snack-bar error",
+        "Valid zip parses and loads session",
+        "Loading spinner shows during parse",
+        "Recent sessions list shows previously loaded sessions",
+        "Click recent session → Loads from IndexedDB"
+      ]
+    },
+    {
+      "id": "FEAT-14",
+      "name": "Zip Export Service",
+      "status": "todo",
+      "steps": [
+        "Create ZipExportService for modified session export",
+        "exportSession() applies all operations to session data",
+        "Notes inserted into actions array at correct positions",
+        "Edited fields updated in action data",
+        "Deleted actions removed from export",
+        "Creates new zip with modified session.json",
+        "Original snapshots and screenshots preserved",
+        "Download triggers with filename session-edited-{timestamp}.zip"
+      ]
+    },
+    {
+      "id": "FEAT-15",
+      "name": "Angular Material Integration",
+      "status": "todo",
+      "steps": [
+        "All buttons use mat-button or mat-icon-button",
+        "All inputs use mat-form-field with mat-input",
+        "All dialogs use MatDialog service",
+        "Tabs use mat-tab-group",
+        "Lists use mat-list with virtual scroll",
+        "Progress indicators use mat-progress-bar or mat-spinner",
+        "Tooltips use matTooltip directive",
+        "Theme colors match existing application palette"
+      ]
+    },
+    {
+      "id": "FEAT-16",
+      "name": "Performance and Accessibility",
+      "status": "todo",
+      "steps": [
+        "All components use ChangeDetectionStrategy.OnPush",
+        "All *ngFor directives have trackBy functions",
+        "IntersectionObserver lazy loads thumbnails",
+        "Offscreen snapshots unloaded from memory",
+        "All interactive elements have ARIA labels",
+        "Focus trap in dialogs via cdkFocusTrap",
+        "Keyboard navigation works for all features",
+        "Angular DevTools shows no change detection issues"
+      ]
+    }
+  ]
+}

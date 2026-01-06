@@ -1,0 +1,188 @@
+/* ===== Compact Field Editor (for transcription/text edits) ===== */
+.compact-field-editor {
+  width: 100%;
+}
+
+.compact-field-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.compact-field-input {
+  width: 100%;
+  padding: 0.25rem 0.5rem;
+  padding-right: 52px; /* Space for buttons */
+  background-color: #1e2128;
+  border: 1px solid #3b82f6;
+  border-radius: 4px;
+  color: #e4e6eb;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.compact-field-input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+}
+
+.compact-field-buttons {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  gap: 2px;
+}
+
+.compact-field-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  transition: all 0.15s;
+}
+
+.compact-field-btn-save {
+  background-color: #10b981;
+  color: white;
+}
+
+.compact-field-btn-save:hover {
+  background-color: #059669;
+}
+
+.compact-field-btn-save:disabled {
+  background-color: #4a5568;
+  color: #6b7280;
+  cursor: not-allowed;
+}
+
+.compact-field-btn-cancel {
+  background-color: #ef4444;
+  color: white;
+}
+
+.compact-field-btn-cancel:hover {
+  background-color: #dc2626;
+}
+
+/* ===== Compact Note Editor (single line) ===== */
+.compact-note-editor {
+  width: 100%;
+}
+
+.compact-note-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.compact-note-input {
+  width: 100%;
+  padding: 0.375rem 0.5rem;
+  padding-right: 52px; /* Space for buttons */
+  background-color: #1e2128;
+  border: 1px solid #f59e0b;
+  border-radius: 4px;
+  color: #e4e6eb;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.compact-note-input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.3);
+}
+
+.compact-note-input::placeholder {
+  color: #6b7280;
+}
+
+.compact-note-buttons {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  gap: 2px;
+}
+
+/* ===== Insert Point Styles ===== */
+.action-insert-point {
+  position: relative;
+  height: 24px;
+  margin: 0;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.action-insert-point:hover {
+  background-color: rgba(245, 158, 11, 0.15);
+}
+
+.action-insert-point-line {
+  position: absolute;
+  left: 0.75rem;
+  right: 0.75rem;
+  top: 50%;
+  height: 2px;
+  background-color: transparent;
+  transition: all 0.15s ease;
+}
+
+.action-insert-point:hover .action-insert-point-line {
+  background-color: #f59e0b;
+}
+
+.action-insert-point-button {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 50%;
+  background-color: #f59e0b;
+  color: #1e2128;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  opacity: 0;
+  transition: all 0.15s ease;
+  z-index: 1;
+}
+
+.action-insert-point:hover .action-insert-point-button {
+  opacity: 1;
+}
+
+.action-insert-point-button:hover {
+  background-color: #d97706;
+  transform: translate(-50%, -50%) scale(1.1);
+}
+
+/* Insert point with active editor */
+.action-insert-point.editing {
+  height: auto;
+  background-color: transparent;
+  padding: 0.25rem 0.75rem;
+}
+
+.action-insert-point.editing .action-insert-point-line,
+.action-insert-point.editing .action-insert-point-button {
+  display: none;
+}

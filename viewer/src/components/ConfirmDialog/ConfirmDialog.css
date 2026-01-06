@@ -1,0 +1,129 @@
+/* ConfirmDialog Styles */
+
+.confirm-dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  animation: fadeIn 0.15s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.confirm-dialog-modal {
+  background-color: #1e2128;
+  border-radius: 8px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  width: 90%;
+  max-width: 400px;
+  animation: slideIn 0.2s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(-20px) scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+.confirm-dialog-header {
+  padding: 1.25rem 1.5rem 1rem;
+}
+
+.confirm-dialog-title {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #e4e6eb;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.confirm-dialog-warning-icon {
+  font-size: 1.25rem;
+}
+
+.confirm-dialog-body {
+  padding: 0 1.5rem 1.25rem;
+}
+
+.confirm-dialog-message {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #9ca3af;
+  line-height: 1.5;
+}
+
+.confirm-dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #3a3f4b;
+  background-color: #242830;
+  border-radius: 0 0 8px 8px;
+}
+
+.confirm-dialog-btn {
+  padding: 0.625rem 1.25rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.confirm-dialog-btn-cancel {
+  background-color: #3a3f4b;
+  color: #e4e6eb;
+}
+
+.confirm-dialog-btn-cancel:hover {
+  background-color: #4a5568;
+}
+
+.confirm-dialog-btn-confirm {
+  background-color: #667eea;
+  color: white;
+}
+
+.confirm-dialog-btn-confirm:hover {
+  background-color: #5a67d8;
+}
+
+.confirm-dialog-btn-destructive {
+  background-color: #ef4444;
+  color: white;
+}
+
+.confirm-dialog-btn-destructive:hover {
+  background-color: #dc2626;
+}
+
+.confirm-dialog-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3);
+}
+
+.confirm-dialog-btn-destructive:focus {
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.3);
+}

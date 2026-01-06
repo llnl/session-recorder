@@ -1,0 +1,162 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$comment": "Template for TDD task files - copy and customize for each epic",
+
+  "epic": "epic-[init]-[epic]",
+  "initiative": "[init]",
+  "total_features": 0,
+
+  "summary": {
+    "todo": 0,
+    "planning": 0,
+    "implementing": 0,
+    "implemented": 0,
+    "tested": 0,
+    "regression": 0,
+    "debug": 0
+  },
+
+  "features": [
+    {
+      "$comment": "EXAMPLE: Database feature with idempotent CHECK → IF NEEDED → VERIFY pattern",
+      "id": "DB-FUNC-01",
+      "category": "functional",
+      "phase": "database-setup",
+      "description": "new_column column exists in table_name with constraints",
+      "status": "todo",
+      "steps": [
+        "CHECK: Query `SELECT column_name FROM information_schema.columns WHERE table_name = 'table_name' AND column_name = 'new_column'` → If returns 1 row, column exists (skip creation)",
+        "IF NEEDED: Create file supabase/migrations/YYYYMMDDHHMMSS_name.sql → File created",
+        "IF NEEDED: Add new_column TEXT with DEFAULT value → Column added",
+        "IF NEEDED: Add CHECK constraint → Constraint created",
+        "IF NEEDED: Run `supabase db push` → Migration completes",
+        "VERIFY: Query `SELECT new_column FROM table_name LIMIT 0` → Column accessible",
+        "VERIFY: Insert row with valid value → Row inserted successfully",
+        "VERIFY: Insert row with invalid value → Error: constraint violation"
+      ],
+      "tests": {
+        "unit": [],
+        "integration": [],
+        "e2e": []
+      },
+      "files": ["supabase/migrations/"],
+      "history": []
+    },
+    {
+      "$comment": "EXAMPLE: UI feature with idempotent CHECK → IF NEEDED → VERIFY pattern",
+      "id": "PAGE-FUNC-01",
+      "category": "functional",
+      "phase": "page-implementation",
+      "description": "PageName component displays list with empty state",
+      "status": "implemented",
+      "steps": [
+        "CHECK: File src/features/feature-name/PageName.tsx exists → If exists, check functionality",
+        "IF NEEDED: Create file src/features/feature-name/PageName.tsx → File created",
+        "IF NEEDED: Add page header with title → h1 element present",
+        "IF NEEDED: Add list container with data-testid='list' → Container element added",
+        "IF NEEDED: Add empty state component → Shows when list empty",
+        "VERIFY: Navigate to /path → URL is exactly '/path', no redirect",
+        "VERIFY: Page contains h1 → h1.textContent === 'Expected Title'",
+        "VERIFY: List with items → Element with data-testid='list' contains N child elements",
+        "VERIFY: Empty state → When no items, element with text 'No items' visible"
+      ],
+      "tests": {
+        "unit": [],
+        "integration": [],
+        "e2e": ["e2e/page-name.spec.ts"]
+      },
+      "files": ["src/features/feature-name/PageName.tsx"],
+      "history": []
+    },
+    {
+      "$comment": "EXAMPLE: Style feature with idempotent CHECK → VERIFY pattern (styles usually verify-only)",
+      "id": "PAGE-STYLE-01",
+      "category": "style",
+      "phase": "page-implementation",
+      "description": "PageName styling matches design spec",
+      "status": "todo",
+      "steps": [
+        "CHECK: PageName.tsx contains Tailwind classes for dark theme → If bg-slate-900 found, styling exists",
+        "IF NEEDED: Add bg-slate-900 to page container → Background class added",
+        "IF NEEDED: Add bg-slate-800 to card components → Card background class added",
+        "IF NEEDED: Add responsive classes for mobile/desktop → Classes added",
+        "VERIFY: Page background color → getComputedStyle(body).backgroundColor === 'rgb(15, 23, 42)'",
+        "VERIFY: Card background color → .card elements have backgroundColor rgb(30, 41, 59)",
+        "VERIFY: Mobile 375px viewport → Layout is single column, full width",
+        "VERIFY: Desktop 1440px viewport → Layout shows sidebar (280px) + main content",
+        "VERIFY: Hover on button → Background changes to rgb(51, 65, 85)"
+      ],
+      "tests": {
+        "unit": [],
+        "integration": [],
+        "e2e": ["e2e/page-name.spec.ts"]
+      },
+      "files": ["src/features/feature-name/PageName.tsx"],
+      "history": []
+    },
+    {
+      "$comment": "EXAMPLE: Comprehensive end-to-end flow with idempotent pattern (10+ steps)",
+      "id": "FLOW-FUNC-01",
+      "category": "functional",
+      "phase": "user-flows",
+      "description": "Complete user workflow from start to finish passes",
+      "status": "todo",
+      "steps": [
+        "CHECK: File e2e/complete-flow.spec.ts exists → If exists and passes, flow complete",
+        "IF NEEDED: Create e2e/complete-flow.spec.ts → Test file created",
+        "IF NEEDED: Implement workflow steps in application → Code complete",
+        "VERIFY: Navigate to /start → Start page loads with 'Begin' button visible",
+        "VERIFY: Click 'Begin' button → URL changes to '/step-1'",
+        "VERIFY: Fill form field 'name' with 'Test' → Input value === 'Test'",
+        "VERIFY: Fill form field 'email' with 'test@example.com' → Input value === 'test@example.com'",
+        "VERIFY: Click 'Next' button → URL changes to '/step-2'",
+        "VERIFY: Select option 'Option A' from dropdown → Selected value === 'Option A'",
+        "VERIFY: Click 'Next' button → URL changes to '/step-3'",
+        "VERIFY: Review page → Name shows 'Test', email shows 'test@example.com'",
+        "VERIFY: Click 'Submit' → Loading spinner appears, then success message 'Success!' visible",
+        "VERIFY: Query database → Row exists with name='Test'",
+        "VERIFY: Navigate to /list → New item with name='Test' appears in list"
+      ],
+      "tests": {
+        "unit": [],
+        "integration": [],
+        "e2e": ["e2e/complete-flow.spec.ts"]
+      },
+      "files": ["src/features/workflow/"],
+      "history": []
+    }
+  ],
+
+  "_documentation": {
+    "status_lifecycle": {
+      "todo": "Not started - waiting to be implemented",
+      "planning": "Being planned in plan mode",
+      "implementing": "Currently being implemented",
+      "implemented": "Code complete, needs e2e verification",
+      "tested": "All tests passing, verified working",
+      "regression": "Being retested after changes",
+      "debug": "Test failed - needs investigation and fix"
+    },
+    "idempotent_step_pattern": {
+      "description": "Tasks follow CHECK → IF NEEDED → VERIFY pattern for idempotency",
+      "CHECK": "First verify if desired state already exists (safe to re-run)",
+      "IF_NEEDED": "Only perform action if state doesn't match desired",
+      "VERIFY": "Confirm final state is correct (can be run multiple times)"
+    },
+    "step_format": "[CHECK/IF NEEDED/VERIFY]: [ACTION] → [OBSERVABLE RESULT]",
+    "step_rules": [
+      "Every task MUST start with CHECK step to verify current state",
+      "IF NEEDED steps only execute when CHECK shows state missing",
+      "VERIFY steps confirm final state (can be run multiple times)",
+      "NO vague words: works, correct, properly, valid, good",
+      "Include exact values: colors as rgb(), sizes as px, text as exact strings",
+      "Include exact selectors: data-testid, aria-label, element types"
+    ],
+    "history_format": {"date": "YYYY-MM-DD", "from": "status", "to": "status"},
+    "id_convention": "[PHASE]-[TYPE]-[NN] e.g., DB-FUNC-01, NAV-STYLE-03",
+    "description_rules": [
+      "Use state-based descriptions: 'X exists' not 'Create X'",
+      "Describe the desired end state, not the action to take"
+    ]
+  }
+}

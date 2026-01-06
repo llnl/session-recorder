@@ -1,0 +1,234 @@
+{
+  "epic": "epic-recorder-core",
+  "initiative": "session-recorder",
+  "total_features": 10,
+  "original_tasks": "PRDs/TASKS.md",
+
+  "summary": {
+    "todo": 0,
+    "planning": 0,
+    "implementing": 0,
+    "implemented": 0,
+    "tested": 10,
+    "regression": 0,
+    "debug": 0
+  },
+
+  "features": [
+    {
+      "id": "SETUP-FUNC-01",
+      "category": "functional",
+      "phase": "project-setup",
+      "description": "Project structure with TypeScript and Playwright configured",
+      "status": "tested",
+      "steps": [
+        "CHECK: Directory session-recorder/ exists with src/browser/, src/node/, test/, output/ → If exists, setup complete",
+        "IF NEEDED: Create directory structure → Directories created",
+        "IF NEEDED: Initialize package.json with dependencies → package.json created",
+        "IF NEEDED: Setup tsconfig.json for TypeScript compilation → tsconfig.json created",
+        "VERIFY: Run npm install → Dependencies installed without errors",
+        "VERIFY: Run npm run build → TypeScript compiles to dist/"
+      ],
+      "tests": { "unit": [], "integration": [], "e2e": [] },
+      "files": ["package.json", "tsconfig.json"],
+      "history": [{"date": "2024-12-01", "from": "todo", "to": "tested"}]
+    },
+    {
+      "id": "CAPTURE-FUNC-01",
+      "category": "functional",
+      "phase": "action-capture",
+      "description": "Action listener captures click, input, change, submit, keydown events",
+      "status": "tested",
+      "steps": [
+        "CHECK: File src/browser/actionListener.ts exists → If exists, check functionality",
+        "IF NEEDED: Create actionListener.ts with capture phase listeners → File created",
+        "IF NEEDED: Implement click event handler with x/y coordinates → Handler added",
+        "IF NEEDED: Implement input event handler with value → Handler added",
+        "IF NEEDED: Implement change event handler for select/checkbox/radio → Handler added",
+        "IF NEEDED: Implement submit event handler → Handler added",
+        "IF NEEDED: Implement keydown event handler for Enter/Tab/Escape → Handler added",
+        "VERIFY: Click on element → Action captured with type='click', x, y coordinates",
+        "VERIFY: Type in input field → Action captured with type='input', value",
+        "VERIFY: Change select option → Action captured with type='change', value",
+        "VERIFY: Submit form → Action captured with type='submit'",
+        "VERIFY: Press Enter key → Action captured with type='keydown', key='Enter'"
+      ],
+      "tests": { "unit": [], "integration": [], "e2e": ["test/simple-test.ts"] },
+      "files": ["src/browser/actionListener.ts"],
+      "history": [{"date": "2024-12-01", "from": "todo", "to": "tested"}]
+    },
+    {
+      "id": "CAPTURE-FUNC-02",
+      "category": "functional",
+      "phase": "snapshot-capture",
+      "description": "Snapshot capture serializes DOM with form state preservation",
+      "status": "tested",
+      "steps": [
+        "CHECK: File src/browser/snapshotCapture.ts exists → If exists, check functionality",
+        "IF NEEDED: Create snapshotCapture.ts → File created",
+        "IF NEEDED: Implement visitNode() for DOM traversal → Function added",
+        "IF NEEDED: Add __playwright_value_ for input/textarea → Attribute captured",
+        "IF NEEDED: Add __playwright_checked_ for checkbox/radio → Attribute captured",
+        "IF NEEDED: Add __playwright_selected_ for select options → Attribute captured",
+        "IF NEEDED: Add __playwright_scroll_top/left_ → Attributes captured",
+        "IF NEEDED: Implement Shadow DOM traversal → Shadow DOM supported",
+        "VERIFY: Input with value 'test' → Snapshot contains __playwright_value_='test'",
+        "VERIFY: Checked checkbox → Snapshot contains __playwright_checked_='true'",
+        "VERIFY: Selected option → Snapshot contains __playwright_selected_='true'",
+        "VERIFY: Scrolled element → Snapshot contains scroll position attributes"
+      ],
+      "tests": { "unit": [], "integration": [], "e2e": ["test/simple-test.ts"] },
+      "files": ["src/browser/snapshotCapture.ts"],
+      "history": [{"date": "2024-12-01", "from": "todo", "to": "tested"}]
+    },
+    {
+      "id": "CAPTURE-FUNC-03",
+      "category": "functional",
+      "phase": "screenshot-capture",
+      "description": "Screenshot capture takes before/after PNG screenshots for each action",
+      "status": "tested",
+      "steps": [
+        "CHECK: SessionRecorder._handleActionBefore() captures screenshot → If screenshot saved, complete",
+        "IF NEEDED: Add page.screenshot() call in _handleActionBefore() → Screenshot saved",
+        "IF NEEDED: Add page.screenshot() call in _handleActionAfter() → Screenshot saved",
+        "IF NEEDED: Configure PNG format with viewport screenshots → Format configured",
+        "VERIFY: Perform action → screenshots/action-N-before.png exists",
+        "VERIFY: Perform action → screenshots/action-N-after.png exists",
+        "VERIFY: Screenshot size → File is valid PNG image"
+      ],
+      "tests": { "unit": [], "integration": [], "e2e": ["test/simple-test.ts"] },
+      "files": ["src/node/SessionRecorder.ts"],
+      "history": [{"date": "2024-12-01", "from": "todo", "to": "tested"}]
+    },
+    {
+      "id": "STORAGE-FUNC-01",
+      "category": "functional",
+      "phase": "data-storage",
+      "description": "Session storage creates directory structure and saves session.json",
+      "status": "tested",
+      "steps": [
+        "CHECK: output/session-{id}/ directory created on recording → If exists, check structure",
+        "IF NEEDED: Create session directory in SessionRecorder.start() → Directory created",
+        "IF NEEDED: Create subdirectories: snapshots/, screenshots/ → Subdirectories created",
+        "IF NEEDED: Implement session.json writing in SessionRecorder.stop() → File created",
+        "VERIFY: Start recording → output/session-{timestamp}/ directory exists",
+        "VERIFY: Stop recording → session.json file created",
+        "VERIFY: session.json structure → Contains sessionId, startTime, endTime, actions array"
+      ],
+      "tests": { "unit": [], "integration": [], "e2e": ["test/simple-test.ts"] },
+      "files": ["src/node/SessionRecorder.ts"],
+      "history": [{"date": "2024-12-01", "from": "todo", "to": "tested"}]
+    },
+    {
+      "id": "BROWSER-FUNC-01",
+      "category": "functional",
+      "phase": "browser-coordination",
+      "description": "Browser coordinator integrates action listener and snapshot capture",
+      "status": "tested",
+      "steps": [
+        "CHECK: File src/browser/injected.ts exists → If exists, check integration",
+        "IF NEEDED: Create injected.ts → File created",
+        "IF NEEDED: Import actionListener and snapshotCapture → Modules imported",
+        "IF NEEDED: Implement action flow with before/after snapshots → Flow implemented",
+        "VERIFY: Click element → Before snapshot captured, then after snapshot",
+        "VERIFY: Error during capture → Error handled gracefully, markers cleaned up"
+      ],
+      "tests": { "unit": [], "integration": [], "e2e": ["test/simple-test.ts"] },
+      "files": ["src/browser/injected.ts"],
+      "history": [{"date": "2024-12-01", "from": "todo", "to": "tested"}]
+    },
+    {
+      "id": "NODE-FUNC-01",
+      "category": "functional",
+      "phase": "node-orchestration",
+      "description": "SessionRecorder class manages recording lifecycle",
+      "status": "tested",
+      "steps": [
+        "CHECK: File src/node/SessionRecorder.ts exists → If exists, check API",
+        "IF NEEDED: Create SessionRecorder class → Class created",
+        "IF NEEDED: Implement constructor with session ID generation → Constructor works",
+        "IF NEEDED: Implement start(page) method → Method added",
+        "IF NEEDED: Implement stop() method → Method added",
+        "IF NEEDED: Implement getSessionData() method → Method added",
+        "VERIFY: new SessionRecorder('test') → Instance created with sessionId",
+        "VERIFY: recorder.start(page) → Recording starts, browser injected",
+        "VERIFY: recorder.stop() → Recording stops, data saved",
+        "VERIFY: recorder.getSessionData() → Returns complete session data"
+      ],
+      "tests": { "unit": [], "integration": [], "e2e": ["test/simple-test.ts"] },
+      "files": ["src/node/SessionRecorder.ts", "src/node/types.ts"],
+      "history": [{"date": "2024-12-01", "from": "todo", "to": "tested"}]
+    },
+    {
+      "id": "RESOURCE-FUNC-01",
+      "category": "functional",
+      "phase": "resource-capture",
+      "description": "Network resource capture with SHA1 deduplication",
+      "status": "tested",
+      "steps": [
+        "CHECK: Resources captured and deduplicated → If resources/ has SHA1 files, complete",
+        "IF NEEDED: Implement page.on('response') interception → Response captured",
+        "IF NEEDED: Calculate SHA1 hashes for deduplication → Hashes calculated",
+        "IF NEEDED: Save resources with SHA1 filenames → Resources saved",
+        "IF NEEDED: Build URL → SHA1 mapping → Mapping created",
+        "VERIFY: Load page with CSS → resources/ contains CSS file with SHA1 name",
+        "VERIFY: Same CSS on different pages → Only one copy saved (deduplication)"
+      ],
+      "tests": { "unit": [], "integration": [], "e2e": ["test/simple-test.ts"] },
+      "files": ["src/storage/ResourceStorage.ts"],
+      "history": [{"date": "2024-12-01", "from": "todo", "to": "tested"}]
+    },
+    {
+      "id": "RESOURCE-FUNC-02",
+      "category": "functional",
+      "phase": "url-rewriting",
+      "description": "URL rewriting makes snapshots work offline",
+      "status": "tested",
+      "steps": [
+        "CHECK: HTML snapshots have rewritten URLs → If URLs point to resources/, complete",
+        "IF NEEDED: Implement _rewriteHTML() method → Method added",
+        "IF NEEDED: Implement _rewriteCSS() method → Method added",
+        "IF NEEDED: Rewrite link, script, img, source tags → Tags rewritten",
+        "IF NEEDED: Rewrite CSS url() references → References rewritten",
+        "VERIFY: Open snapshot HTML → CSS loads from resources/ directory",
+        "VERIFY: Open snapshot HTML → Images load from resources/ directory"
+      ],
+      "tests": { "unit": [], "integration": [], "e2e": ["test/simple-test.ts"] },
+      "files": ["src/node/SessionRecorder.ts"],
+      "history": [{"date": "2024-12-01", "from": "todo", "to": "tested"}]
+    },
+    {
+      "id": "VIEWER-FUNC-01",
+      "category": "functional",
+      "phase": "express-viewer",
+      "description": "Express viewer serves sessions with timeline and snapshots",
+      "status": "tested",
+      "steps": [
+        "CHECK: npm run viewer starts Express server → If server starts, check routes",
+        "IF NEEDED: Create src/viewer/server.ts → File created",
+        "IF NEEDED: Implement SessionViewer class → Class created",
+        "IF NEEDED: Setup routes for serving sessions → Routes added",
+        "IF NEEDED: Create home page listing sessions → Page created",
+        "IF NEEDED: Create session detail page → Page created",
+        "VERIFY: npm run viewer → Server starts on localhost:3000",
+        "VERIFY: Visit / → Shows list of sessions",
+        "VERIFY: Click session → Shows timeline with screenshots"
+      ],
+      "tests": { "unit": [], "integration": [], "e2e": [] },
+      "files": ["src/viewer/server.ts"],
+      "history": [{"date": "2024-12-01", "from": "todo", "to": "tested"}]
+    }
+  ],
+
+  "_documentation": {
+    "status_lifecycle": {
+      "todo": "Not started - waiting to be implemented",
+      "planning": "Being planned in plan mode",
+      "implementing": "Currently being implemented",
+      "implemented": "Code complete, needs e2e verification",
+      "tested": "All tests passing, verified working",
+      "regression": "Being retested after changes",
+      "debug": "Test failed - needs investigation and fix"
+    }
+  }
+}

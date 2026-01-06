@@ -1,0 +1,346 @@
+/* NoteEditor Modal Styles */
+
+.note-editor-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.15s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.note-editor-modal {
+  background-color: #1e2128;
+  border-radius: 8px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  width: 90%;
+  max-width: 600px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  animation: slideIn 0.2s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.note-editor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #3a3f4b;
+}
+
+.note-editor-title {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #e4e6eb;
+}
+
+.note-editor-close-btn {
+  background: none;
+  border: none;
+  color: #9ca3af;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  transition: color 0.15s;
+}
+
+.note-editor-close-btn:hover {
+  color: #e4e6eb;
+}
+
+.note-editor-tabs {
+  display: flex;
+  border-bottom: 1px solid #3a3f4b;
+  padding: 0 1rem;
+}
+
+.note-editor-tab {
+  background: none;
+  border: none;
+  color: #9ca3af;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  position: relative;
+  transition: color 0.15s;
+}
+
+.note-editor-tab:hover {
+  color: #e4e6eb;
+}
+
+.note-editor-tab.active {
+  color: #667eea;
+}
+
+.note-editor-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: #667eea;
+}
+
+.note-editor-content {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 200px;
+  max-height: 400px;
+}
+
+.note-editor-textarea {
+  flex: 1;
+  width: 100%;
+  border: none;
+  background-color: #242830;
+  color: #e4e6eb;
+  font-family: 'Fira Code', 'Consolas', monospace;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  padding: 1rem;
+  resize: none;
+}
+
+.note-editor-textarea:focus {
+  outline: none;
+}
+
+.note-editor-textarea::placeholder {
+  color: #6b7280;
+}
+
+.note-editor-preview {
+  flex: 1;
+  padding: 1rem;
+  overflow-y: auto;
+  background-color: #242830;
+}
+
+.note-editor-preview.markdown-content {
+  color: #e4e6eb;
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.note-editor-preview .preview-empty {
+  color: #6b7280;
+  font-style: italic;
+  margin: 0;
+}
+
+/* Markdown content styles */
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3,
+.markdown-content h4,
+.markdown-content h5,
+.markdown-content h6 {
+  color: #e4e6eb;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.markdown-content h1 { font-size: 1.5rem; }
+.markdown-content h2 { font-size: 1.25rem; }
+.markdown-content h3 { font-size: 1.125rem; }
+.markdown-content h4 { font-size: 1rem; }
+
+.markdown-content p {
+  margin: 0 0 1rem 0;
+}
+
+.markdown-content ul,
+.markdown-content ol {
+  margin: 0 0 1rem 0;
+  padding-left: 1.5rem;
+}
+
+.markdown-content li {
+  margin-bottom: 0.25rem;
+}
+
+.markdown-content code {
+  background-color: #3a3f4b;
+  color: #fbbf24;
+  padding: 0.125rem 0.375rem;
+  border-radius: 3px;
+  font-family: 'Fira Code', 'Consolas', monospace;
+  font-size: 0.85em;
+}
+
+.markdown-content pre {
+  background-color: #3a3f4b;
+  padding: 1rem;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin: 0 0 1rem 0;
+}
+
+.markdown-content pre code {
+  background: none;
+  padding: 0;
+  color: #e4e6eb;
+}
+
+.markdown-content blockquote {
+  border-left: 3px solid #667eea;
+  margin: 0 0 1rem 0;
+  padding-left: 1rem;
+  color: #9ca3af;
+}
+
+.markdown-content a {
+  color: #667eea;
+  text-decoration: none;
+}
+
+.markdown-content a:hover {
+  text-decoration: underline;
+}
+
+.markdown-content strong {
+  font-weight: 600;
+  color: #e4e6eb;
+}
+
+.markdown-content em {
+  font-style: italic;
+}
+
+.markdown-content hr {
+  border: none;
+  border-top: 1px solid #3a3f4b;
+  margin: 1rem 0;
+}
+
+.markdown-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 0 1rem 0;
+}
+
+.markdown-content th,
+.markdown-content td {
+  border: 1px solid #3a3f4b;
+  padding: 0.5rem;
+  text-align: left;
+}
+
+.markdown-content th {
+  background-color: #2a2f3a;
+  font-weight: 600;
+}
+
+.note-editor-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  border-top: 1px solid #3a3f4b;
+  background-color: #242830;
+  border-radius: 0 0 8px 8px;
+}
+
+.note-editor-hint {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.note-editor-hint kbd {
+  background-color: #3a3f4b;
+  border: 1px solid #4a5568;
+  border-radius: 3px;
+  padding: 0.125rem 0.375rem;
+  font-family: inherit;
+  font-size: 0.7rem;
+}
+
+.note-editor-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.note-editor-btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.note-editor-btn-cancel {
+  background-color: #3a3f4b;
+  color: #e4e6eb;
+}
+
+.note-editor-btn-cancel:hover {
+  background-color: #4a5568;
+}
+
+.note-editor-btn-save {
+  background-color: #667eea;
+  color: white;
+}
+
+.note-editor-btn-save:hover {
+  background-color: #5a67d8;
+}
+
+.note-editor-btn-save:disabled {
+  background-color: #4a5568;
+  color: #6b7280;
+  cursor: not-allowed;
+}
+
+/* Scrollbar styling for preview */
+.note-editor-preview::-webkit-scrollbar {
+  width: 8px;
+}
+
+.note-editor-preview::-webkit-scrollbar-track {
+  background: #1a1d23;
+}
+
+.note-editor-preview::-webkit-scrollbar-thumb {
+  background: #3a3f4b;
+  border-radius: 4px;
+}
+
+.note-editor-preview::-webkit-scrollbar-thumb:hover {
+  background: #4a5568;
+}

@@ -1,0 +1,245 @@
+{
+  "epic": "epic-editor-core",
+  "initiative": "session-editor",
+  "total_features": 10,
+  "original_tasks": "PRDs/TASKS-session-editor.md",
+
+  "summary": {
+    "todo": 0,
+    "planning": 0,
+    "implementing": 0,
+    "implemented": 0,
+    "tested": 10,
+    "regression": 0,
+    "debug": 0
+  },
+
+  "features": [
+    {
+      "id": "EDIT-FUNC-01",
+      "category": "functional",
+      "phase": "foundation",
+      "description": "Edit operation types defined for all editing actions",
+      "status": "tested",
+      "steps": [
+        "CHECK: File viewer/src/types/editOperations.ts exists → If exists, check types",
+        "IF NEEDED: Create editOperations.ts → File created",
+        "IF NEEDED: Create BaseEditOperation interface → Interface added",
+        "IF NEEDED: Create AddNoteOperation interface → Interface added",
+        "IF NEEDED: Create EditFieldOperation interface → Interface added",
+        "IF NEEDED: Create DeleteActionOperation interface → Interface added",
+        "IF NEEDED: Create EditOperation union type → Union type created",
+        "IF NEEDED: Create SessionEditState interface → Interface added",
+        "VERIFY: TypeScript compiles without errors → No type errors",
+        "VERIFY: All interfaces exported → Interfaces importable"
+      ],
+      "tests": { "unit": [], "integration": [], "e2e": [] },
+      "files": ["viewer/src/types/editOperations.ts"],
+      "history": [{"date": "2025-12-11", "from": "todo", "to": "tested"}]
+    },
+    {
+      "id": "EDIT-FUNC-02",
+      "category": "functional",
+      "phase": "foundation",
+      "description": "IndexedDB service provides persistence for edit states",
+      "status": "tested",
+      "steps": [
+        "CHECK: File viewer/src/services/indexedDBService.ts exists → If exists, check API",
+        "IF NEEDED: Create indexedDBService.ts → File created",
+        "IF NEEDED: Define database schema (session-editor-db) → Schema defined",
+        "IF NEEDED: Create sessionEdits object store → Store created",
+        "IF NEEDED: Create sessionMetadata object store → Store created",
+        "IF NEEDED: Implement getSessionEditState() → Method added",
+        "IF NEEDED: Implement saveSessionEditState() → Method added",
+        "IF NEEDED: Implement getAllSessionMetadata() → Method added",
+        "VERIFY: Save edit state → Data persists in IndexedDB",
+        "VERIFY: Reload page → Edit state restored from IndexedDB"
+      ],
+      "tests": { "unit": [], "integration": [], "e2e": [] },
+      "files": ["viewer/src/services/indexedDBService.ts"],
+      "history": [{"date": "2025-12-11", "from": "todo", "to": "tested"}]
+    },
+    {
+      "id": "EDIT-FUNC-03",
+      "category": "functional",
+      "phase": "foundation",
+      "description": "Edit operations processor applies operations to session data",
+      "status": "tested",
+      "steps": [
+        "CHECK: File viewer/src/utils/editOperationsProcessor.ts exists → If exists, check functions",
+        "IF NEEDED: Create editOperationsProcessor.ts → File created",
+        "IF NEEDED: Implement applyOperations() → Function added",
+        "IF NEEDED: Implement insertNote() → Function added",
+        "IF NEEDED: Implement editField() → Function added",
+        "IF NEEDED: Implement getExcludedFilesFromOperations() → Function added",
+        "VERIFY: Apply add_note operation → Note inserted at correct position",
+        "VERIFY: Apply edit_field operation → Field value changed",
+        "VERIFY: Apply delete_action operation → Action removed from array"
+      ],
+      "tests": { "unit": [], "integration": [], "e2e": [] },
+      "files": ["viewer/src/utils/editOperationsProcessor.ts"],
+      "history": [{"date": "2025-12-11", "from": "todo", "to": "tested"}]
+    },
+    {
+      "id": "STORE-FUNC-01",
+      "category": "functional",
+      "phase": "store",
+      "description": "Session store extended with edit state and actions",
+      "status": "tested",
+      "steps": [
+        "CHECK: sessionStore.ts has editState field → If exists, check functionality",
+        "IF NEEDED: Add editState to store → Field added",
+        "IF NEEDED: Implement getEditedActions() → Method added",
+        "IF NEEDED: Implement addNote() → Method added",
+        "IF NEEDED: Implement editActionField() → Method added",
+        "IF NEEDED: Implement deleteAction() → Method added",
+        "IF NEEDED: Implement loadEditState() → Method added",
+        "IF NEEDED: Implement persistEditState() → Method added",
+        "VERIFY: addNote() → Note appears in getEditedActions()",
+        "VERIFY: editActionField() → Field value updated",
+        "VERIFY: deleteAction() → Action removed from list"
+      ],
+      "tests": { "unit": [], "integration": [], "e2e": [] },
+      "files": ["viewer/src/stores/sessionStore.ts"],
+      "history": [{"date": "2025-12-11", "from": "todo", "to": "tested"}]
+    },
+    {
+      "id": "STORE-FUNC-02",
+      "category": "functional",
+      "phase": "store",
+      "description": "Undo/redo functionality with operation stacks",
+      "status": "tested",
+      "steps": [
+        "CHECK: sessionStore.ts has undo/redo methods → If exists, check functionality",
+        "IF NEEDED: Implement undo() → Method added",
+        "IF NEEDED: Implement redo() → Method added",
+        "IF NEEDED: Implement canUndo() → Method added",
+        "IF NEEDED: Implement canRedo() → Method added",
+        "IF NEEDED: Cap operations at 100 items → Limit enforced",
+        "VERIFY: Perform edit then undo() → Edit reversed",
+        "VERIFY: Undo then redo() → Edit restored",
+        "VERIFY: New edit after undo → Redo stack cleared",
+        "VERIFY: Keyboard Ctrl+Z → Undo triggered",
+        "VERIFY: Keyboard Ctrl+Y → Redo triggered"
+      ],
+      "tests": { "unit": [], "integration": [], "e2e": [] },
+      "files": ["viewer/src/stores/sessionStore.ts"],
+      "history": [{"date": "2025-12-11", "from": "todo", "to": "tested"}]
+    },
+    {
+      "id": "UI-FUNC-01",
+      "category": "functional",
+      "phase": "ui-components",
+      "description": "Inline note editor for creating and editing notes",
+      "status": "tested",
+      "steps": [
+        "CHECK: InlineNoteEditor component exists → If exists, check functionality",
+        "IF NEEDED: Create InlineNoteEditor.tsx → Component created",
+        "IF NEEDED: Implement markdown input → Input works",
+        "IF NEEDED: Implement save/cancel buttons → Buttons work",
+        "IF NEEDED: Add keyboard shortcuts (Ctrl+Enter, Esc) → Shortcuts work",
+        "VERIFY: Click + between actions → Note editor appears inline",
+        "VERIFY: Type note and press Ctrl+Enter → Note saved",
+        "VERIFY: Press Escape → Edit cancelled"
+      ],
+      "tests": { "unit": [], "integration": [], "e2e": [] },
+      "files": ["viewer/src/components/InlineNoteEditor/"],
+      "history": [{"date": "2025-12-12", "from": "todo", "to": "tested"}]
+    },
+    {
+      "id": "UI-FUNC-02",
+      "category": "functional",
+      "phase": "ui-components",
+      "description": "Editor toolbar with undo/redo and export",
+      "status": "tested",
+      "steps": [
+        "CHECK: EditorToolbar component exists → If exists, check functionality",
+        "IF NEEDED: Create EditorToolbar.tsx → Component created",
+        "IF NEEDED: Add Undo button → Button added",
+        "IF NEEDED: Add Redo button → Button added",
+        "IF NEEDED: Add edit count badge → Badge shows count",
+        "IF NEEDED: Add Export button → Button added",
+        "VERIFY: Undo button disabled when no history → Button disabled",
+        "VERIFY: Click Undo → Last operation undone",
+        "VERIFY: Edit count shows correct number → Count matches operations"
+      ],
+      "tests": { "unit": [], "integration": [], "e2e": [] },
+      "files": ["viewer/src/components/EditorToolbar/"],
+      "history": [{"date": "2025-12-11", "from": "todo", "to": "tested"}]
+    },
+    {
+      "id": "UI-FUNC-03",
+      "category": "functional",
+      "phase": "ui-components",
+      "description": "ActionList with note rendering and edit/delete buttons",
+      "status": "tested",
+      "steps": [
+        "CHECK: ActionList shows notes and edit buttons → If working, complete",
+        "IF NEEDED: Add insert point divs between actions → Points added",
+        "IF NEEDED: Add note item renderer → Notes rendered",
+        "IF NEEDED: Add Edit button to actions → Button added",
+        "IF NEEDED: Add Delete button to actions → Button added",
+        "VERIFY: Hover between actions → + button appears",
+        "VERIFY: Notes show with amber border → Notes styled correctly",
+        "VERIFY: Click Edit on action → Editor opens",
+        "VERIFY: Click Delete → Confirmation dialog appears"
+      ],
+      "tests": { "unit": [], "integration": [], "e2e": [] },
+      "files": ["viewer/src/components/ActionList/ActionList.tsx"],
+      "history": [{"date": "2025-12-11", "from": "todo", "to": "tested"}]
+    },
+    {
+      "id": "EXPORT-FUNC-01",
+      "category": "functional",
+      "phase": "integration",
+      "description": "Export utility applies edits and excludes deleted files",
+      "status": "tested",
+      "steps": [
+        "CHECK: exportSessionToZip applies operations → If working, complete",
+        "IF NEEDED: Update function to accept editOperations → Parameter added",
+        "IF NEEDED: Apply operations to get final actions → Operations applied",
+        "IF NEEDED: Get excluded files from delete operations → Files excluded",
+        "IF NEEDED: Create modified session.json → JSON modified",
+        "VERIFY: Export with notes → session.json contains NoteAction entries",
+        "VERIFY: Export with deleted action → Deleted files not in zip",
+        "VERIFY: Export with edited values → Values reflect edits"
+      ],
+      "tests": { "unit": [], "integration": [], "e2e": [] },
+      "files": ["viewer/src/utils/zipHandler.ts"],
+      "history": [{"date": "2025-12-11", "from": "todo", "to": "tested"}]
+    },
+    {
+      "id": "URL-FUNC-01",
+      "category": "functional",
+      "phase": "integration",
+      "description": "URL deep linking with session and action params",
+      "status": "tested",
+      "steps": [
+        "CHECK: URL updates with ?session=id&action=id → If working, complete",
+        "IF NEEDED: Add URL state management → State managed",
+        "IF NEEDED: Update URL on session load → URL updated",
+        "IF NEEDED: Update URL on action selection → URL updated",
+        "IF NEEDED: Parse URL on page load → URL parsed",
+        "VERIFY: Load session → URL shows ?session=id",
+        "VERIFY: Select action → URL shows ?action=id",
+        "VERIFY: Refresh page → Same session and action selected",
+        "VERIFY: Browser back button → Navigates to previous action"
+      ],
+      "tests": { "unit": [], "integration": [], "e2e": [] },
+      "files": ["viewer/src/hooks/useUrlState.ts", "viewer/src/stores/sessionStore.ts"],
+      "history": [{"date": "2025-12-12", "from": "todo", "to": "tested"}]
+    }
+  ],
+
+  "_documentation": {
+    "status_lifecycle": {
+      "todo": "Not started - waiting to be implemented",
+      "planning": "Being planned in plan mode",
+      "implementing": "Currently being implemented",
+      "implemented": "Code complete, needs e2e verification",
+      "tested": "All tests passing, verified working",
+      "regression": "Being retested after changes",
+      "debug": "Test failed - needs investigation and fix"
+    }
+  }
+}

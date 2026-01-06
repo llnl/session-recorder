@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'">
+  <title>Session Recorder</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <h1 class="app-title">Session Recorder</h1>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Recording Title -->
+      <section class="section">
+        <label class="label" for="recording-title">Recording Title</label>
+        <input
+          type="text"
+          id="recording-title"
+          class="input"
+          placeholder="Enter recording title (optional)"
+        >
+      </section>
+
+      <!-- Recording Mode -->
+      <section class="section">
+        <label class="label">Recording Mode</label>
+        <div class="button-group" id="recording-mode">
+          <button type="button" class="toggle-btn" data-mode="browser">Browser Only</button>
+          <button type="button" class="toggle-btn" data-mode="voice">Voice Only</button>
+          <button type="button" class="toggle-btn active" data-mode="combined">Browser + Voice</button>
+        </div>
+      </section>
+
+      <!-- Browser Selection -->
+      <section class="section" id="browser-section">
+        <label class="label">Browser</label>
+        <div class="button-group" id="browser-type">
+          <button type="button" class="toggle-btn active" data-browser="chromium">Chromium</button>
+          <button type="button" class="toggle-btn" data-browser="firefox">Firefox</button>
+          <button type="button" class="toggle-btn" data-browser="webkit">WebKit</button>
+        </div>
+      </section>
+
+      <!-- Recording Status (shown during recording) -->
+      <section class="section recording-status hidden" id="recording-status">
+        <!-- Recording indicator with red dot -->
+        <div class="recording-header" id="recording-header">
+          <span class="recording-dot" id="recording-dot"></span>
+          <span class="recording-state-text" id="recording-state-text">Recording</span>
+        </div>
+
+        <div class="status-grid">
+          <div class="status-item">
+            <span class="status-label">Timer</span>
+            <span class="status-value timer" id="timer">00:00:00</span>
+            <span class="paused-badge hidden" id="paused-badge">PAUSED</span>
+          </div>
+          <div class="status-item">
+            <span class="status-label">Actions</span>
+            <span class="status-value"><span id="action-count">0</span> <span class="action-label">actions</span></span>
+          </div>
+        </div>
+
+        <!-- Voice indicator -->
+        <div class="voice-indicator hidden" id="voice-indicator">
+          <div class="voice-icon">🎤</div>
+          <span class="voice-status">Voice Recording Active</span>
+          <div class="voice-bars">
+            <span class="voice-bar"></span>
+            <span class="voice-bar"></span>
+            <span class="voice-bar"></span>
+          </div>
+        </div>
+
+        <div class="status-url">
+          <span class="status-label">Current URL</span>
+          <span class="status-value url-text" id="current-url" title="">—</span>
+        </div>
+
+        <!-- Tips section -->
+        <div class="tips-section">
+          <span class="tips-label">Tips</span>
+          <ul class="tips-list">
+            <li>Click and interact in the browser to record actions</li>
+            <li>Speak to add voice narration (if enabled)</li>
+            <li>Press Pause to temporarily stop recording</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Controls -->
+      <section class="section controls-section">
+        <button type="button" id="start-btn" class="btn btn-primary">
+          <span class="btn-icon">&#9658;</span>
+          Start Recording
+        </button>
+        <button type="button" id="pause-btn" class="btn btn-secondary" disabled>
+          <span class="btn-icon">&#10074;&#10074;</span>
+          Pause
+        </button>
+      </section>
+    </main>
+
+    <!-- Status Bar -->
+    <footer class="status-bar">
+      <span class="status-indicator" id="status-indicator"></span>
+      <span class="status-text" id="status-text">Ready to record</span>
+    </footer>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

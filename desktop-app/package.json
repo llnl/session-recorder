@@ -1,0 +1,110 @@
+{
+  "name": "session-recorder-desktop",
+  "version": "1.0.0",
+  "description": "Desktop application for recording browser sessions with voice narration",
+  "main": "dist/main/index.js",
+  "author": "Session Recorder",
+  "license": "MIT",
+  "scripts": {
+    "start": "npm run build && env -u ELECTRON_RUN_AS_NODE electron .",
+    "dev": "npm run build && env -u ELECTRON_RUN_AS_NODE electron .",
+    "build": "tsc && npm run copy-renderer",
+    "copy-renderer": "node -e \"const fs=require('fs');const p=require('path');const src='src/renderer';const dst='dist/renderer';fs.mkdirSync(dst,{recursive:true});['index.html','styles.css'].forEach(f=>fs.copyFileSync(p.join(src,f),p.join(dst,f)))\"",
+    "clean": "rimraf dist",
+    "electron:build": "npm run build && electron-builder",
+    "electron:build:win": "npm run build && electron-builder --win",
+    "electron:build:mac": "npm run build && electron-builder --mac",
+    "electron:build:linux": "npm run build && electron-builder --linux",
+    "electron:build:all": "npm run build && electron-builder --win --mac --linux"
+  },
+  "dependencies": {
+    "archiver": "^7.0.1",
+    "playwright": "^1.40.0",
+    "session-recorder": "file:.."
+  },
+  "devDependencies": {
+    "@types/archiver": "^7.0.0",
+    "@types/node": "^20.10.0",
+    "electron": "^33.4.11",
+    "electron-builder": "^25.0.0",
+    "rimraf": "^5.0.0",
+    "typescript": "^5.3.0"
+  },
+  "build": {
+    "appId": "com.sessionrecorder.desktop",
+    "productName": "Session Recorder",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "resources/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "resources/${os}/voice-recorder",
+        "to": "voice-recorder",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "src/assets/icon.ico"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "icon": "src/assets/icon.icns",
+      "category": "public.app-category.developer-tools",
+      "entitlements": "entitlements.mac.plist",
+      "entitlementsInherit": "entitlements.mac.plist"
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "deb",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "src/assets/icon.png",
+      "category": "Development"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Session Recorder"
+    }
+  }
+}

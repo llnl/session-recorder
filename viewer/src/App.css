@@ -1,0 +1,239 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #1a1d23;
+  color: #e4e6eb;
+}
+
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.app-header-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.app-header h1 {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.app-header-session-id {
+  padding: 0.25rem 0.75rem;
+  background-color: rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-family: 'Courier New', monospace;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.app-header-stats {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  font-size: 0.875rem;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.stat-item strong {
+  font-weight: 600;
+  font-size: 1rem;
+  color: white;
+}
+
+.app-header-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.btn-primary,
+.btn-secondary {
+  padding: 0.5rem 1.25rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.btn-primary {
+  background-color: #4ade80;
+  color: #1a1d23;
+  box-shadow: 0 2px 4px rgba(74, 222, 128, 0.3);
+}
+
+.btn-primary:hover {
+  background-color: #22c55e;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(74, 222, 128, 0.4);
+}
+
+.btn-secondary {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.btn-secondary:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.app-layout {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+}
+
+.layout-timeline {
+  flex-shrink: 0;
+  /* Height is now controlled by ResizablePanel */
+}
+
+.layout-main {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.layout-sidebar {
+  /* Width is now controlled by ResizablePanel */
+  flex-shrink: 0;
+}
+
+.layout-content {
+  flex: 1;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.layout-tabs {
+  /* Height is now controlled by ResizablePanel */
+  flex-shrink: 0;
+}
+
+/* Loading state */
+.app-loading {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  z-index: 999;
+}
+
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid #e0e0e0;
+  border-top-color: #1976d2;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.app-loading p {
+  font-size: 1rem;
+  color: #666;
+}
+
+/* Error state */
+.app-error {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  max-width: 500px;
+  padding: 2rem;
+  background-color: #fff;
+  border: 2px solid #f44336;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  text-align: center;
+  z-index: 999;
+}
+
+.app-error h3 {
+  color: #f44336;
+  margin-bottom: 1rem;
+  font-size: 1.25rem;
+}
+
+.app-error p {
+  color: #666;
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+}
+
+.app-error button {
+  padding: 0.75rem 1.5rem;
+  background-color: #1976d2;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.app-error button:hover {
+  background-color: #1565c0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .layout-sidebar {
+    width: 200px;
+  }
+
+  .layout-tabs {
+    height: 250px;
+  }
+
+  .app-header h1 {
+    font-size: 1rem;
+  }
+
+  .app-header-session-id {
+    display: none;
+  }
+}

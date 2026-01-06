@@ -1,0 +1,154 @@
+{
+  "epic": "epic-recorder-ux",
+  "initiative": "session-recorder",
+  "total_features": 5,
+
+  "summary": {
+    "todo": 2,
+    "planning": 0,
+    "implementing": 0,
+    "implemented": 1,
+    "tested": 0,
+    "regression": 0,
+    "debug": 2
+  },
+
+  "features": [
+    {
+      "id": "UX-01",
+      "category": "functional",
+      "phase": "viewport-fix",
+      "description": "Dynamic viewport size - remove fixed 1280x720 constraint",
+      "status": "implemented",
+      "steps": [
+        "MODIFY: desktop-app/src/main/recorder.ts line 58-60 → Change viewport: { width: 1280, height: 720 } to viewport: null",
+        "BUILD: Run npm run build in desktop-app → Build completes without errors",
+        "VERIFY: Launch desktop app recorder → Browser window opens maximized",
+        "VERIFY: Navigate to any page → Page content fills entire browser window (not 1280x720 box)",
+        "VERIFY: Resize browser window → Page content resizes with window",
+        "VERIFY: Check screenshot → Screenshot dimensions match window size (not fixed 1280x720)"
+      ],
+      "tests": { "unit": [], "integration": [], "e2e": ["manual: desktop app recording"] },
+      "files": ["desktop-app/src/main/recorder.ts"],
+      "history": [{"date": "2025-12-17", "from": "todo", "to": "implemented"}]
+    },
+    {
+      "id": "UX-02",
+      "category": "functional",
+      "phase": "screenshot-queue",
+      "description": "Create ScreenshotQueue for non-blocking capture",
+      "status": "debug",
+      "debug_notes": "ScreenshotQueue.ts file exists but not integrated. Blocked on UX-04 investigation - need to determine if async queue is the right fix or if root cause is JPEG/viewport size.",
+      "steps": [
+        "CREATE: src/node/ScreenshotQueue.ts → New file created",
+        "IMPLEMENT: QueuedScreenshot interface with actionId, type, page, path, options, timestamp → Interface defined",
+        "IMPLEMENT: ScreenshotQueue class with private queue array and processing flag → Class structure created",
+        "IMPLEMENT: enqueue() method that adds to queue and starts processing → Method returns immediately without awaiting",
+        "IMPLEMENT: _startProcessing() method that processes queue items serially → Screenshots taken in order",
+        "IMPLEMENT: flush() method that waits for queue to empty → Returns promise that resolves when queue empty",
+        "IMPLEMENT: Error handling for closed pages → Graceful skip with console warning (no crash)",
+        "VERIFY: Build succeeds → npm run build completes without TypeScript errors"
+      ],
+      "tests": { "unit": [], "integration": [], "e2e": [] },
+      "files": ["src/node/ScreenshotQueue.ts"],
+      "history": [
+        {"date": "2025-12-17", "from": "todo", "to": "implemented"},
+        {"date": "2025-12-17", "from": "implemented", "to": "debug", "reason": "Reverted - jitter not caused by blocking, need to investigate TR-1 JPEG change"}
+      ]
+    },
+    {
+      "id": "UX-03",
+      "category": "functional",
+      "phase": "sessionrecorder-integration",
+      "description": "Integrate ScreenshotQueue into SessionRecorder",
+      "status": "debug",
+      "debug_notes": "Integration reverted. Blocked on UX-04 investigation - will re-implement once root cause is identified and appropriate fix is determined.",
+      "steps": [
+        "MODIFY: src/node/SessionRecorder.ts → Import ScreenshotQueue class",
+        "MODIFY: Add screenshotQueue property to SessionRecorder class → Property declared",
+        "MODIFY: Initialize screenshotQueue in constructor or start() → Queue instance created",
+        "MODIFY: _handleActionBefore() lines 1020-1031 → Replace await page.screenshot() with screenshotQueue.enqueue()",
+        "MODIFY: _handleActionAfter() lines 1104-1116 → Replace await page.screenshot() with screenshotQueue.enqueue()",
+        "MODIFY: stop() method after line 1146 → Add await this.screenshotQueue.flush() before session finalization",
+        "VERIFY: Build succeeds → npm run build completes without TypeScript errors",
+        "VERIFY: Start recording, click element → BEFORE screenshot queued (console shows no await delay)",
+        "VERIFY: Stop recording → All screenshots saved to disk"
+      ],
+      "tests": { "unit": [], "integration": [], "e2e": ["test/simple-test.ts"] },
+      "files": ["src/node/SessionRecorder.ts"],
+      "history": [
+        {"date": "2025-12-17", "from": "todo", "to": "implemented"},
+        {"date": "2025-12-17", "from": "implemented", "to": "debug", "reason": "Reverted - need to find actual jitter cause first"}
+      ]
+    },
+    {
+      "id": "UX-04",
+      "category": "investigation",
+      "phase": "jitter-root-cause",
+      "description": "Investigate jitter root cause - TR-1 JPEG change vs viewport size",
+      "status": "todo",
+      "steps": [
+        "PROFILE: Add console.time('screenshot') around page.screenshot() in SessionRecorder.ts → Measure actual capture time",
+        "TEST: Record session with JPEG format (current) → Note jitter presence and screenshot times",
+        "TEST: Change screenshot format to PNG in SessionRecorder.ts → Record session and compare jitter",
+        "TEST: Record with viewport: { width: 1280, height: 720 } (fixed) → Compare to dynamic viewport",
+        "TEST: Record with viewport: null (dynamic, fullscreen) → Compare screenshot file sizes",
+        "ANALYZE: Compare results → Identify if jitter correlates with format, viewport size, or file size",
+        "DOCUMENT: Record findings in debug_notes → Clear root cause identification"
+      ],
+      "tests": { "unit": [], "integration": [], "e2e": ["manual: desktop app recording"] },
+      "files": ["src/node/SessionRecorder.ts"],
+      "history": [
+        {"date": "2025-12-17", "from": "debug", "to": "todo", "reason": "Replaced timeout workaround with root cause investigation"}
+      ]
+    },
+    {
+      "id": "UX-05",
+      "category": "functional",
+      "phase": "e2e-verification",
+      "description": "End-to-end verification of UX improvements",
+      "status": "todo",
+      "steps": [
+        "TEST: Launch desktop app recorder → Browser opens with full-size viewport",
+        "TEST: Navigate to responsive test page → Page renders at full window size",
+        "TEST: Resize browser window → Page content reflows correctly",
+        "TEST: Click rapidly 10 times on different elements → No visible jitter or freeze between clicks",
+        "TEST: Type text rapidly into input field → No lag or delay during input",
+        "TEST: Stop recording → session.json contains all actions",
+        "TEST: Verify screenshots exist → All 10 click actions have before/after screenshots",
+        "TEST: Compare screenshot dimensions → Screenshots match window size at time of capture",
+        "MEASURE: Add console.time in injected.ts → Per-action callback time < 100ms"
+      ],
+      "tests": { "unit": [], "integration": [], "e2e": ["manual: desktop app recording"] },
+      "files": [],
+      "history": []
+    }
+  ],
+
+  "_next_steps": {
+    "investigation": [
+      "1. Test recording with PNG format instead of JPEG (screenshot_format: 'png')",
+      "2. Test recording with fixed 1280x720 viewport vs dynamic viewport",
+      "3. Add console.time() around page.screenshot() to measure actual capture time",
+      "4. Check if jitter correlates with screenshot file size"
+    ],
+    "possible_fixes": [
+      "Add screenshot_scale option to downscale during capture",
+      "Use lower JPEG quality for faster encoding",
+      "Implement proper async screenshot queue",
+      "Revert TR-1 JPEG change if PNG was faster"
+    ]
+  },
+
+  "_documentation": {
+    "status_lifecycle": {
+      "todo": "Not started - waiting to be implemented",
+      "planning": "Being planned in plan mode",
+      "implementing": "Currently being implemented",
+      "implemented": "Code complete, needs e2e verification",
+      "tested": "All tests passing, verified working",
+      "regression": "Being retested after changes",
+      "debug": "Test failed - needs investigation and fix"
+    }
+  }
+}

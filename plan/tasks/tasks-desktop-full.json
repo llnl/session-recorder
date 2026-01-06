@@ -1,0 +1,170 @@
+{
+  "epic": "epic-desktop-full",
+  "initiative": "desktop-app",
+  "generated": "2025-12-17",
+  "summary": {
+    "todo": 5,
+    "planning": 0,
+    "implementing": 0,
+    "implemented": 0,
+    "tested": 3,
+    "regression": 0,
+    "debug": 0
+  },
+  "features": [
+    {
+      "id": "FEAT-01",
+      "name": "Main Window UI",
+      "status": "tested",
+      "steps": [
+        "Launch desktop app → Main window displays with title 'Session Recorder'",
+        "Recording title input field is visible and accepts text",
+        "Recording mode has 3 options: 'Browser Only', 'Voice Only', 'Browser + Voice'",
+        "Select 'Browser + Voice' mode → Mode button shows selected state",
+        "Browser selection shows 3 toggle buttons: 'Chromium', 'Firefox', 'WebKit'",
+        "Click 'Firefox' toggle → Firefox button shows selected state, others deselected",
+        "Start Recording button is visible and enabled",
+        "Pause button is visible (disabled until recording starts)",
+        "Status bar shows 'Ready to record' text",
+        "Click X on window → Window hides to tray (app stays running)",
+        "Double-click tray icon → Window shows and gains focus",
+        "Right-click tray → 'Show Window' menu item opens the window"
+      ],
+      "files": [
+        "desktop-app/src/renderer/index.html",
+        "desktop-app/src/renderer/styles.css",
+        "desktop-app/src/renderer/renderer.ts",
+        "desktop-app/src/main/mainWindow.ts",
+        "desktop-app/src/main/preload.ts",
+        "desktop-app/src/main/index.ts",
+        "desktop-app/src/main/tray.ts"
+      ],
+      "history": [
+        {"date": "2026-01-05", "from": "todo", "to": "implemented"},
+        {"date": "2026-01-05", "from": "implemented", "to": "tested", "notes": "Added hide-to-tray on close, double-click tray to show, Show Window menu item"}
+      ]
+    },
+    {
+      "id": "FEAT-02",
+      "name": "Recording Controls Flow",
+      "status": "tested",
+      "history": [
+        {"date": "2026-01-05", "from": "todo", "to": "implementing"},
+        {"date": "2026-01-05", "from": "implementing", "to": "tested", "notes": "Core controls implemented: timer, action count, URL tracking, pause/resume. Fixed renderer.ts module compilation (removed export{}, use declare const for preload API). Voice level indicator deferred to FEAT-03."}
+      ],
+      "steps": [
+        "Click Start Recording → Browser window opens within 3 seconds",
+        "Main window transitions to 'Recording Active' state",
+        "Timer displays and increments every second (format: 00:00:00)",
+        "Action count increments when clicking in browser",
+        "Voice level indicator shows activity when speaking",
+        "Current URL updates as browser navigates",
+        "Pause button is enabled during recording",
+        "Click Pause → Timer stops, Pause button changes to Resume",
+        "Click Resume → Timer continues from paused time",
+        "Stop Recording button is visible and enabled"
+      ]
+    },
+    {
+      "id": "FEAT-03",
+      "name": "Recording Status View",
+      "status": "tested",
+      "steps": [
+        "During recording → Recording indicator shows red dot",
+        "Timer shows elapsed time in HH:MM:SS format",
+        "Actions counter shows 'N actions' label",
+        "Voice indicator shows audio level bars when microphone active",
+        "URL display shows current page URL (truncated if needed)",
+        "Pause/Resume button visible next to Stop button",
+        "When paused → Recording indicator changes to yellow/orange",
+        "When paused → Timer display shows 'Paused' state",
+        "Tips section shows helpful guidance text",
+        "Window title bar shows 'Recording' or 'Paused' state indicator"
+      ],
+      "history": [
+        {"date": "2026-01-05", "from": "todo", "to": "implementing"},
+        {"date": "2026-01-05", "from": "implementing", "to": "implemented", "notes": "Added recording header with pulsing red dot, paused badge, voice indicator with animated bars, tips section, window title state indicators. Voice bars animate to simulate activity when voice mode enabled."},
+        {"date": "2026-01-05", "from": "implemented", "to": "tested", "notes": "User verified all UI elements. Fixed button state bugs, added Processing window title state, browser now closes immediately on stop."}
+      ]
+    },
+    {
+      "id": "FEAT-04",
+      "name": "Recording Complete View",
+      "status": "todo",
+      "steps": [
+        "Click Stop Recording → Processing indicator appears",
+        "After processing → 'Recording Complete' view displays",
+        "Summary shows duration (e.g., '5 minutes, 23 seconds')",
+        "Summary shows action count (e.g., '47 browser actions')",
+        "Summary shows voice segments if voice recording was enabled",
+        "File path displays the saved zip location",
+        "'Open in Viewer' button is visible and clickable",
+        "'Show in Folder' button is visible and clickable",
+        "'New Recording' button returns to idle state"
+      ]
+    },
+    {
+      "id": "FEAT-05",
+      "name": "Recent Recordings Panel",
+      "status": "todo",
+      "steps": [
+        "Recent Recordings section visible on main window",
+        "After completing a recording → New entry appears in list",
+        "Each entry shows title (or default name), date, duration",
+        "Each entry shows action count",
+        "Click entry → Context menu or buttons for Open/Delete/Show",
+        "Click 'Open in Viewer' → Viewer launches with that recording",
+        "Click 'Show in Folder' → File explorer opens to zip location",
+        "Click 'Delete' → Confirmation dialog appears → Confirm deletes file"
+      ]
+    },
+    {
+      "id": "FEAT-06",
+      "name": "Settings Dialog",
+      "status": "todo",
+      "steps": [
+        "Click settings icon → Settings dialog opens",
+        "Output Directory field shows current path with Browse button",
+        "Click Browse → Native folder picker opens",
+        "Default Browser dropdown shows available browsers",
+        "Whisper Model dropdown shows: Tiny, Base, Small, Medium",
+        "'Start minimized to system tray' checkbox is functional",
+        "'Show notification on recording complete' checkbox is functional",
+        "'Auto-open viewer after recording' checkbox is functional",
+        "Click Save → Settings persist after app restart",
+        "Click Cancel → Changes are discarded"
+      ]
+    },
+    {
+      "id": "FEAT-07",
+      "name": "System Tray Integration",
+      "status": "todo",
+      "steps": [
+        "App minimized → System tray icon appears",
+        "Right-click tray icon → Context menu displays",
+        "Menu shows 'Quick Record (Browser)' option",
+        "Menu shows 'Quick Record (Combined)' option",
+        "Click 'Quick Record (Combined)' → Browser opens and recording starts",
+        "Menu shows 'Open Recordings Folder' option → Opens folder",
+        "Menu shows 'Open Viewer' option → Launches viewer",
+        "Menu shows 'Settings' option → Opens settings dialog",
+        "Menu shows 'Quit' option → App exits completely"
+      ]
+    },
+    {
+      "id": "FEAT-08",
+      "name": "Cross-Platform Builds",
+      "status": "todo",
+      "steps": [
+        "Run Windows build → NSIS installer created in dist/",
+        "Run Windows build → Portable exe created",
+        "Run macOS build → DMG file created",
+        "Run Linux build → AppImage created",
+        "Run Linux build → DEB package created",
+        "Install on Windows → App runs without errors",
+        "Install on macOS → App runs without errors",
+        "Install on Linux (AppImage) → App runs without errors"
+      ]
+    }
+  ]
+}

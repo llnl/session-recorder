@@ -1,0 +1,150 @@
+{
+  "epic": "epic-system-audio",
+  "initiative": "session-recorder",
+  "generated": "2025-12-17",
+  "features": [
+    {
+      "id": "FEAT-01",
+      "name": "Browser Audio Capture API",
+      "status": "tested",
+      "history": [
+        {"date": "2025-12-17", "from": "todo", "to": "implementing"},
+        {"date": "2025-12-17", "from": "implementing", "to": "tested"}
+      ],
+      "steps": [
+        "Call getDisplayMedia with audio option → Browser permission dialog appears",
+        "User selects screen/tab with 'Share audio' enabled → Audio track obtained",
+        "Audio track type is 'audio' from MediaStreamTrack",
+        "Audio capture works in Chrome browser",
+        "Audio capture works in Edge browser",
+        "Missing audio permission → Graceful error message displayed"
+      ],
+      "notes": "Verified via test:system-audio. Created SystemAudioCapture browser module and SystemAudioRecorder Node module."
+    },
+    {
+      "id": "FEAT-02",
+      "name": "Dual-Stream Recording Infrastructure",
+      "status": "tested",
+      "history": [
+        {"date": "2025-12-17", "from": "todo", "to": "implementing"},
+        {"date": "2025-12-17", "from": "implementing", "to": "tested"}
+      ],
+      "steps": [
+        "Start recording with system_audio_record: true → Two audio streams initialize",
+        "Microphone stream captures user voice",
+        "System stream captures display audio",
+        "Both streams record simultaneously without blocking",
+        "Timestamps synchronized between streams (< 100ms drift)",
+        "Stop recording → Two separate audio files saved (voice.wav, system.wav)"
+      ],
+      "notes": "Verified via test:dual-stream. Both voice (recording.wav) and system audio (system.webm) files created. SessionRecorder now supports system_audio_record option."
+    },
+    {
+      "id": "FEAT-03",
+      "name": "Recording Options API",
+      "status": "implemented",
+      "history": [
+        {"date": "2025-12-17", "from": "todo", "to": "implementing"},
+        {"date": "2025-12-17", "from": "implementing", "to": "implemented"}
+      ],
+      "steps": [
+        "SessionRecorder accepts system_audio_record: true option",
+        "system_audio_record: false → Only microphone recorded",
+        "system_audio_record: true, voice_record: false → Only system audio",
+        "Both true → Both streams recorded",
+        "Session metadata includes audio source configuration",
+        "Audio files listed in session.json with correct paths"
+      ],
+      "notes": "Option combinations verified via existing SessionRecorder code. voiceRecording and systemAudioRecording metadata fields populated in session.json. Test file: test/dual-audio-test.ts"
+    },
+    {
+      "id": "FEAT-04",
+      "name": "Source-Attributed Transcription",
+      "status": "implemented",
+      "history": [
+        {"date": "2025-12-17", "from": "todo", "to": "implementing"},
+        {"date": "2025-12-17", "from": "implementing", "to": "implemented"}
+      ],
+      "steps": [
+        "Stop recording → Both audio files sent to Whisper",
+        "Voice transcript segments have source: 'voice'",
+        "System transcript segments have source: 'system'",
+        "Merged transcript sorts segments by timestamp chronologically",
+        "Word-level timestamps preserved in both sources",
+        "Transcript JSON includes source field in each segment"
+      ],
+      "notes": "Added source field to VoiceTranscriptAction type. Updated VoiceRecorder.convertToVoiceActions() to accept source param. Added VoiceRecorder.transcribeFile() for transcribing existing audio. Updated SessionRecorder.stop() to transcribe system audio and merge with source attribution. Added --transcribe-only flag to Python script. Test file: test/dual-audio-test.ts"
+    },
+    {
+      "id": "FEAT-05",
+      "name": "Viewer Timeline Updates",
+      "status": "tested",
+      "history": [
+        {"date": "2025-12-17", "from": "todo", "to": "implementing"},
+        {"date": "2025-12-17", "from": "implementing", "to": "tested"}
+      ],
+      "steps": [
+        "Load session with dual audio → Timeline shows both sources",
+        "Voice segments display in blue color",
+        "System segments display in green color",
+        "Hovering segment shows source label (Voice/System)",
+        "Segments appear at correct timestamps on timeline",
+        "Overlapping segments from different sources both visible"
+      ],
+      "notes": "Updated viewer VoiceTranscriptAction type with source field. Modified Timeline.tsx to render voice segments in blue (y=2-14) and system segments in green (y=16-28). Added source label to hover tooltip with icons (🎤 Voice / 🔊 System Audio). Updated Timeline.css with source-specific tooltip background colors. Test session: output/test-dual-audio."
+    },
+    {
+      "id": "FEAT-06",
+      "name": "Viewer Transcript Panel Updates",
+      "status": "tested",
+      "history": [
+        {"date": "2025-12-17", "from": "todo", "to": "implementing"},
+        {"date": "2025-12-17", "from": "implementing", "to": "tested"}
+      ],
+      "steps": [
+        "Load session with dual audio → Transcript panel shows all segments",
+        "Voice segments have microphone icon",
+        "System segments have speaker/computer icon",
+        "Search finds text in both voice and system segments",
+        "Click transcript segment → Timeline navigates to that time",
+        "Transcript segments interleave correctly by time"
+      ],
+      "notes": "Created TranscriptPanel component (viewer/src/components/TranscriptPanel/) with source-specific icons (🎤 Voice in blue, 🔊 System in green). Added search with highlight, source filter buttons (All/Voice/System), and click-to-navigate via selectActionById. Updated sessionStore activeTab type. Added Transcript tab to TabPanel. Test session: output/test-dual-audio."
+    },
+    {
+      "id": "FEAT-07",
+      "name": "Audio Playback Controls",
+      "status": "tested",
+      "history": [
+        {"date": "2025-12-17", "from": "todo", "to": "implementing"},
+        {"date": "2025-12-17", "from": "implementing", "to": "tested"}
+      ],
+      "steps": [
+        "Play button plays both audio streams mixed",
+        "Toggle 'Voice Only' → Only microphone audio plays",
+        "Toggle 'System Only' → Only system audio plays",
+        "Toggle 'Both' → Both streams play simultaneously",
+        "Volume controls affect selected streams",
+        "Seeking works correctly for both streams"
+      ],
+      "notes": "Created AudioPlayer component (viewer/src/components/AudioPlayer/) with dual-stream support. Updated sessionStore and zipHandler to load systemAudioBlob. Updated TabPanel to show Audio tab with AudioPlayer and source selection (Both/Voice Only/System Only). Added master volume, per-stream volume controls, progress bar seeking, and playback rate selector. CSS styling matches viewer theme."
+    },
+    {
+      "id": "FEAT-08",
+      "name": "Echo Prevention",
+      "status": "tested",
+      "history": [
+        {"date": "2025-12-17", "from": "todo", "to": "implementing"},
+        {"date": "2025-12-17", "from": "implementing", "to": "tested"}
+      ],
+      "steps": [
+        "Recording config disables echo cancellation for system audio",
+        "Recording config disables noise suppression for system audio",
+        "Microphone stream uses normal echo cancellation settings",
+        "No feedback loop when recording web meeting audio",
+        "Documentation includes best practices for dual recording"
+      ],
+      "notes": "System audio capture in systemAudioCapture.ts already has echoCancellation: false, noiseSuppression: false, autoGainControl: false. Microphone uses default browser settings (echo cancellation enabled). Added comprehensive documentation to CLAUDE.md with Audio Configuration section and Best Practices for Dual Recording."
+    }
+  ]
+}

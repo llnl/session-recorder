@@ -1,0 +1,185 @@
+{
+  "epic": "epic-desktop-poc",
+  "initiative": "desktop-app",
+  "total_features": 8,
+  "original_tasks": "PRDs/TASKS-DESKTOP-POC.md",
+
+  "summary": {
+    "todo": 0,
+    "planning": 0,
+    "implementing": 2,
+    "implemented": 0,
+    "tested": 6,
+    "regression": 0,
+    "debug": 0
+  },
+
+  "features": [
+    {
+      "id": "VOICE-FUNC-01",
+      "category": "functional",
+      "phase": "voice-bundle",
+      "description": "PyInstaller spec file for voice recorder bundle",
+      "status": "tested",
+      "steps": [
+        "CHECK: File src/voice/voice-recorder.spec exists → If exists, check configuration",
+        "IF NEEDED: Create PyInstaller spec file → Spec created",
+        "IF NEEDED: Configure Python 3.11 runtime → Runtime configured",
+        "IF NEEDED: Add sounddevice dependency → Dependency included",
+        "IF NEEDED: Add openai-whisper dependency → Dependency included",
+        "IF NEEDED: Add torch (CPU-only) dependency → Dependency included",
+        "VERIFY: pyinstaller voice-recorder.spec → Bundle builds without errors",
+        "VERIFY: Bundle size → ~964 MB (torch is large)"
+      ],
+      "tests": { "unit": [], "integration": [], "e2e": [] },
+      "files": ["src/voice/voice-recorder.spec"],
+      "history": [{"date": "2025-12-12", "from": "todo", "to": "tested"}]
+    },
+    {
+      "id": "VOICE-FUNC-02",
+      "category": "functional",
+      "phase": "voice-bundle",
+      "description": "Voice recorder executable runs standalone",
+      "status": "tested",
+      "steps": [
+        "CHECK: voice-recorder.exe runs without Python installed → If works, complete",
+        "IF NEEDED: Fix missing dependencies in spec → Dependencies added",
+        "IF NEEDED: Add custom hooks for torch/whisper → Hooks created",
+        "VERIFY: Run voice-recorder.exe record → Recording starts",
+        "VERIFY: Stop recording → Audio saved to WAV",
+        "VERIFY: Run voice-recorder.exe transcribe → Whisper transcription runs"
+      ],
+      "tests": { "unit": [], "integration": [], "e2e": [] },
+      "files": ["src/voice/record_and_transcribe.py", "desktop-app/resources/"],
+      "history": [{"date": "2025-12-12", "from": "todo", "to": "tested"}]
+    },
+    {
+      "id": "ELECTRON-FUNC-01",
+      "category": "functional",
+      "phase": "electron-shell",
+      "description": "Electron main process with system tray UI",
+      "status": "tested",
+      "steps": [
+        "CHECK: desktop-app/src/main/index.ts exists → If exists, check tray",
+        "IF NEEDED: Create Electron main process → Process created",
+        "IF NEEDED: Create system tray with icon → Tray created",
+        "IF NEEDED: Add context menu (Start/Stop Recording, Quit) → Menu added",
+        "IF NEEDED: Add tray icon states (idle/recording/processing) → States added",
+        "VERIFY: npm run dev → Electron app launches",
+        "VERIFY: System tray icon visible → Icon appears in tray",
+        "VERIFY: Right-click tray → Context menu appears"
+      ],
+      "tests": { "unit": [], "integration": [], "e2e": [] },
+      "files": ["desktop-app/src/main/index.ts", "desktop-app/src/main/tray.ts"],
+      "history": [{"date": "2025-12-12", "from": "todo", "to": "tested"}]
+    },
+    {
+      "id": "ELECTRON-FUNC-02",
+      "category": "functional",
+      "phase": "electron-shell",
+      "description": "Recording orchestration with SessionRecorder integration",
+      "status": "tested",
+      "steps": [
+        "CHECK: Start Recording launches browser and voice → If working, complete",
+        "IF NEEDED: Integrate real SessionRecorder from parent package → Integrated",
+        "IF NEEDED: Spawn voice-recorder.exe as subprocess → Subprocess spawned",
+        "IF NEEDED: Handle browser launch via Playwright → Browser launches",
+        "IF NEEDED: Implement stop and zip creation → Stop works",
+        "VERIFY: Click Start Recording → Browser opens with recording active",
+        "VERIFY: Click Stop Recording → Session zip created",
+        "VERIFY: Zip contains session.json, snapshots, screenshots → All files present"
+      ],
+      "tests": { "unit": [], "integration": [], "e2e": [] },
+      "files": ["desktop-app/src/main/recording.ts"],
+      "history": [{"date": "2025-12-12", "from": "todo", "to": "tested"}]
+    },
+    {
+      "id": "ELECTRON-FUNC-03",
+      "category": "functional",
+      "phase": "electron-shell",
+      "description": "Multi-browser support (Chromium, Firefox, WebKit)",
+      "status": "tested",
+      "steps": [
+        "CHECK: Browser selection in context menu → If working, complete",
+        "IF NEEDED: Add browser type to Start Recording submenu → Submenu added",
+        "IF NEEDED: Pass browser type to recording orchestration → Type passed",
+        "IF NEEDED: Launch correct browser via Playwright → Browser launches",
+        "VERIFY: Select Chromium → Chromium browser opens",
+        "VERIFY: Select Firefox → Firefox browser opens",
+        "VERIFY: Select WebKit → WebKit browser opens"
+      ],
+      "tests": { "unit": [], "integration": [], "e2e": [] },
+      "files": ["desktop-app/src/main/tray.ts"],
+      "history": [{"date": "2025-12-12", "from": "todo", "to": "tested"}]
+    },
+    {
+      "id": "PACKAGE-FUNC-01",
+      "category": "functional",
+      "phase": "packaging",
+      "description": "electron-builder configured for Windows/Mac/Linux",
+      "status": "tested",
+      "steps": [
+        "CHECK: electron-builder.yml configured → If exists, check targets",
+        "IF NEEDED: Configure Windows targets (NSIS, portable) → Targets configured",
+        "IF NEEDED: Configure macOS targets (DMG) → Targets configured",
+        "IF NEEDED: Configure Linux targets (AppImage, DEB) → Targets configured",
+        "IF NEEDED: Include voice-recorder in extraResources → Resource included",
+        "VERIFY: npm run electron:build:win → Windows build completes",
+        "VERIFY: dist/ contains installer and portable exe → Files exist"
+      ],
+      "tests": { "unit": [], "integration": [], "e2e": [] },
+      "files": ["desktop-app/electron-builder.yml", "desktop-app/package.json"],
+      "history": [{"date": "2025-12-12", "from": "todo", "to": "tested"}]
+    },
+    {
+      "id": "TEST-FUNC-01",
+      "category": "functional",
+      "phase": "testing",
+      "description": "Clean Windows VM testing",
+      "status": "implementing",
+      "steps": [
+        "CHECK: App runs on clean Windows 10/11 VM → If works, complete",
+        "IF NEEDED: Fix missing dependencies → Dependencies bundled",
+        "IF NEEDED: Fix permission issues → Permissions handled",
+        "VERIFY: Download installer on clean Windows 10 VM → Installer runs",
+        "VERIFY: Launch app after install → App launches without errors",
+        "VERIFY: Start Recording → Browser and voice recording work",
+        "VERIFY: Stop Recording → Zip created and Explorer opens"
+      ],
+      "tests": { "unit": [], "integration": [], "e2e": [] },
+      "files": [],
+      "history": []
+    },
+    {
+      "id": "TEST-FUNC-02",
+      "category": "functional",
+      "phase": "testing",
+      "description": "Cross-platform testing (macOS, Linux)",
+      "status": "implementing",
+      "steps": [
+        "CHECK: App runs on macOS and Linux → If works, complete",
+        "IF NEEDED: Build voice bundle for each platform → Bundles built",
+        "IF NEEDED: Test on macOS → Works on Mac",
+        "IF NEEDED: Test on Linux → Works on Linux",
+        "VERIFY: macOS DMG installs → App launches correctly",
+        "VERIFY: Linux AppImage runs → App launches correctly",
+        "VERIFY: Recording works on all platforms → Sessions created"
+      ],
+      "tests": { "unit": [], "integration": [], "e2e": [] },
+      "files": [],
+      "history": []
+    }
+  ],
+
+  "_documentation": {
+    "status_lifecycle": {
+      "todo": "Not started - waiting to be implemented",
+      "planning": "Being planned in plan mode",
+      "implementing": "Currently being implemented",
+      "implemented": "Code complete, needs e2e verification",
+      "tested": "All tests passing, verified working",
+      "regression": "Being retested after changes",
+      "debug": "Test failed - needs investigation and fix"
+    }
+  }
+}

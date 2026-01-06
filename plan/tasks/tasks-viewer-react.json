@@ -1,0 +1,236 @@
+{
+  "epic": "epic-viewer-react",
+  "initiative": "session-viewer",
+  "total_features": 10,
+  "original_tasks": "PRDs/TASKS-2.md",
+
+  "summary": {
+    "todo": 0,
+    "planning": 0,
+    "implementing": 0,
+    "implemented": 0,
+    "tested": 10,
+    "regression": 0,
+    "debug": 0
+  },
+
+  "features": [
+    {
+      "id": "VIEWER-FUNC-01",
+      "category": "functional",
+      "phase": "project-setup",
+      "description": "React + Vite project with Zustand state management",
+      "status": "tested",
+      "steps": [
+        "CHECK: viewer/ directory exists with package.json → If exists, check deps",
+        "IF NEEDED: Create viewer/ with npm create vite@latest → Project created",
+        "IF NEEDED: Install react, react-dom, zustand, jszip → Deps installed",
+        "IF NEEDED: Configure vite.config.ts → Config complete",
+        "IF NEEDED: Create directory structure (components, hooks, stores, utils) → Structure created",
+        "VERIFY: npm run dev → Vite dev server starts",
+        "VERIFY: npm run build → Production build completes"
+      ],
+      "tests": { "unit": [], "integration": [], "e2e": [] },
+      "files": ["viewer/package.json", "viewer/vite.config.ts", "viewer/tsconfig.json"],
+      "history": [{"date": "2025-12-10", "from": "todo", "to": "tested"}]
+    },
+    {
+      "id": "VIEWER-FUNC-02",
+      "category": "functional",
+      "phase": "data-loading",
+      "description": "Session loading from zip files with JSZip",
+      "status": "tested",
+      "steps": [
+        "CHECK: zipHandler.ts loads session.zip → If works, check parsing",
+        "IF NEEDED: Create utils/zipHandler.ts → File created",
+        "IF NEEDED: Implement loadSessionFromZip() → Function works",
+        "IF NEEDED: Parse session.json from zip → JSON parsed",
+        "IF NEEDED: Parse JSON Lines files (network, console) → Lines parsed",
+        "IF NEEDED: Extract resources lazily from zip → Resources extracted",
+        "VERIFY: Load valid session.zip → Session data available in store",
+        "VERIFY: Load invalid zip → Error message displayed"
+      ],
+      "tests": { "unit": [], "integration": [], "e2e": [] },
+      "files": ["viewer/src/utils/zipHandler.ts", "viewer/src/utils/sessionLoader.ts"],
+      "history": [{"date": "2025-12-10", "from": "todo", "to": "tested"}]
+    },
+    {
+      "id": "VIEWER-FUNC-03",
+      "category": "functional",
+      "phase": "state-management",
+      "description": "Zustand store with session state and actions",
+      "status": "tested",
+      "steps": [
+        "CHECK: sessionStore.ts exports useSessionStore → If exists, check actions",
+        "IF NEEDED: Create stores/sessionStore.ts → Store created",
+        "IF NEEDED: Define state shape (sessionData, actions, selectedIndex) → State defined",
+        "IF NEEDED: Implement loadSession action → Action works",
+        "IF NEEDED: Implement selectAction action → Action works",
+        "IF NEEDED: Implement setTimeRange action → Action works",
+        "VERIFY: loadSession() → State populated with session data",
+        "VERIFY: selectAction(index) → selectedActionIndex updates"
+      ],
+      "tests": { "unit": [], "integration": [], "e2e": [] },
+      "files": ["viewer/src/stores/sessionStore.ts"],
+      "history": [{"date": "2025-12-10", "from": "todo", "to": "tested"}]
+    },
+    {
+      "id": "VIEWER-FUNC-04",
+      "category": "functional",
+      "phase": "timeline",
+      "description": "Timeline component with thumbnails and selection",
+      "status": "tested",
+      "steps": [
+        "CHECK: Timeline.tsx renders thumbnails → If renders, check interaction",
+        "IF NEEDED: Create components/Timeline/Timeline.tsx → Component created",
+        "IF NEEDED: Calculate time scale (pixels per second) → Scale calculated",
+        "IF NEEDED: Render time markers (0s, 5s, 10s...) → Markers rendered",
+        "IF NEEDED: Render screenshot thumbnails at positions → Thumbnails positioned",
+        "IF NEEDED: Implement hover preview with enlarged screenshot → Preview works",
+        "IF NEEDED: Implement click to jump to action → Click handler works",
+        "IF NEEDED: Implement drag selection for time range → Selection works",
+        "VERIFY: Hover thumbnail → Enlarged preview appears",
+        "VERIFY: Click thumbnail → Action selected in list"
+      ],
+      "tests": { "unit": [], "integration": [], "e2e": [] },
+      "files": ["viewer/src/components/Timeline/Timeline.tsx"],
+      "history": [{"date": "2025-12-10", "from": "todo", "to": "tested"}]
+    },
+    {
+      "id": "VIEWER-FUNC-05",
+      "category": "functional",
+      "phase": "action-list",
+      "description": "Virtual scrolling action list with TanStack Virtual",
+      "status": "tested",
+      "steps": [
+        "CHECK: ActionList.tsx renders with virtual scrolling → If renders, check selection",
+        "IF NEEDED: Create components/ActionList/ActionList.tsx → Component created",
+        "IF NEEDED: Integrate @tanstack/react-virtual → Virtual scrolling works",
+        "IF NEEDED: Render action items (type, time, target) → Items rendered",
+        "IF NEEDED: Highlight selected action → Selection highlighted",
+        "IF NEEDED: Auto-scroll to selected action → Auto-scroll works",
+        "IF NEEDED: Filter by timeline selection → Filtering works",
+        "VERIFY: Load 1000+ actions → List renders smoothly",
+        "VERIFY: Select action → Item highlighted, auto-scrolled into view"
+      ],
+      "tests": { "unit": [], "integration": [], "e2e": [] },
+      "files": ["viewer/src/components/ActionList/ActionList.tsx"],
+      "history": [{"date": "2025-12-10", "from": "todo", "to": "tested"}]
+    },
+    {
+      "id": "VIEWER-FUNC-06",
+      "category": "functional",
+      "phase": "snapshot-viewer",
+      "description": "Before/after snapshot viewer with zoom controls",
+      "status": "tested",
+      "steps": [
+        "CHECK: SnapshotViewer.tsx displays snapshots → If displays, check toggle",
+        "IF NEEDED: Create components/SnapshotViewer/SnapshotViewer.tsx → Component created",
+        "IF NEEDED: Display before/after snapshots in iframes → Iframes render",
+        "IF NEEDED: Implement before/after toggle → Toggle works",
+        "IF NEEDED: Highlight acted-upon element (data-recorded-el) → Highlight visible",
+        "IF NEEDED: Implement zoom controls (50%-200%) → Zoom works",
+        "IF NEEDED: Display snapshot metadata → Metadata shown",
+        "VERIFY: Select action → Before snapshot displayed",
+        "VERIFY: Toggle to after → After snapshot displayed"
+      ],
+      "tests": { "unit": [], "integration": [], "e2e": [] },
+      "files": ["viewer/src/components/SnapshotViewer/SnapshotViewer.tsx"],
+      "history": [{"date": "2025-12-10", "from": "todo", "to": "tested"}]
+    },
+    {
+      "id": "VIEWER-FUNC-07",
+      "category": "functional",
+      "phase": "tab-panel",
+      "description": "Console and network tabs with filtering",
+      "status": "tested",
+      "steps": [
+        "CHECK: TabPanel.tsx renders tabs → If renders, check console/network",
+        "IF NEEDED: Create components/TabPanel/TabPanel.tsx → Component created",
+        "IF NEEDED: Implement Information tab → Tab shows action details",
+        "IF NEEDED: Implement Console tab with level filtering → Console works",
+        "IF NEEDED: Implement Network tab with waterfall → Network works",
+        "IF NEEDED: Color-code console entries by level → Colors applied",
+        "IF NEEDED: Show expandable stack traces for errors → Traces expandable",
+        "VERIFY: Console tab → Shows logs filtered by level",
+        "VERIFY: Network tab → Shows requests with timing waterfall"
+      ],
+      "tests": { "unit": [], "integration": [], "e2e": [] },
+      "files": ["viewer/src/components/TabPanel/TabPanel.tsx"],
+      "history": [{"date": "2025-12-10", "from": "todo", "to": "tested"}]
+    },
+    {
+      "id": "VIEWER-FUNC-08",
+      "category": "functional",
+      "phase": "layout",
+      "description": "Resizable panel layout with persistence",
+      "status": "tested",
+      "steps": [
+        "CHECK: App.tsx renders grid layout → If renders, check resize",
+        "IF NEEDED: Implement grid layout (Timeline, ActionList, SnapshotViewer, TabPanel) → Layout works",
+        "IF NEEDED: Add resizable panels with drag handles → Resize works",
+        "IF NEEDED: Save panel sizes to localStorage → Sizes persisted",
+        "IF NEEDED: Add session statistics in header → Stats shown",
+        "IF NEEDED: Add export session button → Button works",
+        "IF NEEDED: Implement arrow key navigation → Keys work",
+        "VERIFY: Drag panel divider → Panel sizes change",
+        "VERIFY: Refresh page → Panel sizes restored"
+      ],
+      "tests": { "unit": [], "integration": [], "e2e": [] },
+      "files": ["viewer/src/App.tsx"],
+      "history": [{"date": "2025-12-10", "from": "todo", "to": "tested"}]
+    },
+    {
+      "id": "VIEWER-FUNC-09",
+      "category": "functional",
+      "phase": "voice",
+      "description": "Voice transcript viewer with audio sync",
+      "status": "tested",
+      "steps": [
+        "CHECK: VoiceTranscriptViewer.tsx displays transcript → If displays, check sync",
+        "IF NEEDED: Create components/VoiceTranscriptViewer/VoiceTranscriptViewer.tsx → Component created",
+        "IF NEEDED: Render transcript segments with timestamps → Segments rendered",
+        "IF NEEDED: Highlight current segment during playback → Highlight works",
+        "IF NEEDED: Implement audio player synced to timeline → Sync works",
+        "VERIFY: Play audio → Current transcript segment highlighted",
+        "VERIFY: Click transcript segment → Audio seeks to that time"
+      ],
+      "tests": { "unit": [], "integration": [], "e2e": [] },
+      "files": ["viewer/src/components/VoiceTranscriptViewer/VoiceTranscriptViewer.tsx"],
+      "history": [{"date": "2025-12-11", "from": "todo", "to": "tested"}]
+    },
+    {
+      "id": "VIEWER-FUNC-10",
+      "category": "functional",
+      "phase": "performance",
+      "description": "Lazy loading for large sessions with LRU cache",
+      "status": "tested",
+      "steps": [
+        "CHECK: LazyResourceLoader.ts implements lazy loading → If exists, check cache",
+        "IF NEEDED: Create utils/lazyResourceLoader.ts → Loader created",
+        "IF NEEDED: Implement IntersectionObserver for thumbnails → Observer works",
+        "IF NEEDED: Implement LRU cache with configurable limit → Cache works",
+        "IF NEEDED: Create useLazyResource hook → Hook works",
+        "IF NEEDED: Create LazyThumbnail component → Component works",
+        "IF NEEDED: Update SnapshotViewer for lazy snapshot loading → Lazy load works",
+        "VERIFY: Load 1000+ action session → Thumbnails load on scroll",
+        "VERIFY: Memory usage stays bounded → Cache evicts old entries"
+      ],
+      "tests": { "unit": [], "integration": [], "e2e": [] },
+      "files": ["viewer/src/utils/lazyResourceLoader.ts", "viewer/src/hooks/useLazyResource.ts", "viewer/src/components/Timeline/LazyThumbnail.tsx"],
+      "history": [{"date": "2025-12-11", "from": "todo", "to": "tested"}]
+    }
+  ],
+
+  "_documentation": {
+    "status_lifecycle": {
+      "todo": "Not started - waiting to be implemented",
+      "planning": "Being planned in plan mode",
+      "implementing": "Currently being implemented",
+      "implemented": "Code complete, needs e2e verification",
+      "tested": "All tests passing, verified working",
+      "regression": "Being retested after changes",
+      "debug": "Test failed - needs investigation and fix"
+    }
+  }
+}

@@ -1,0 +1,12 @@
+node_modules/
+dist/
+output/
+*.log
+.DS_Store
+.playwright-mcp/
+desktop-app/resources
+
+# Voice recorder build artifacts
+src/voice/build/
+src/voice/venv-bundle/
+src/voice/*.wav

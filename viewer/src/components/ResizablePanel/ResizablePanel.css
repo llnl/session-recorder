@@ -1,0 +1,100 @@
+.resizable-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.resizable-panel.vertical {
+  flex-direction: row;
+}
+
+.resizable-panel-content {
+  flex: 1;
+  overflow: auto;
+  min-width: 0;
+  min-height: 0;
+}
+
+.resizable-handle {
+  position: absolute;
+  z-index: 10;
+  background-color: transparent;
+  transition: background-color 0.2s ease;
+}
+
+.resizable-handle.horizontal {
+  left: 0;
+  right: 0;
+  height: 8px;
+  cursor: ns-resize;
+}
+
+.resizable-handle.horizontal.handle-end {
+  bottom: 0;
+}
+
+.resizable-handle.horizontal.handle-start {
+  top: 0;
+}
+
+.resizable-handle.vertical {
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 8px;
+  cursor: ew-resize;
+}
+
+.resizable-handle:hover,
+.resizable-handle.dragging {
+  background-color: rgba(102, 126, 234, 0.3);
+}
+
+.resizable-handle-indicator {
+  position: absolute;
+  background-color: #667eea;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.resizable-handle.horizontal .resizable-handle-indicator {
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 40px;
+  height: 4px;
+  border-radius: 2px;
+}
+
+.resizable-handle.vertical .resizable-handle-indicator {
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 4px;
+  height: 40px;
+  border-radius: 2px;
+}
+
+.resizable-handle:hover .resizable-handle-indicator,
+.resizable-handle.dragging .resizable-handle-indicator {
+  opacity: 1;
+}
+
+/* Prevent text selection while dragging */
+.resizable-handle.dragging {
+  user-select: none;
+}
+
+body:has(.resizable-handle.dragging) {
+  user-select: none;
+  cursor: inherit !important;
+}
+
+body:has(.resizable-handle.horizontal.dragging) {
+  cursor: ns-resize !important;
+}
+
+body:has(.resizable-handle.vertical.dragging) {
+  cursor: ew-resize !important;
+}
