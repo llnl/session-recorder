@@ -38,7 +38,22 @@
     },
     "files": [
       "dist/**/*",
-      "resources/**/*"
+      "resources/**/*",
+      "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}",
+      "!**/node_modules/*/{test,__tests__,tests,powered-test,example,examples}",
+      "!**/node_modules/.bin",
+      "!**/*.{iml,o,hprof,orig,pyc,pyo,rbc,swp,cber}",
+      "!**/._*",
+      "!**/{.DS_Store,.git,.hg,.svn,CVS,RCS,SCCS,.gitignore,.gitattributes}",
+      "!**/{__pycache__,thumbs.db,.flowconfig,.idea,.vs,.nyc_output}",
+      "!**/{appveyor.yml,.travis.yml,circle.yml}",
+      "!**/{npm-debug.log,yarn.lock,.yarn-integrity,.yarn-metadata.json}",
+      "!**/node_modules/session-recorder/src/voice/**/*",
+      "!**/node_modules/session-recorder/output/**/*",
+      "!**/node_modules/session-recorder/test/**/*",
+      "!**/node_modules/session-recorder/viewer/**/*",
+      "!**/node_modules/session-recorder/mcp-server/**/*",
+      "!**/node_modules/session-recorder/desktop-app/**/*"
     ],
     "extraResources": [
       {
