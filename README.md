@@ -69,6 +69,17 @@ npm run desktop:build:all     # All platforms
 
 Output is saved to `desktop-app/release/`.
 
+### Build Without Voice Recording
+
+For environments without audio hardware (cloud, containers, CI):
+
+```bash
+npm install
+npm run desktop:build:linux:no-voice   # Linux without voice
+npm run desktop:build:win:no-voice     # Windows without voice
+npm run desktop:build:mac:no-voice     # macOS without voice
+```
+
 ### With Voice Recording
 
 To include voice recording support, build the voice recorder bundle first:
