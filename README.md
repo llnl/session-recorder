@@ -51,6 +51,36 @@ npm run session-recorder:install:linux
 
 To enable voice recording, set `voice_record: true` in SessionRecorder options.
 
+## Desktop App
+
+The desktop app provides a system tray application for recording sessions with voice narration.
+
+### Build from Source
+
+After cloning the repository:
+
+```bash
+npm install
+npm run desktop:build:linux   # Linux (AppImage + DEB)
+npm run desktop:build:win     # Windows (NSIS + portable)
+npm run desktop:build:mac     # macOS (DMG)
+npm run desktop:build:all     # All platforms
+```
+
+Output is saved to `desktop-app/release/`.
+
+### With Voice Recording
+
+To include voice recording support, build the voice recorder bundle first:
+
+```bash
+npm install
+npm run voice:build           # Build voice recorder executable
+npm run desktop:build:linux   # Then build desktop app
+```
+
+See [desktop-app/README.md](desktop-app/README.md) for more details.
+
 ## Quick Start
 
 ```typescript
