@@ -65,12 +65,6 @@
   ],
   "author": "",
   "license": "MIT",
-  "files": [
-    "dist/src/**/*",
-    "src/node/**/*",
-    "src/browser/**/*",
-    "src/export/**/*"
-  ],
   "dependencies": {
     "@playwright/test": "^1.40.0",
     "archiver": "^7.0.1",
