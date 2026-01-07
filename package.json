@@ -16,10 +16,10 @@
     "desktop:build:mac": "npm run build && cd desktop-app && npm install && npm run electron:build:mac",
     "desktop:build:linux": "npm run build && cd desktop-app && npm install && npm run electron:build:linux",
     "desktop:build:all": "npm run build && cd desktop-app && npm install && npm run electron:build:all",
-    "desktop:build:no-voice": "npm run build && cd desktop-app && npm install && npm run electron:build:no-voice",
-    "desktop:build:linux:no-voice": "npm run build && cd desktop-app && npm install && npm run electron:build:linux:no-voice",
-    "desktop:build:win:no-voice": "npm run build && cd desktop-app && npm install && npm run electron:build:win:no-voice",
-    "desktop:build:mac:no-voice": "npm run build && cd desktop-app && npm install && npm run electron:build:mac:no-voice",
+    "desktop:build:no-voice": "npm run build && cd desktop-app && npm install && rm -rf node_modules/session-recorder/src/voice && npm run electron:build:no-voice",
+    "desktop:build:linux:no-voice": "npm run build && cd desktop-app && npm install && rm -rf node_modules/session-recorder/src/voice && npm run electron:build:linux:no-voice",
+    "desktop:build:win:no-voice": "npm run build && cd desktop-app && npm install && rm -rf node_modules/session-recorder/src/voice && npm run electron:build:win:no-voice",
+    "desktop:build:mac:no-voice": "npm run build && cd desktop-app && npm install && rm -rf node_modules/session-recorder/src/voice && npm run electron:build:mac:no-voice",
     "typecheck": "tsc --noEmit",
     "typecheck:mcp": "cd mcp-server && tsc --noEmit",
     "typecheck:desktop": "cd desktop-app && tsc --noEmit",
@@ -65,6 +65,12 @@
   ],
   "author": "",
   "license": "MIT",
+  "files": [
+    "dist/src/**/*",
+    "src/node/**/*",
+    "src/browser/**/*",
+    "src/export/**/*"
+  ],
   "dependencies": {
     "@playwright/test": "^1.40.0",
     "archiver": "^7.0.1",
