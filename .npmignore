@@ -1,0 +1,12 @@
+# Exclude from npm package (used by file: dependencies)
+src/voice/
+src/browser/
+test/
+output/
+viewer/
+mcp-server/
+desktop-app/
+plan/
+.claude/
+*.md
+!dist/
