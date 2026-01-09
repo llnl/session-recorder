@@ -19,7 +19,8 @@ import {
 import { VoiceRecorderProcess } from './voice';
 
 // Import real SessionRecorder from parent session-recorder package
-import { SessionRecorder } from 'session-recorder';
+import { SessionRecorder, VoiceTranscriptAction } from 'session-recorder';
+import type { TranscriptResult } from './voice';
 
 export type RecordingState = 'idle' | 'starting' | 'recording' | 'paused' | 'stopping' | 'processing';
 
@@ -237,16 +238,57 @@ export class RecordingOrchestrator extends EventEmitter {
       // Get session directory first (needed for saving transcript)
       const sessionDir = this.sessionRecorder?.getSessionDir();
 
-      // Stop voice recording and save transcript
+      // Stop voice recording and integrate transcript into session data
       if (this.voiceRecorder) {
         try {
           const transcriptResult = await this.voiceRecorder.stop();
 
-          // Save transcript to session directory before session recorder stops
-          if (transcriptResult && sessionDir) {
+          if (transcriptResult && transcriptResult.success && sessionDir && this.sessionRecorder) {
+            // Save transcript to session directory
             const transcriptPath = path.join(sessionDir, 'transcript.json');
             fs.writeFileSync(transcriptPath, JSON.stringify(transcriptResult, null, 2));
             console.log(`Saved transcript to: ${transcriptPath}`);
+
+            // Get session data and integrate voice transcript actions
+            const sessionData = this.sessionRecorder.getSessionData();
+            const sessionStartTime = new Date(sessionData.startTime).getTime();
+
+            // Update voiceRecording metadata
+            sessionData.voiceRecording = {
+              enabled: true,
+              audioFile: `audio/recording.${this.config.audioFormat}`,
+              transcriptFile: 'transcript.json',
+              model: this.config.whisperModel,
+              language: transcriptResult.language,
+              duration: transcriptResult.duration
+            };
+
+            // Convert transcript segments to VoiceTranscriptAction entries
+            const voiceActions = this.convertTranscriptToVoiceActions(
+              transcriptResult,
+              sessionStartTime,
+              `audio/recording.${this.config.audioFormat}`
+            );
+
+            if (voiceActions.length > 0) {
+              // Merge voice actions with existing actions and sort by timestamp
+              const allActions = [...sessionData.actions, ...voiceActions];
+              allActions.sort((a, b) => {
+                const timeA = new Date(a.timestamp).getTime();
+                const timeB = new Date(b.timestamp).getTime();
+                if (timeA !== timeB) return timeA - timeB;
+                // Same timestamp: non-voice actions before voice actions
+                const aIsVoice = a.type === 'voice_transcript';
+                const bIsVoice = b.type === 'voice_transcript';
+                if (aIsVoice && !bIsVoice) return 1;
+                if (!aIsVoice && bIsVoice) return -1;
+                return 0;
+              });
+              sessionData.actions = allActions;
+              console.log(`🎙️  Added ${voiceActions.length} voice transcript segments to session`);
+            }
+          } else if (transcriptResult && !transcriptResult.success) {
+            console.error(`Voice transcription failed: ${transcriptResult.error || 'Unknown error'}`);
           }
         } catch (error) {
           console.error('Error stopping voice recorder:', error);
@@ -460,5 +502,55 @@ export class RecordingOrchestrator extends EventEmitter {
 
   setVoiceEnabled(enabled: boolean): void {
     this.voiceEnabled = enabled;
+  }
+
+  /**
+   * Convert transcript result to VoiceTranscriptAction entries
+   * Replicates the logic from VoiceRecorder.convertToVoiceActions
+   */
+  private convertTranscriptToVoiceActions(
+    transcript: TranscriptResult,
+    sessionStartTime: number,
+    audioFile: string
+  ): VoiceTranscriptAction[] {
+    if (!transcript.success || !transcript.segments) {
+      return [];
+    }
+
+    const actions: VoiceTranscriptAction[] = [];
+    let actionCounter = 1;
+
+    for (const segment of transcript.segments) {
+      // Convert relative timestamps (in seconds) to absolute UTC
+      const startTime = new Date(sessionStartTime + segment.start * 1000);
+      const endTime = new Date(sessionStartTime + segment.end * 1000);
+
+      // Convert words to absolute timestamps
+      const words = segment.words?.map(word => ({
+        word: word.word,
+        startTime: new Date(sessionStartTime + word.start * 1000).toISOString(),
+        endTime: new Date(sessionStartTime + word.end * 1000).toISOString(),
+        probability: word.probability
+      }));
+
+      const action: VoiceTranscriptAction = {
+        id: `voice-${actionCounter++}`,
+        type: 'voice_transcript',
+        timestamp: startTime.toISOString(),
+        transcript: {
+          text: segment.text,
+          startTime: startTime.toISOString(),
+          endTime: endTime.toISOString(),
+          confidence: Math.exp(segment.confidence), // Convert log prob to probability
+          words
+        },
+        audioFile,
+        source: 'voice'
+      };
+
+      actions.push(action);
+    }
+
+    return actions;
   }
 }
