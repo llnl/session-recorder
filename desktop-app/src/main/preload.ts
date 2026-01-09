@@ -43,5 +43,30 @@ contextBridge.exposeInMainWorld('electronAPI', {
     const subscription = (_event: Electron.IpcRendererEvent, error: string) => callback(error);
     ipcRenderer.on('recording:error', subscription);
     return () => ipcRenderer.removeListener('recording:error', subscription);
-  }
+  },
+
+  // Recording complete callback
+  onRecordingComplete: (callback: (data: {
+    outputPath: string;
+    duration: number;
+    actionCount: number;
+    voiceSegments: number;
+    voiceEnabled: boolean;
+  }) => void) => {
+    const subscription = (_event: Electron.IpcRendererEvent, data: {
+      outputPath: string;
+      duration: number;
+      actionCount: number;
+      voiceSegments: number;
+      voiceEnabled: boolean;
+    }) => callback(data);
+    ipcRenderer.on('recording:complete', subscription);
+    return () => ipcRenderer.removeListener('recording:complete', subscription);
+  },
+
+  // Open session in viewer
+  openInViewer: (sessionPath: string) => ipcRenderer.invoke('session:openInViewer', sessionPath),
+
+  // Show session in folder
+  showInFolder: (sessionPath: string) => ipcRenderer.invoke('session:showInFolder', sessionPath)
 });

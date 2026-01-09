@@ -20,6 +20,9 @@ export class MainWindow {
   private orchestrator: RecordingOrchestrator;
   private config: AppConfig;
   private isQuitting = false;
+  private currentVoiceEnabled = false;
+  private lastRecordingDuration = 0;
+  private lastActionCount = 0;
 
   constructor(options: MainWindowOptions) {
     this.orchestrator = options.orchestrator;
@@ -116,6 +119,7 @@ export class MainWindow {
       try {
         // Configure voice based on mode
         const voiceEnabled = options.mode === 'voice' || options.mode === 'combined';
+        this.currentVoiceEnabled = voiceEnabled;
         this.orchestrator.setVoiceEnabled(voiceEnabled);
 
         // Update config
@@ -140,11 +144,21 @@ export class MainWindow {
     // Stop recording
     ipcMain.handle('recording:stop', async () => {
       try {
+        // Capture final stats before stopping
+        const finalDuration = this.orchestrator.getDuration();
+        this.lastRecordingDuration = finalDuration;
+
         const outputPath = await this.orchestrator.stopRecording();
 
         if (outputPath) {
-          // Show file in explorer
-          shell.showItemInFolder(outputPath);
+          // Send complete event to renderer with session summary
+          this.sendToRenderer('recording:complete', {
+            outputPath,
+            duration: this.lastRecordingDuration,
+            actionCount: this.lastActionCount,
+            voiceSegments: 0,  // Will be updated from session data if available
+            voiceEnabled: this.currentVoiceEnabled
+          });
         }
 
         return outputPath;
@@ -153,6 +167,18 @@ export class MainWindow {
         this.sendToRenderer('recording:error', message);
         throw error;
       }
+    });
+
+    // Open session in viewer
+    ipcMain.handle('session:openInViewer', async (_event, sessionPath: string) => {
+      // Get the viewer URL - use the session path as a parameter
+      const viewerUrl = `http://localhost:5173/?session=${encodeURIComponent(sessionPath)}`;
+      shell.openExternal(viewerUrl);
+    });
+
+    // Show session in folder
+    ipcMain.handle('session:showInFolder', async (_event, sessionPath: string) => {
+      shell.showItemInFolder(sessionPath);
     });
 
     // Pause recording
@@ -195,6 +221,8 @@ export class MainWindow {
 
     // Recording stats (timer, action count, URL)
     this.orchestrator.on('stats', (stats: RecordingStats) => {
+      // Track last known action count for complete summary
+      this.lastActionCount = stats.actionCount;
       this.sendToRenderer('recording:stats', stats);
     });
 
@@ -241,6 +269,8 @@ export class MainWindow {
     ipcMain.removeHandler('recording:pause');
     ipcMain.removeHandler('recording:resume');
     ipcMain.removeHandler('recording:getState');
+    ipcMain.removeHandler('session:openInViewer');
+    ipcMain.removeHandler('session:showInFolder');
 
     // Set quitting flag so close handler allows actual close
     this.isQuitting = true;

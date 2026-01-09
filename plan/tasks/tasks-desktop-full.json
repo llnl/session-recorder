@@ -3,10 +3,10 @@
   "initiative": "desktop-app",
   "generated": "2025-12-17",
   "summary": {
-    "todo": 5,
+    "todo": 4,
     "planning": 0,
     "implementing": 0,
-    "implemented": 0,
+    "implemented": 1,
     "tested": 3,
     "regression": 0,
     "debug": 0
@@ -90,7 +90,11 @@
     {
       "id": "FEAT-04",
       "name": "Recording Complete View",
-      "status": "todo",
+      "status": "implemented",
+      "history": [
+        {"date": "2026-01-09", "from": "todo", "to": "implementing"},
+        {"date": "2026-01-09", "from": "implementing", "to": "implemented", "notes": "Added complete view with duration, action count, voice segments, file path, Open in Viewer, Show in Folder, and New Recording buttons"}
+      ],
       "steps": [
         "Click Stop Recording → Processing indicator appears",
         "After processing → 'Recording Complete' view displays",

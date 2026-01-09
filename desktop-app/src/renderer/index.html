@@ -94,6 +94,50 @@
         </div>
       </section>
 
+      <!-- Recording Complete View (shown after recording stops) -->
+      <section class="section recording-complete hidden" id="recording-complete">
+        <div class="complete-header">
+          <span class="complete-icon">✓</span>
+          <span class="complete-title">Recording Complete</span>
+        </div>
+
+        <div class="complete-summary">
+          <div class="summary-item">
+            <span class="summary-label">Duration</span>
+            <span class="summary-value" id="complete-duration">—</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Browser Actions</span>
+            <span class="summary-value" id="complete-actions">—</span>
+          </div>
+          <div class="summary-item voice-summary hidden" id="voice-summary">
+            <span class="summary-label">Voice Segments</span>
+            <span class="summary-value" id="complete-voice">—</span>
+          </div>
+        </div>
+
+        <div class="complete-file">
+          <span class="file-label">Saved to</span>
+          <span class="file-path" id="complete-path" title="">—</span>
+        </div>
+
+        <div class="complete-actions">
+          <button type="button" id="open-viewer-btn" class="btn btn-primary">
+            <span class="btn-icon">▶</span>
+            Open in Viewer
+          </button>
+          <button type="button" id="show-folder-btn" class="btn btn-secondary">
+            <span class="btn-icon">📁</span>
+            Show in Folder
+          </button>
+        </div>
+
+        <button type="button" id="new-recording-btn" class="btn btn-tertiary">
+          <span class="btn-icon">+</span>
+          New Recording
+        </button>
+      </section>
+
       <!-- Controls -->
       <section class="section controls-section">
         <button type="button" id="start-btn" class="btn btn-primary">

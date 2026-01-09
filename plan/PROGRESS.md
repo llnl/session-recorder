@@ -1,6 +1,6 @@
 # Session Recorder - Progress Tracker
 
-**Last Updated:** 2026-01-05
+**Last Updated:** 2026-01-09
 
 ---
 
@@ -21,7 +21,7 @@
 
 **Goal:** Full-featured desktop UI with main window, recording controls, settings, and recent recordings
 
-**Status:** 3 tested, 5 todo
+**Status:** 3 tested, 1 implemented, 4 todo
 
 - FEAT-01: Main Window UI - **tested** (2026-01-05)
   - Main window with recording title, mode, and browser selection
@@ -43,13 +43,22 @@
   - Tips section with helpful guidance text
   - Window title shows 🔴/⏸/⏳ state indicators
   - Browser closes immediately on stop (before processing)
-- FEAT-04 through FEAT-08 - todo
+- FEAT-04: Recording Complete View - **implemented** (2026-01-09)
+  - Summary shows duration in human-readable format (e.g., "5 minutes, 23 seconds")
+  - Summary shows action count (e.g., "47 browser actions")
+  - Summary shows voice segments if voice recording was enabled
+  - File path displays the saved zip location
+  - "Open in Viewer" button opens the session in web viewer
+  - "Show in Folder" button opens file explorer to zip location
+  - "New Recording" button returns to idle state
+  - Window title shows ✓ Complete state
+- FEAT-05 through FEAT-08 - todo
 
 **Next Task:**
 
 | ID | Description | Tasks File |
 |---|---|---|
-| FEAT-04 | Recording Complete View | [tasks-desktop-full.json](tasks/tasks-desktop-full.json) |
+| FEAT-05 | Recent Recordings Panel | [tasks-desktop-full.json](tasks/tasks-desktop-full.json) |
 
 ---
 
@@ -210,6 +219,7 @@ The session-recorder folder will become its own standalone repository containing
 
 | Date | Changes |
 |------|---------|
+| 2026-01-09 | FEAT-04 (desktop-full): Recording Complete View implemented - summary with duration/actions/voice, file path, Open in Viewer, Show in Folder, New Recording buttons |
 | 2026-01-05 | FEAT-03 (desktop-full): Recording Status View tested - fixed button state bugs, added Processing window title, browser closes immediately on stop |
 | 2026-01-05 | FEAT-03 (desktop-full): Recording Status View implemented - red dot indicator, voice level bars, paused badge, tips section, window title states |
 | 2026-01-05 | FEAT-02 (desktop-full): Recording Controls Flow tested - timer, action count, URL tracking, pause/resume |

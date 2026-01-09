@@ -13,6 +13,15 @@ interface RecordingStats {
   currentUrl: string;
 }
 
+// Recording complete data from main process
+interface RecordingCompleteData {
+  outputPath: string;
+  duration: number;
+  actionCount: number;
+  voiceSegments: number;
+  voiceEnabled: boolean;
+}
+
 // Type definitions for the exposed API
 interface ElectronAPI {
   // Recording control
@@ -36,6 +45,11 @@ interface ElectronAPI {
   onStateChange: (callback: (state: string) => void) => void;
   onStats: (callback: (stats: RecordingStats) => void) => void;
   onError: (callback: (error: string) => void) => void;
+  onRecordingComplete: (callback: (data: RecordingCompleteData) => void) => void;
+
+  // Session actions
+  openInViewer: (sessionPath: string) => Promise<void>;
+  showInFolder: (sessionPath: string) => Promise<void>;
 }
 
 // electronAPI is exposed globally by preload script via contextBridge
@@ -50,6 +64,8 @@ let selectedBrowser: BrowserType = 'chromium';
 let isRecording = false;
 let isPaused = false;
 let isProcessing = false;
+let isComplete = false;
+let lastOutputPath: string | null = null;
 
 // DOM Elements
 const recordingTitleInput = document.getElementById('recording-title') as HTMLInputElement;
@@ -73,6 +89,18 @@ const recordingStateText = document.getElementById('recording-state-text') as HT
 const pausedBadge = document.getElementById('paused-badge') as HTMLSpanElement;
 const voiceIndicator = document.getElementById('voice-indicator') as HTMLElement;
 
+// FEAT-04: Recording complete elements
+const recordingCompleteSection = document.getElementById('recording-complete') as HTMLElement;
+const completeDurationDisplay = document.getElementById('complete-duration') as HTMLSpanElement;
+const completeActionsDisplay = document.getElementById('complete-actions') as HTMLSpanElement;
+const voiceSummaryItem = document.getElementById('voice-summary') as HTMLElement;
+const completeVoiceDisplay = document.getElementById('complete-voice') as HTMLSpanElement;
+const completePathDisplay = document.getElementById('complete-path') as HTMLSpanElement;
+const openViewerBtn = document.getElementById('open-viewer-btn') as HTMLButtonElement;
+const showFolderBtn = document.getElementById('show-folder-btn') as HTMLButtonElement;
+const newRecordingBtn = document.getElementById('new-recording-btn') as HTMLButtonElement;
+const controlsSection = document.querySelector('.controls-section') as HTMLElement;
+
 // Original window title
 const originalTitle = document.title;
 
@@ -90,6 +118,28 @@ function formatDuration(ms: number): string {
   ].join(':');
 }
 
+// Format milliseconds as human-readable string (e.g., "5 minutes, 23 seconds")
+function formatDurationHuman(ms: number): string {
+  const totalSeconds = Math.floor(ms / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  const parts: string[] = [];
+
+  if (hours > 0) {
+    parts.push(`${hours} ${hours === 1 ? 'hour' : 'hours'}`);
+  }
+  if (minutes > 0) {
+    parts.push(`${minutes} ${minutes === 1 ? 'minute' : 'minutes'}`);
+  }
+  if (seconds > 0 || parts.length === 0) {
+    parts.push(`${seconds} ${seconds === 1 ? 'second' : 'seconds'}`);
+  }
+
+  return parts.join(', ');
+}
+
 // Truncate URL for display
 function truncateUrl(url: string, maxLength: number = 50): string {
   if (!url || url.length <= maxLength) return url;
@@ -101,6 +151,7 @@ function init(): void {
   setupModeToggle();
   setupBrowserToggle();
   setupControlButtons();
+  setupCompleteViewButtons();
   setupIPCListeners();
   updateUI();
 }
@@ -152,6 +203,43 @@ function setupControlButtons(): void {
   pauseBtn.addEventListener('click', handlePauseResume);
 }
 
+// Complete view buttons
+function setupCompleteViewButtons(): void {
+  openViewerBtn.addEventListener('click', handleOpenInViewer);
+  showFolderBtn.addEventListener('click', handleShowInFolder);
+  newRecordingBtn.addEventListener('click', handleNewRecording);
+}
+
+async function handleOpenInViewer(): Promise<void> {
+  if (lastOutputPath) {
+    try {
+      await electronAPI.openInViewer(lastOutputPath);
+    } catch (error) {
+      console.error('Failed to open in viewer:', error);
+      alert(`Failed to open in viewer: ${error}`);
+    }
+  }
+}
+
+async function handleShowInFolder(): Promise<void> {
+  if (lastOutputPath) {
+    try {
+      await electronAPI.showInFolder(lastOutputPath);
+    } catch (error) {
+      console.error('Failed to show in folder:', error);
+      alert(`Failed to show in folder: ${error}`);
+    }
+  }
+}
+
+function handleNewRecording(): void {
+  // Reset to idle state
+  isComplete = false;
+  lastOutputPath = null;
+  recordingTitleInput.value = '';
+  updateUI();
+}
+
 async function handleStartStop(): Promise<void> {
   if (isRecording) {
     // Stop recording
@@ -190,20 +278,18 @@ async function stopRecording(): Promise<void> {
     setStatus('processing', 'Processing recording...');
     updateUI();
 
-    const outputPath = await electronAPI.stopRecording();
+    // Stop recording - the onRecordingComplete event handler
+    // will update the UI to show the complete view
+    await electronAPI.stopRecording();
 
-    isRecording = false;
-    isPaused = false;
-    isProcessing = false;
-    setStatus('ready', 'Ready to record');
-    updateUI();
+    // Note: State is updated by onRecordingComplete event handler
+    // Don't reset state here to avoid race condition with event
 
-    if (outputPath) {
-      setStatus('ready', `Recording saved: ${outputPath.split(/[\\/]/).pop()}`);
-    }
   } catch (error) {
     console.error('Failed to stop recording:', error);
     isProcessing = false;
+    isRecording = false;
+    isPaused = false;
     setStatus('ready', 'Ready to record');
     updateUI();
     alert(`Failed to stop recording: ${error}`);
@@ -294,10 +380,72 @@ function setupIPCListeners(): void {
     isPaused = false;
     updateUI();
   });
+
+  // Handle recording complete with session summary
+  electronAPI.onRecordingComplete((data: RecordingCompleteData) => {
+    console.log('Recording complete:', data);
+
+    // Store the output path for button actions
+    lastOutputPath = data.outputPath;
+
+    // Update the complete view with session summary
+    completeDurationDisplay.textContent = formatDurationHuman(data.duration);
+    completeActionsDisplay.textContent = `${data.actionCount} browser actions`;
+
+    // Show voice segments if voice was enabled
+    if (data.voiceEnabled) {
+      voiceSummaryItem.classList.remove('hidden');
+      completeVoiceDisplay.textContent = `${data.voiceSegments} segments`;
+    } else {
+      voiceSummaryItem.classList.add('hidden');
+    }
+
+    // Display the file path
+    const fileName = data.outputPath.split(/[\\/]/).pop() || data.outputPath;
+    completePathDisplay.textContent = fileName;
+    completePathDisplay.title = data.outputPath;
+
+    // Set state to complete
+    isComplete = true;
+    isProcessing = false;
+    isRecording = false;
+    isPaused = false;
+
+    setStatus('ready', 'Recording saved');
+    updateUI();
+  });
 }
 
 // UI Updates
 function updateUI(): void {
+  // FEAT-04: Handle complete view visibility
+  if (isComplete) {
+    // Show complete view, hide everything else
+    recordingCompleteSection.classList.remove('hidden');
+    recordingStatusSection.classList.add('hidden');
+    controlsSection.classList.add('hidden');
+
+    // Hide setup sections (title, mode, browser selection)
+    document.querySelectorAll('.section').forEach(section => {
+      if (section !== recordingCompleteSection) {
+        section.classList.add('setup-hidden');
+      }
+    });
+
+    // Reset window title
+    document.title = `✓ Complete - ${originalTitle}`;
+    return;
+  }
+
+  // Not complete - show normal UI
+  recordingCompleteSection.classList.add('hidden');
+  controlsSection.classList.remove('hidden');
+
+  // Show setup sections
+  document.querySelectorAll('.section').forEach(section => {
+    section.classList.remove('setup-hidden');
+  });
+
   // Update start/stop button text and style
   if (isRecording) {
     startBtn.innerHTML = '<span class="btn-icon">&#9632;</span> Stop Recording';
