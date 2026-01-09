@@ -18,3 +18,4 @@ If included in the type/scope prefix, breaking changes MUST be indicated by a ! 
 Types other than feat and fix MAY be used in your commit messages, e.g., docs: update ref docs.
 The units of information that make up Conventional Commits MUST NOT be treated as case sensitive by implementors, with the exception of BREAKING CHANGE which MUST be uppercase.
 BREAKING-CHANGE MUST be synonymous with BREAKING CHANGE, when used as a token in a footer.
+Do not say "Co-Authored-By" at all.
