@@ -11,7 +11,8 @@ src/voice/build/
 src/voice/venv-bundle/
 src/voice/*.wav
 
-# MCP todo list
 .mcp-todos.json
 **/release
 .idea/
+release/
+desktop-app/core
