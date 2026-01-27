@@ -30,3 +30,5 @@ export type {
   TrayManagerOptions,
   TrayNotification
 } from './node/TrayManager';
+export { chromium, firefox, webkit } from '@playwright/test'
+export type { Browser, BrowserContext, Page } from '@playwright/test'

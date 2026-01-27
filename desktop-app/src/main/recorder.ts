@@ -6,7 +6,6 @@
  */
 
 import { EventEmitter } from 'events';
-import { chromium, firefox, webkit, Browser, BrowserContext, Page } from 'playwright';
 import * as path from 'path';
 import * as fs from 'fs';
 import {
@@ -19,7 +18,7 @@ import {
 import { VoiceRecorderProcess } from './voice';
 
 // Import real SessionRecorder from parent session-recorder package
-import { SessionRecorder, VoiceTranscriptAction } from 'session-recorder';
+import { SessionRecorder, VoiceTranscriptAction, chromium, firefox, webkit, Browser, BrowserContext, Page } from 'session-recorder';
 import type { TranscriptResult } from './voice';
 
 export type RecordingState = 'idle' | 'starting' | 'recording' | 'paused' | 'stopping' | 'processing';

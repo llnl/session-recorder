@@ -32,7 +32,7 @@ def get_platform_info():
 
     if system == 'windows':
         return {
-            'name': 'windows',
+            'name': 'win',  # Matches electron-builder ${os}
             'exe_name': 'voice-recorder.exe',
             'venv_python': 'Scripts/python.exe',
             'venv_pip': 'Scripts/pip.exe',
@@ -40,7 +40,7 @@ def get_platform_info():
         }
     elif system == 'darwin':
         return {
-            'name': 'macos',
+            'name': 'mac',  # Matches electron-builder ${os}
             'exe_name': 'voice-recorder',
             'venv_python': 'bin/python',
             'venv_pip': 'bin/pip',
@@ -114,7 +114,7 @@ def install_dependencies(venv_path: Path, voice_dir: Path, platform_info: dict, 
     # Install PyTorch (CPU-only for bundle, full for dev)
     if dev:
         # Install with platform-specific acceleration
-        if platform_info['name'] == 'macos':
+        if platform_info['name'] == 'mac':
             # macOS: MPS is included in default wheel
             run_command([str(python_path), '-m', 'pip', 'install', 'torch>=2.0.0'])
         else:
@@ -122,7 +122,7 @@ def install_dependencies(venv_path: Path, voice_dir: Path, platform_info: dict, 
             run_command([str(python_path), '-m', 'pip', 'install', 'torch>=2.0.0'])
     else:
         # CPU-only for smaller bundle
-        if platform_info['name'] == 'macos':
+        if platform_info['name'] == 'mac':
             # macOS wheels don't have CPU-only option, use default
             run_command([str(python_path), '-m', 'pip', 'install', 'torch>=2.0.0'])
         else:

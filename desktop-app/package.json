@@ -11,11 +11,12 @@
     "build": "tsc && npm run copy-renderer",
     "copy-renderer": "node -e \"const fs=require('fs');const p=require('path');const src='src/renderer';const dst='dist/renderer';fs.mkdirSync(dst,{recursive:true});['index.html','styles.css'].forEach(f=>fs.copyFileSync(p.join(src,f),p.join(dst,f)))\"",
     "clean": "rimraf dist",
-    "electron:build": "npm run build && electron-builder",
-    "electron:build:win": "npm run build && electron-builder --win",
-    "electron:build:mac": "npm run build && electron-builder --mac",
-    "electron:build:linux": "npm run build && electron-builder --linux",
-    "electron:build:all": "npm run build && electron-builder --win --mac --linux",
+    "voice:build": "cd .. && npm run voice:build",
+    "electron:build": "npm run build && npm run voice:build && electron-builder",
+    "electron:build:win": "npm run build && npm run voice:build && electron-builder --win",
+    "electron:build:mac": "npm run build && npm run voice:build && electron-builder --mac",
+    "electron:build:linux": "npm run build && npm run voice:build && electron-builder --linux",
+    "electron:build:all": "npm run build && npm run voice:build && electron-builder --win --mac --linux",
     "electron:build:no-voice": "npm run build && electron-builder -c.extraResources=",
     "electron:build:linux:no-voice": "npm run build && electron-builder --linux -c.extraResources=",
     "electron:build:win:no-voice": "npm run build && electron-builder --win -c.extraResources=",
@@ -23,8 +24,10 @@
   },
   "dependencies": {
     "archiver": "^7.0.1",
-    "playwright": "^1.40.0",
-    "session-recorder": "file:.."
+    "archiver-utils": "^5.0.2",
+    "compress-commons": "^6.0.2",
+    "session-recorder": "file:..",
+    "zip-stream": "^6.0.1"
   },
   "devDependencies": {
     "@types/archiver": "^7.0.0",
@@ -57,7 +60,9 @@
       "!**/node_modules/session-recorder/test/**/*",
       "!**/node_modules/session-recorder/viewer/**/*",
       "!**/node_modules/session-recorder/mcp-server/**/*",
-      "!**/node_modules/session-recorder/desktop-app/**/*"
+      "!**/node_modules/session-recorder/desktop-app/**/*",
+      "!**/node_modules/session-recorder/.claude/**/*",
+      "!**/node_modules/session-recorder/plan/**/*"
     ],
     "extraResources": [
       {
@@ -75,15 +80,10 @@
           "arch": [
             "x64"
           ]
-        },
-        {
-          "target": "portable",
-          "arch": [
-            "x64"
-          ]
         }
       ],
-      "icon": "src/assets/icon.ico"
+      "icon": "src/assets/icon.ico",
+      "signAndEditExecutable": false
     },
     "mac": {
       "target": [
@@ -118,6 +118,7 @@
       "icon": "src/assets/icon.png",
       "category": "Development"
     },
+    "asar": false,
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
