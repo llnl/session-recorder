@@ -10,5 +10,9 @@ desktop-app/resources
 src/voice/build/
 src/voice/venv-bundle/
 src/voice/*.wav
+
+.mcp-todos.json
+**/release
+.idea/
 release/
 desktop-app/core
